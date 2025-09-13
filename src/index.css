@@ -1,7 +1,6 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 @layer components{
   .btn{ @apply border border-slate-300 bg-white px-3 py-2 rounded-xl font-semibold shadow-sm hover:shadow transition; }
   .btn-primary{ @apply bg-emerald-700 text-white border-transparent hover:bg-emerald-800; }
