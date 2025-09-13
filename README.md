@@ -1,11 +1,11 @@
-# Dashboard AVA — Vite + React + Tailwind
+# Dashboard AVA — Vite + React + TypeScript + Tailwind (Vercel Ready)
 
-## Como rodar localmente
+## Rodar localmente
 npm install
 npm run dev
 
 ## Deploy na Vercel
-- Importar o repositório do GitHub
+- Importar do GitHub
 - Framework: Vite
 - Install: npm install
 - Build: npm run build
