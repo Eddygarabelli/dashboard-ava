@@ -8,4 +8,6 @@
   .btn-ghost{ @apply bg-slate-100; }
   .badge{ @apply inline-block px-2 py-1 text-xs rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200; }
   .card{ @apply bg-white border border-slate-200 rounded-2xl p-4 shadow-sm; }
+  .input{ @apply pl-3 pr-3 py-2 border rounded-xl w-full bg-white; }
+  .label{ @apply text-xs font-semibold text-slate-600; }
 }
