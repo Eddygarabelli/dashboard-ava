@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { GraduationCap, Search, UserCircle, Home, Plus } from "lucide-react";
 import "./index.css";
 import { supabase } from "./lib/supabaseClient";
+import Modal from "./components/Modal";
 
 type Student = {
   id: string;
@@ -38,24 +39,6 @@ const filterStudents = (students: Student[], q: string) => {
   if (!s) return students;
   return students.filter(st => st.name.toLowerCase().includes(s));
 };
-
-function Modal({ open, onClose, title, children }: { open: boolean; onClose: ()=>void; title: string; children: React.ReactNode }){
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="absolute inset-0 grid place-items-center p-4">
-        <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl border">
-          <div className="flex items-center justify-between px-4 py-3 border-b">
-            <h3 className="font-semibold">{title}</h3>
-            <button className="btn" onClick={onClose}>Fechar</button>
-          </div>
-          <div className="p-4 max-h-[80vh] overflow-auto">{children}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function App(){
   const [view, setView] = useState<View>("dashboard");
@@ -171,7 +154,9 @@ export default function App(){
             ) : (
               <button onClick={goAlunos} className="btn btn-ghost flex items-center gap-2"><UserCircle className="h-4 w-4" /> Alunos</button>
             )}
-            <button onClick={()=>setOpenAdd(true)} className="btn btn-primary flex items-center gap-2"><Plus className="h-4 w-4"/> Adicionar Aluno</button>
+            <button type="button" onClick={()=>{ console.log('abrir modal'); setOpenAdd(true); }} className="btn btn-primary flex items-center gap-2">
+              <Plus className="h-4 w-4"/> Adicionar Aluno
+            </button>
           </div>
         </div>
       </header>
