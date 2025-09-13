@@ -1,7 +1,7 @@
 -- Extensão
 create extension if not exists "pgcrypto";
 
--- Tabelas base (idempotente)
+-- Tabelas (idempotente)
 create table if not exists public.students (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -24,7 +24,7 @@ create table if not exists public.enrollments (
   unique (student_id, course_id)
 );
 
--- Colunas extras do formulário (se faltarem)
+-- Colunas extras do formulário
 alter table public.students
   add column if not exists first_name text,
   add column if not exists last_name  text,
@@ -41,12 +41,12 @@ alter table public.students
   add column if not exists state      text,
   add column if not exists levels     text[];
 
--- RLS (não cria policies aqui para evitar conflito com as já existentes)
+-- RLS ativado (policies ficam a seu critério)
 alter table public.students enable row level security;
 alter table public.courses enable row level security;
 alter table public.enrollments enable row level security;
 
--- Realtime
+-- Realtime publish
 do $$ begin alter publication supabase_realtime add table public.students;   exception when duplicate_object then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.courses;    exception when duplicate_object then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.enrollments; exception when duplicate_object then null; end $$;

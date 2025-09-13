@@ -45,6 +45,28 @@ function viewFromHash(): View {
   return "dashboard";
 }
 
+// Mini testes em DEV
+function runDevTests(){
+  if (!(import.meta as any).env?.DEV) return;
+  const fc = filterCourses([
+    { id:"1", title:"MATEMÁTICA", category:"Exatas", description:"", created_at:new Date().toISOString() },
+    { id:"2", title:"História", category:"Humanas", description:"", created_at:new Date().toISOString() }
+  ], "mat");
+  console.assert(fc.length === 1 && fc[0].title === "MATEMÁTICA", "filterCourses deve retornar só Matemática");
+
+  const fs = filterStudents([
+    { id:"a", name:"Ana Silva", courseIds:[] } as Student,
+    { id:"b", name:"Bruno", courseIds:[] } as Student
+  ], "ana");
+  console.assert(fs.length === 1 && fs[0].name === "Ana Silva", "filterStudents deve retornar só Ana");
+
+  const old = location.hash;
+  location.hash = "#/alunos/novo";
+  console.assert(viewFromHash() === "add-aluno", "viewFromHash deve reconhecer add-aluno");
+  location.hash = old;
+}
+runDevTests();
+
 export default function App(){
   const [view, setView] = useState<View>(viewFromHash());
   useEffect(() => {
@@ -116,7 +138,7 @@ export default function App(){
   const [studentQuery, setStudentQuery] = useState("");  const filteredStudents = useMemo(()=>filterStudents(students, studentQuery), [students, studentQuery]);
   const enrollCount = (id:string)=> students.filter(s=>s.courseIds.includes(id)).length;
 
-  // Form Novo Aluno (página separada)
+  // Form Novo Aluno
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [rg, setRg] = useState("");
@@ -160,7 +182,6 @@ export default function App(){
     }]);
     if (error) { console.error(error); return; }
 
-    // Limpa e volta para a lista de alunos
     setFirstName(""); setLastName(""); setRg(""); setCpf(""); setBirthDate(""); setBirthPlace("");
     setEmail(""); setPhone(""); setStreet(""); setNumber(""); setNeighborhood(""); setZip(""); setCity(""); setUf("");
     setLevels({Fundamental:false, Medio:false});
@@ -187,20 +208,20 @@ export default function App(){
               <button onClick={goAlunos} className="btn btn-ghost flex items-center gap-2"><UserCircle className="h-4 w-4" /> Alunos</button>
             )}
             {view !== "add-aluno" && (
-              <button onClick={goAddAluno} className="btn btn-primary flex items-center gap-2"><Plus className="h-4 w-4"/> Adicionar Aluno</button>
+              <a href="#/alunos/novo" onClick={(e)=>{ e.preventDefault(); goAddAluno(); }} className="btn btn-primary flex items-center gap-2"><Plus className="h-4 w-4"/> Adicionar Aluno</a>
             )}
           </div>
         </div>
       </header>
 
-      {/* INDICADORES (topo) */}
+      {/* Indicadores */}
       <section className="max-w-6xl mx-auto px-4 mt-4 grid gap-4 md:grid-cols-3">
         <div className="card"><h3 className="font-semibold mb-1">Total de Cursos</h3><div className="text-3xl font-bold">{totalCourses}</div></div>
         <div className="card"><h3 className="font-semibold mb-1">Total de Alunos</h3><div className="text-3xl font-bold">{totalStudents}</div></div>
         <div className="card"><h3 className="font-semibold mb-1">Matrículas</h3><div className="text-3xl font-bold">{totalEnrolls}</div></div>
       </section>
 
-      {/* CONTEÚDO por página */}
+      {/* Dashboard */}
       {view === "dashboard" && (
         <main className="max-w-6xl mx-auto px-4 py-6">
           <section id="meus-cursos">
@@ -231,6 +252,7 @@ export default function App(){
         </main>
       )}
 
+      {/* Alunos */}
       {view === "alunos" && (
         <main className="max-w-6xl mx-auto px-4 py-6">
           <section>
@@ -280,6 +302,7 @@ export default function App(){
         </main>
       )}
 
+      {/* Adicionar Aluno */}
       {view === "add-aluno" && (
         <main className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center gap-2 mb-4">
