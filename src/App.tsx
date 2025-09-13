@@ -1,12 +1,11 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { GraduationCap, Search, UserCircle, Home, Plus } from "lucide-react";
+import { GraduationCap, Search, UserCircle, Home, Plus, ArrowLeft } from "lucide-react";
 import "./index.css";
 import { supabase } from "./lib/supabaseClient";
-import Modal from "./components/Modal";
 
 type Student = {
   id: string;
-  name: string;
+  name: string; // Nome completo
   first_name?: string | null;
   last_name?: string | null;
   rg?: string | null;
@@ -20,14 +19,14 @@ type Student = {
   neighborhood?: string | null;
   zip_code?: string | null;
   city?: string | null;
-  state?: string | null;
-  levels?: string[] | null;
+  state?: string | null; // UF
+  levels?: string[] | null; // ["Fundamental","Médio"]
   photo_url?: string | null;
   created_at?: string;
   courseIds: string[];
 };
 type Course = { id: string; title: string; category?: string | null; description?: string | null; created_at: string; };
-type View = "dashboard" | "alunos";
+type View = "dashboard" | "alunos" | "add-aluno";
 
 const filterCourses = (courses: Course[], q: string) => {
   const s = q.trim().toLowerCase();
@@ -39,16 +38,24 @@ const filterStudents = (students: Student[], q: string) => {
   if (!s) return students;
   return students.filter(st => st.name.toLowerCase().includes(s));
 };
+function viewFromHash(): View {
+  const h = location.hash || "";
+  if (h.includes("alunos/novo") || h.includes("adicionar")) return "add-aluno";
+  if (h.includes("alunos")) return "alunos";
+  return "dashboard";
+}
 
 export default function App(){
-  const [view, setView] = useState<View>("dashboard");
+  const [view, setView] = useState<View>(viewFromHash());
   useEffect(() => {
-    const apply = () => setView(location.hash.includes("alunos") ? "alunos" : "dashboard");
-    apply(); window.addEventListener("hashchange", apply);
+    const apply = () => setView(viewFromHash());
+    apply();
+    window.addEventListener("hashchange", apply);
     return () => window.removeEventListener("hashchange", apply);
   }, []);
   const goAlunos = () => { setView("alunos"); location.hash = "#/alunos"; };
   const goDashboard = () => { setView("dashboard"); location.hash = "#/"; };
+  const goAddAluno = () => { setView("add-aluno"); location.hash = "#/alunos/novo"; };
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -67,16 +74,31 @@ export default function App(){
       });
 
       setCourses((coursesData ?? []) as Course[]);
-      setStudents(((studentsData ?? []) as any[]).map(s => ({
-        id: s.id, name: s.name, first_name: s.first_name ?? null, last_name: s.last_name ?? null,
-        rg: s.rg ?? null, cpf: s.cpf ?? null, birth_date: s.birth_date ?? null, birth_place: s.birth_place ?? null,
-        email: s.email ?? null, phone: s.phone ?? null, street: s.street ?? null, number: s.number ?? null,
-        neighborhood: s.neighborhood ?? null, zip_code: s.zip_code ?? null, city: s.city ?? null, state: s.state ?? null,
-        levels: s.levels ?? null, photo_url: s.photo_url ?? null, created_at: s.created_at,
-        courseIds: byStudent.get(s.id) ?? []
+      setStudents(((studentsData ?? []) as any[]).map((s:any) => ({
+        id: s.id,
+        name: s.name,
+        first_name: s.first_name ?? null,
+        last_name: s.last_name ?? null,
+        rg: s.rg ?? null,
+        cpf: s.cpf ?? null,
+        birth_date: s.birth_date ?? null,
+        birth_place: s.birth_place ?? null,
+        email: s.email ?? null,
+        phone: s.phone ?? null,
+        street: s.street ?? null,
+        number: s.number ?? null,
+        neighborhood: s.neighborhood ?? null,
+        zip_code: s.zip_code ?? null,
+        city: s.city ?? null,
+        state: s.state ?? null,
+        levels: s.levels ?? null,
+        photo_url: s.photo_url ?? null,
+        created_at: s.created_at,
+        courseIds: byStudent.get(s.id) ?? [],
       }))));
     };
     load();
+
     const ch = supabase
       .channel("realtime-all")
       .on("postgres_changes", { event: "*", schema: "public", table: "students" }, () => load())
@@ -94,14 +116,21 @@ export default function App(){
   const [studentQuery, setStudentQuery] = useState("");  const filteredStudents = useMemo(()=>filterStudents(students, studentQuery), [students, studentQuery]);
   const enrollCount = (id:string)=> students.filter(s=>s.courseIds.includes(id)).length;
 
-  const [openAdd, setOpenAdd] = useState(false);
-  const [firstName, setFirstName] = useState(""); const [lastName, setLastName] = useState("");
-  const [rg, setRg] = useState(""); const [cpf, setCpf] = useState("");
-  const [birthDate, setBirthDate] = useState(""); const [birthPlace, setBirthPlace] = useState("");
-  const [email, setEmail] = useState(""); const [phone, setPhone] = useState("");
-  const [street, setStreet] = useState(""); const [number, setNumber] = useState("");
-  const [neighborhood, setNeighborhood] = useState(""); const [zip, setZip] = useState("");
-  const [city, setCity] = useState(""); const [uf, setUf] = useState("");
+  // Form Novo Aluno (página separada)
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [rg, setRg] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [birthPlace, setBirthPlace] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [street, setStreet] = useState("");
+  const [number, setNumber] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
+  const [zip, setZip] = useState("");
+  const [city, setCity] = useState("");
+  const [uf, setUf] = useState("");
   const [levels, setLevels] = useState<{Fundamental:boolean; Medio:boolean}>({ Fundamental:false, Medio:false });
   const toggleLevel = (k: 'Fundamental'|'Medio') => setLevels(prev=>({...prev, [k]: !prev[k]}));
 
@@ -127,18 +156,20 @@ export default function App(){
       zip_code: zip || null,
       city: city || null,
       state: uf || null,
-      levels: levelsArr.length ? levelsArr : null
+      levels: levelsArr.length ? levelsArr : null,
     }]);
     if (error) { console.error(error); return; }
 
+    // Limpa e volta para a lista de alunos
     setFirstName(""); setLastName(""); setRg(""); setCpf(""); setBirthDate(""); setBirthPlace("");
     setEmail(""); setPhone(""); setStreet(""); setNumber(""); setNeighborhood(""); setZip(""); setCity(""); setUf("");
     setLevels({Fundamental:false, Medio:false});
-    setOpenAdd(false);
+    goAlunos();
   }
 
   return (
     <div className="min-h-screen text-slate-800">
+      {/* Header */}
       <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -149,24 +180,27 @@ export default function App(){
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {view === "alunos" ? (
+            {view !== "dashboard" && (
               <button onClick={goDashboard} className="btn btn-ghost flex items-center gap-2"><Home className="h-4 w-4"/> Dashboard</button>
-            ) : (
+            )}
+            {view !== "alunos" && (
               <button onClick={goAlunos} className="btn btn-ghost flex items-center gap-2"><UserCircle className="h-4 w-4" /> Alunos</button>
             )}
-            <button type="button" onClick={()=>{ console.log('abrir modal'); setOpenAdd(true); }} className="btn btn-primary flex items-center gap-2">
-              <Plus className="h-4 w-4"/> Adicionar Aluno
-            </button>
+            {view !== "add-aluno" && (
+              <button onClick={goAddAluno} className="btn btn-primary flex items-center gap-2"><Plus className="h-4 w-4"/> Adicionar Aluno</button>
+            )}
           </div>
         </div>
       </header>
 
+      {/* INDICADORES (topo) */}
       <section className="max-w-6xl mx-auto px-4 mt-4 grid gap-4 md:grid-cols-3">
         <div className="card"><h3 className="font-semibold mb-1">Total de Cursos</h3><div className="text-3xl font-bold">{totalCourses}</div></div>
         <div className="card"><h3 className="font-semibold mb-1">Total de Alunos</h3><div className="text-3xl font-bold">{totalStudents}</div></div>
         <div className="card"><h3 className="font-semibold mb-1">Matrículas</h3><div className="text-3xl font-bold">{totalEnrolls}</div></div>
       </section>
 
+      {/* CONTEÚDO por página */}
       {view === "dashboard" && (
         <main className="max-w-6xl mx-auto px-4 py-6">
           <section id="meus-cursos">
@@ -175,6 +209,7 @@ export default function App(){
               <input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Buscar curso por título ou categoria" className="pl-9 pr-3 py-2 border rounded-xl w-full bg-white" />
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             </div>
+
             {filteredCourses.length === 0 ? (
               <div className="card text-center text-slate-600">Nenhum curso encontrado.</div>
             ) : (
@@ -209,6 +244,7 @@ export default function App(){
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               </div>
             </div>
+
             {filteredStudents.length === 0 ? (
               <div className="card text-center text-slate-600">Nenhum aluno encontrado.</div>
             ) : (
@@ -244,53 +280,108 @@ export default function App(){
         </main>
       )}
 
+      {view === "add-aluno" && (
+        <main className="max-w-4xl mx-auto px-4 py-6">
+          <div className="flex items-center gap-2 mb-4">
+            <button onClick={goAlunos} className="btn flex items-center gap-2"><ArrowLeft className="h-4 w-4"/> Voltar</button>
+            <h2 className="text-lg font-semibold">Adicionar Aluno</h2>
+          </div>
+          <form onSubmit={handleAddStudent} className="grid gap-3">
+            <div className="grid md:grid-cols-2 gap-3">
+              <div>
+                <div className="label">Nome</div>
+                <input className="input" value={firstName} onChange={e=>setFirstName(e.target.value)} required />
+              </div>
+              <div>
+                <div className="label">Sobrenome</div>
+                <input className="input" value={lastName} onChange={e=>setLastName(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-3">
+              <div>
+                <div className="label">RG</div>
+                <input className="input" value={rg} onChange={e=>setRg(e.target.value)} />
+              </div>
+              <div>
+                <div className="label">CPF</div>
+                <input className="input" value={cpf} onChange={e=>setCpf(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-3">
+              <div>
+                <div className="label">Data de Nascimento</div>
+                <input type="date" className="input" value={birthDate} onChange={e=>setBirthDate(e.target.value)} />
+              </div>
+              <div>
+                <div className="label">Local de Nascimento</div>
+                <input className="input" value={birthPlace} onChange={e=>setBirthPlace(e.target.value)} placeholder="Cidade/UF ou País" />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-3">
+              <div>
+                <div className="label">E-mail</div>
+                <input type="email" className="input" value={email} onChange={e=>setEmail(e.target.value)} />
+              </div>
+              <div>
+                <div className="label">Telefone</div>
+                <input className="input" value={phone} onChange={e=>setPhone(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-3">
+              <div>
+                <div className="label">Rua</div>
+                <input className="input" value={street} onChange={e=>setStreet(e.target.value)} />
+              </div>
+              <div>
+                <div className="label">Número</div>
+                <input className="input" value={number} onChange={e=>setNumber(e.target.value)} />
+              </div>
+              <div>
+                <div className="label">Bairro</div>
+                <input className="input" value={neighborhood} onChange={e=>setNeighborhood(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-3">
+              <div>
+                <div className="label">CEP</div>
+                <input className="input" value={zip} onChange={e=>setZip(e.target.value)} />
+              </div>
+              <div>
+                <div className="label">Cidade</div>
+                <input className="input" value={city} onChange={e=>setCity(e.target.value)} />
+              </div>
+              <div>
+                <div className="label">Estado (UF)</div>
+                <input className="input" value={uf} onChange={e=>setUf(e.target.value.toUpperCase())} maxLength={2} placeholder="PR, SC, ..." />
+              </div>
+            </div>
+
+            <div>
+              <div className="label mb-1">Nível de Ensino</div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <label className="flex items-center gap-2"><input type="checkbox" checked={levels.Fundamental} onChange={()=>toggleLevel('Fundamental')} /> Fundamental</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={levels.Medio} onChange={()=>toggleLevel('Medio')} /> Médio</label>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button type="button" className="btn" onClick={goAlunos}>Cancelar</button>
+              <button type="submit" className="btn btn-primary">Salvar</button>
+            </div>
+          </form>
+        </main>
+      )}
+
       <footer className="mt-10 border-t">
         <div className="max-w-6xl mx-auto px-4 py-6 text-xs text-slate-500">
           Feito com ❤. Protótipo com Supabase Realtime.
         </div>
       </footer>
-
-      <Modal open={openAdd} onClose={()=>setOpenAdd(false)} title="Adicionar Aluno">
-        <form onSubmit={handleAddStudent} className="grid gap-3">
-          <div className="grid md:grid-cols-2 gap-3">
-            <div><div className="label">Nome</div><input className="input" value={firstName} onChange={e=>setFirstName(e.target.value)} required /></div>
-            <div><div className="label">Sobrenome</div><input className="input" value={lastName} onChange={e=>setLastName(e.target.value)} /></div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-3">
-            <div><div className="label">RG</div><input className="input" value={rg} onChange={e=>setRg(e.target.value)} /></div>
-            <div><div className="label">CPF</div><input className="input" value={cpf} onChange={e=>setCpf(e.target.value)} /></div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-3">
-            <div><div className="label">Data de Nascimento</div><input type="date" className="input" value={birthDate} onChange={e=>setBirthDate(e.target.value)} /></div>
-            <div><div className="label">Local de Nascimento</div><input className="input" value={birthPlace} onChange={e=>setBirthPlace(e.target.value)} placeholder="Cidade/UF ou País" /></div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-3">
-            <div><div className="label">E-mail</div><input type="email" className="input" value={email} onChange={e=>setEmail(e.target.value)} /></div>
-            <div><div className="label">Telefone</div><input className="input" value={phone} onChange={e=>setPhone(e.target.value)} /></div>
-          </div>
-          <div className="grid md:grid-cols-3 gap-3">
-            <div><div className="label">Rua</div><input className="input" value={street} onChange={e=>setStreet(e.target.value)} /></div>
-            <div><div className="label">Número</div><input className="input" value={number} onChange={e=>setNumber(e.target.value)} /></div>
-            <div><div className="label">Bairro</div><input className="input" value={neighborhood} onChange={e=>setNeighborhood(e.target.value)} /></div>
-          </div>
-          <div className="grid md:grid-cols-3 gap-3">
-            <div><div className="label">CEP</div><input className="input" value={zip} onChange={e=>setZip(e.target.value)} /></div>
-            <div><div className="label">Cidade</div><input className="input" value={city} onChange={e=>setCity(e.target.value)} /></div>
-            <div><div className="label">Estado (UF)</div><input className="input" value={uf} onChange={e=>setUf(e.target.value.toUpperCase())} maxLength={2} placeholder="PR, SC, ..." /></div>
-          </div>
-          <div>
-            <div className="label mb-1">Nível de Ensino</div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <label className="flex items-center gap-2"><input type="checkbox" checked={levels.Fundamental} onChange={()=>toggleLevel('Fundamental')} /> Fundamental</label>
-              <label className="flex items-center gap-2"><input type="checkbox" checked={levels.Medio} onChange={()=>toggleLevel('Medio')} /> Médio</label>
-            </div>
-          </div>
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <button type="button" className="btn" onClick={()=>setOpenAdd(false)}>Cancelar</button>
-            <button type="submit" className="btn btn-primary">Salvar</button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 }
