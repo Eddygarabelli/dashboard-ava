@@ -177,5 +177,34 @@
             });
         });
     </script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var novo = document.getElementById('card-novo-aluno');
+  if (novo) novo.addEventListener('click', function(){ window.location.href = 'cadastro.html'; });
+  var lista = document.getElementById('card-alunos-matriculados');
+  if (lista) lista.addEventListener('click', function(){ window.location.href = 'alunos.html'; });
+  var buttons = document.querySelectorAll('.nav-button');
+  if (buttons && buttons.length) {
+    buttons.forEach(function(button){
+      button.addEventListener('click', function(e){
+        e.preventDefault();
+        document.querySelectorAll('.nav-button').forEach(function(b){ b.classList.remove('active'); });
+        button.classList.add('active');
+        var target = button.dataset.target;
+        document.querySelectorAll('.dashboard-content').forEach(function(c){ c.classList.add('hidden'); });
+        if (target) {
+          var el = document.getElementById(target);
+          if (el) el.classList.remove('hidden');
+        }
+      });
+    });
+  }
+});
+</script>
+
+<script type="module">
+  import { supabase } from './supabaseClient.js';
+</script>
+
 </body>
 </html>

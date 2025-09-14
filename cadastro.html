@@ -93,5 +93,34 @@
             }
         });
     </script>
+<script type="module">
+import { supabase } from './supabaseClient.js';
+const form = document.getElementById('cadastro-form');
+if (form) {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const novoAluno = {
+      nome: document.getElementById('nome').value,
+      rg: document.getElementById('rg').value,
+      cpf: document.getElementById('cpf').value,
+      email: document.getElementById('email').value,
+      telefone: document.getElementById('telefone').value,
+      dataNascimento: document.getElementById('dataNascimento').value,
+      localNascimento: document.getElementById('localNascimento').value,
+      endereco: document.getElementById('endereco').value,
+      dataCadastro: new Date().toISOString()
+    };
+    const { error } = await supabase.from('alunos').insert([novoAluno]);
+    if (error) {
+      alert('Erro ao cadastrar aluno.');
+      console.error(error);
+    } else {
+      alert('Aluno cadastrado com sucesso!');
+      window.location.href = 'index.html';
+    }
+  });
+}
+</script>
+
 </body>
 </html>
