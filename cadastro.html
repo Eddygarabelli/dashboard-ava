@@ -55,8 +55,8 @@
                 <input type="text" id="cpf" placeholder="CPF" required class="form-input">
                 <input type="email" id="email" placeholder="E-mail" required class="form-input">
                 <input type="tel" id="telefone" placeholder="Telefone" required class="form-input">
-                <input type="text" onfocus="(this.type='date')" onblur="(this.type='text')" id="dataNascimento" placeholder="Data de Nascimento" required class="form-input">
-                <input type="text" id="localNascimento" placeholder="Local de Nascimento" required class="form-input">
+                <input type="text" onfocus="(this.type='date')" onblur="(this.type='text')" id="datanascimento" placeholder="Data de Nascimento" required class="form-input">
+                <input type="text" id="localnascimento" placeholder="Local de Nascimento" required class="form-input">
                 <input type="text" id="endereco" placeholder="Endereço Completo" required class="form-input">
                 <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md transition-colors shadow-sm">Cadastrar Aluno</button>
             </form>
@@ -75,10 +75,10 @@
                 cpf: document.getElementById('cpf').value,
                 email: document.getElementById('email').value,
                 telefone: document.getElementById('telefone').value,
-                dataNascimento: document.getElementById('dataNascimento').value,
-                localNascimento: document.getElementById('localNascimento').value,
+                datanascimento: document.getElementById('datanascimento').value,
+                localnascimento: document.getElementById('localnascimento').value,
                 endereco: document.getElementById('endereco').value,
-            };
+             datacadastro: new Date().toISOString() };
 
             const { data, error } = await supabase
                 .from('alunos')

@@ -49,10 +49,10 @@ create table if not exists public.alunos (
   cpf text,
   email text,
   telefone text,
-  "dataNascimento" date,
-  "localNascimento" text,
+  "datanascimento" date,
+  "localnascimento" text,
   endereco text,
-  "dataCadastro" timestamptz not null default now()
+  "datacadastro" timestamptz not null default now()
 );
 
 alter table public.alunos enable row level security;
@@ -107,9 +107,7 @@ end $$;</code></pre>
     document.getElementById('btn-insert').addEventListener('click', async () => {
       const novo = {
         nome: 'TESTE DEBUG ' + new Date().toISOString(),
-        email: 'debug@example.com',
-        dataCadastro: new Date().toISOString()
-      };
+        email: 'debug@example.com', datacadastro: new Date().toISOString() };
       const { data, error } = await supabase.from('alunos').insert([novo]).select();
       if (data && data.length) lastInsertedId = data[0].id || null;
       log('INSERT alunos', { data, error });

@@ -82,7 +82,7 @@
                         <div class="text-center sm:text-left flex-grow">
                             <h1 class="text-3xl font-bold text-gray-800">${aluno.nome}</h1>
                             <p class="text-gray-500">Matrícula: ${aluno.matricula}</p>
-                            <p class="text-gray-500">Data de Matrícula: ${new Date(aluno.dataCadastro).toLocaleDateString()}</p>
+                            <p class="text-gray-500">Data de Matrícula: ${new Date(aluno.datacadastro).toLocaleDateString()}</p>
                         </div>
                         <div class="mt-4 sm:mt-0 flex gap-2">
                             <button id="edit-student-btn" class="p-2 rounded-full hover:bg-gray-200" data-aluno-id="${aluno.id}">
@@ -128,8 +128,8 @@
                         cpf: document.getElementById('edit-cpf').value,
                         email: document.getElementById('edit-email').value,
                         telefone: document.getElementById('edit-telefone').value,
-                        dataNascimento: document.getElementById('edit-dataNascimento').value,
-                        localNascimento: document.getElementById('edit-localNascimento').value,
+                        datanascimento: document.getElementById('edit-datanascimento').value,
+                        localnascimento: document.getElementById('edit-localnascimento').value,
                         endereco: document.getElementById('edit-endereco').value
                     };
 
@@ -167,8 +167,8 @@
                     <div><strong class="text-gray-600">CPF:</strong> <input type="text" id="edit-cpf" value="${aluno.cpf || ''}" class="form-input"></div>
                     <div><strong class="text-gray-600">E-mail:</strong> <input type="email" id="edit-email" value="${aluno.email || ''}" class="form-input"></div>
                     <div><strong class="text-gray-600">Telefone:</strong> <input type="tel" id="edit-telefone" value="${aluno.telefone || ''}" class="form-input"></div>
-                    <div><strong class="text-gray-600">Data de Nasc.:</strong> <input type="date" id="edit-dataNascimento" value="${aluno.dataNascimento || ''}" class="form-input"></div>
-                    <div><strong class="text-gray-600">Local de Nasc.:</strong> <input type="text" id="edit-localNascimento" value="${aluno.localNascimento || ''}" class="form-input"></div>
+                    <div><strong class="text-gray-600">Data de Nasc.:</strong> <input type="date" id="edit-datanascimento" value="${aluno.datanascimento || ''}" class="form-input"></div>
+                    <div><strong class="text-gray-600">Local de Nasc.:</strong> <input type="text" id="edit-localnascimento" value="${aluno.localnascimento || ''}" class="form-input"></div>
                     <div class="md:col-span-2"><strong class="text-gray-600">Endereço:</strong> <input type="text" id="edit-endereco" value="${aluno.endereco || ''}" class="form-input"></div>
                     <div class="md:col-span-2 flex justify-end gap-2 mt-4">
                         <button id="cancel-edit-btn" class="px-4 py-2 bg-gray-300 rounded-md">Cancelar</button>
@@ -180,8 +180,8 @@
                     <div><strong class="text-gray-600">Nome:</strong> ${aluno.nome || 'Não informado'}</div>
                     <div><strong class="text-gray-600">RG:</strong> ${aluno.rg || 'Não informado'}</div>
                     <div><strong class="text-gray-600">CPF:</strong> ${aluno.cpf || 'Não informado'}</div>
-                    <div><strong class="text-gray-600">Data de Nasc.:</strong> ${aluno.dataNascimento || 'Não informado'}</div>
-                    <div><strong class="text-gray-600">Local de Nasc.:</strong> ${aluno.localNascimento || 'Não informado'}</div>
+                    <div><strong class="text-gray-600">Data de Nasc.:</strong> ${aluno.datanascimento || 'Não informado'}</div>
+                    <div><strong class="text-gray-600">Local de Nasc.:</strong> ${aluno.localnascimento || 'Não informado'}</div>
                     <div><strong class="text-gray-600">E-mail:</strong> ${aluno.email || 'Não informado'}</div>
                     <div><strong class="text-gray-600">Telefone:</strong> ${aluno.telefone || 'Não informado'}</div>
                     <div class="md:col-span-2"><strong class="text-gray-600">Endereço:</strong> ${aluno.endereco || 'Não informado'}</div>
