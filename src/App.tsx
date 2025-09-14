@@ -46,6 +46,21 @@ function viewFromHash(): View {
   return "dashboard";
 }
 
+// Pequenos testes de roteamento em modo DEV
+if (import.meta && (import.meta as any).env?.DEV) {
+  const _cases: Array<[string, View]> = [
+    ["#/alunos/novo", "add-aluno"],
+    ["#/alunos", "alunos"],
+    ["#/", "dashboard"],
+    ["", "dashboard"],
+  ];
+  for (const [h, v] of _cases) {
+    const res = (function(){ const hh = h; if (hh.includes("alunos/novo") || hh.includes("adicionar")) return "add-aluno" as View; if (hh.includes("alunos")) return "alunos" as View; return "dashboard" as View; })();
+    console.assert(res === v, "DEV_ROUTER_TESTS: esperado", v, "recebido", res, "para", h);
+  }
+}
+
+
 const onlyDigits = (s: string) => s.replace(/\D/g, "");
 const maskCPF = (v: string) => {
   const d = onlyDigits(v).slice(0, 11);
@@ -242,7 +257,7 @@ export default function App(){
               <button onClick={goAlunos} className="btn btn-ghost flex items-center gap-2"><UserCircle className="h-4 w-4" /> Alunos</button>
             )}
             {view !== "add-aluno" && (
-              <a href="#/alunos/novo" onClick={(e)=>{ e.preventDefault(); goAddAluno(); }} className="btn btn-primary flex items-center gap-2"><Plus className="h-4 w-4"/> Adicionar Aluno</a>
+              <button type="button" onClick={goAddAluno} className="btn btn-primary flex items-center gap-2"><Plus className="h-4 w-4"/> Adicionar Aluno</button>
             )}
           </div>
         </div>
