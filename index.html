@@ -1,94 +1,1272 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Escola da Barra · AVA</title>
-  <link rel="stylesheet" href="assets/app.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão Escolar</title>
+    <!-- Tailwind CSS CDN para estilização dinâmica e responsiva -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter para uma tipografia moderna -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Supabase Client para conexão com o banco de dados -->
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        
+        // As credenciais do Supabase serão injetadas aqui.
+        // As variáveis __supabase_url e __supabase_anon_key serão populadas em tempo de execução.
+        const supabaseUrl = typeof __supabase_url !== 'undefined' ? __supabase_url : 'https://your-supabase-url.supabase.co';
+        const supabaseAnonKey = typeof __supabase_anon_key !== 'undefined' ? __supabase_anon_key : 'your-supabase-anon-key';
+        
+        // Expor o cliente Supabase para o escopo global do script
+        window.supabase = createClient(supabaseUrl, supabaseAnonKey);
+    </script>
+    <!-- jsPDF e Autotable para geração de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+            color: #1a202c;
+        }
+        .page { display: none; }
+        .page.active { display: block; }
+        
+        /* Estilos para modais e carregamento */
+        .modal, .modal-backdrop { display: none; }
+        .modal.active, .modal-backdrop.active { display: flex; opacity: 1; }
+        .modal-backdrop.active {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5); z-index: 40;
+        }
+        .modal.active {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); z-index: 50;
+        }
+        
+        /* Estilos aprimorados para botões e inputs */
+        .nav-button {
+            transition: all 0.3s ease-in-out;
+            transform: scale(1);
+        }
+        .nav-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .nav-button.active {
+            background-color: #3b82f6;
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        .form-input {
+            width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-input:focus {
+            outline: none; border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+    </style>
 </head>
-<body>
-  <header class="header">
-    <div class="container">
-      <div class="header-row">
-        <div class="brand">
-          <button id="home-button" class="icon-btn" title="Início" aria-label="Home">🏠</button>
-          <button id="back-button" class="icon-btn" title="Voltar" aria-label="Voltar">↩️</button>
-          <img src="assets/logo.png" alt="Logo Escola da Barra">
-          <span>Escola da Barra</span>
+<body class="min-h-screen">
+    
+    <!-- Cabeçalho -->
+    <header class="bg-white shadow-lg sticky top-0 z-30">
+        <div class="container mx-auto px-4 py-4 sm:px-6 lg:px-8 flex items-center justify-between">
+            <div class="flex items-center">
+                <img id="logo-img" src="https://i.imgur.com/b6s5rvB.png" alt="Logo Escola da Barra" class="h-12 w-12 sm:h-14 sm:w-14 mr-2 sm:mr-4 rounded-full shadow-inner">
+                <span class="text-lg sm:text-2xl font-bold text-gray-800">Escola da Barra</span>
+            </div>
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <button id="home-button" class="p-2 rounded-full text-gray-600 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-transform hover:scale-110">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                </button>
+                <button id="back-button" class="p-2 rounded-full text-gray-600 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-transform hover:scale-110">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                </button>
+            </div>
         </div>
-        <nav class="nav">
-          <button class="btn active" data-target="alunos-dashboard">Alunos</button>
-          <button class="btn" data-target="cursos-dashboard">Cursos</button>
-          <button class="btn" data-target="pedagogico-dashboard">Pedagógico</button>
-        </nav>
-      </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <div id="loading-spinner" class="hidden flex items-center justify-center h-64">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+        </div>
+        <div id="app-container" class="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 w-full transition-opacity duration-500">
+            
+            <!-- Página: Dashboard -->
+            <div id="dashboard-page" class="page active">
+                <div class="flex justify-center flex-wrap gap-4 mb-8">
+                    <button data-target="alunos-dashboard" class="nav-button active px-6 py-2 rounded-full font-semibold text-gray-700 bg-gray-100">Alunos</button>
+                    <button data-target="cursos-dashboard" class="nav-button px-6 py-2 rounded-full font-semibold text-gray-700 bg-gray-100">Cursos</button>
+                    <button data-target="pedagogico-dashboard" class="nav-button px-6 py-2 rounded-full font-semibold text-gray-700 bg-gray-100">Pedagógico</button>
+                </div>
+                <div id="alunos-dashboard" class="dashboard-content active">
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div id="card-alunos-list" class="bg-blue-500 text-white rounded-2xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer">
+                            <h3 class="text-lg">Alunos Cadastrados</h3>
+                            <p id="alunos-count" class="text-5xl font-extrabold mt-2">0</p>
+                        </div>
+                        <div id="card-novo-aluno" class="bg-green-500 text-white rounded-2xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer flex flex-col justify-center items-center">
+                            <h3 class="text-lg">Novo Aluno</h3>
+                            <p class="text-5xl font-extrabold mt-2">+</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="cursos-dashboard" class="dashboard-content hidden">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
+                        <h1 class="text-xl sm:text-3xl font-bold text-gray-800 mb-4 sm:mb-0">Cursos Disponíveis</h1>
+                        <button id="create-course-btn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full flex items-center justify-center gap-2 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            Novo Curso
+                        </button>
+                    </div>
+                    <div id="cursos-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Cursos serão renderizados aqui -->
+                    </div>
+                </div>
+                <div id="pedagogico-dashboard" class="dashboard-content hidden">
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div id="card-boletim" class="bg-teal-500 text-white rounded-2xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer">
+                            <h3 class="text-lg">Boletim Geral</h3>
+                            <p class="text-2xl font-bold mt-2">Ver Notas</p>
+                        </div>
+                        <div id="card-download-boletim" class="bg-orange-500 text-white rounded-2xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer">
+                            <h3 class="text-lg">Download</h3>
+                            <p class="text-2xl font-bold mt-2">Gerar Relatório</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Página: Cadastro de Aluno -->
+            <div id="cadastro-page" class="page">
+                <h1 class="text-xl sm:text-3xl font-bold text-gray-800 mb-6 text-center">Cadastro de Aluno</h1>
+                <form id="cadastro-form" class="space-y-4 max-w-xl mx-auto">
+                    <input type="text" id="nome" placeholder="Nome Completo" required class="form-input">
+                    <input type="text" id="rg" placeholder="RG" required class="form-input">
+                    <input type="text" id="cpf" placeholder="CPF" required class="form-input">
+                    <input type="email" id="email" placeholder="E-mail" required class="form-input">
+                    <input type="tel" id="telefone" placeholder="Telefone" required class="form-input">
+                    <input type="text" onfocus="(this.type='date')" onblur="(this.type='text')" id="dataNascimento" placeholder="Data de Nascimento" required class="form-input">
+                    <input type="text" id="localNascimento" placeholder="Local de Nascimento" required class="form-input">
+                    <input type="text" id="endereco" placeholder="Endereço Completo" required class="form-input">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-full transition-colors shadow-lg">Cadastrar Aluno</button>
+                    <button type="button" id="generate-summary-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded-full transition-colors shadow-lg">
+                        ✨ Gerar Resumo do Aluno
+                    </button>
+                    <textarea id="resumo-aluno" rows="4" class="form-input mt-4 hidden transition-all duration-300" placeholder="Resumo do aluno será gerado aqui..."></textarea>
+                </form>
+            </div>
+            
+            <!-- Páginas dinâmicas -->
+            <div id="alunos-list-page" class="page"></div>
+            <div id="student-details-page" class="page"></div>
+            <div id="course-years-page" class="page"></div>
+            <div id="year-subjects-page" class="page"></div>
+            <div id="subject-students-page" class="page"></div>
+            <div id="boletim-geral-page" class="page"></div>
+            <div id="download-selection-page" class="page"></div>
+        </div>
+    </main>
+    
+    <!-- Modais Genéricos -->
+    <div id="generic-modal" class="modal"></div>
+    <div id="generic-modal-backdrop" class="modal-backdrop"></div>
+    <div id="loading-modal" class="modal">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500 mb-4"></div>
+            <p id="loading-text" class="text-gray-700 font-semibold text-center">Carregando...</p>
+        </div>
     </div>
-  </header>
+    <div id="loading-modal-backdrop" class="modal-backdrop"></div>
 
-  <main class="main container">
-    <div id="dashboard-page" class="page active">
-      <div class="grid grid-2">
-        <div class="card kpi blue" id="card-alunos-matriculados">
-          <div>Alunos Matriculados</div>
-          <div id="alunos-count" style="font-size:42px; font-weight:900; margin-top:6px">0</div>
-        </div>
-        <div class="card kpi green" id="card-novo-aluno">
-          <div>Novo Aluno</div>
-          <div style="font-size:42px; font-weight:900; margin-top:6px">+</div>
-        </div>
-      </div>
+    <script type="module">
+        // Injeção de dependências do Supabase
+        const supabase = window.supabase;
+        
+        let historyStack = ['dashboard-page'];
+        let isLoading = false;
+        
+        // Funções para gerenciar o estado de carregamento
+        const showLoading = (text = 'Carregando...') => {
+            isLoading = true;
+            document.getElementById('loading-text').textContent = text;
+            document.getElementById('loading-modal').classList.add('active');
+            document.getElementById('loading-modal-backdrop').classList.add('active');
+            document.getElementById('app-container').classList.add('opacity-0', 'pointer-events-none');
+        };
 
-      <section id="alunos-dashboard" style="margin-top:18px">
-        <div id="alunos-list-page" class="card"></div>
-      </section>
+        const hideLoading = () => {
+            isLoading = false;
+            document.getElementById('loading-modal').classList.remove('active');
+            document.getElementById('loading-modal-backdrop').classList.remove('active');
+            document.getElementById('app-container').classList.remove('opacity-0', 'pointer-events-none');
+        };
+        
+        // Funções para gerenciar modais personalizados
+        const showMessageModal = (title, message) => {
+            const modal = document.getElementById('generic-modal');
+            const backdrop = document.getElementById('generic-modal-backdrop');
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-sm flex flex-col items-center text-center">
+                    <h2 class="text-xl font-bold mb-2">${title}</h2>
+                    <p class="text-gray-600">${message}</p>
+                    <button id="modal-ok-btn" class="mt-6 px-6 py-2 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 transition-colors">OK</button>
+                </div>
+            `;
+            modal.querySelector('#modal-ok-btn').onclick = () => {
+                modal.classList.remove('active');
+                backdrop.classList.remove('active');
+            };
+            modal.classList.add('active');
+            backdrop.classList.add('active');
+        };
 
-      <section id="cursos-dashboard" class="hidden" style="margin-top:18px">
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
-            <h2 style="margin:0">Cursos</h2>
-            <button id="btn-novo-curso" class="primary">Novo Curso</button>
-          </div>
-          <div id="cursos-grid" class="grid grid-2"></div>
-        </div>
-      </section>
+        const showConfirmationModal = (title, message, onConfirm) => {
+            const modal = document.getElementById('generic-modal');
+            const backdrop = document.getElementById('generic-modal-backdrop');
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-sm">
+                    <h2 class="text-xl font-bold mb-4">${title}</h2>
+                    <p class="text-gray-600 mb-6">${message}</p>
+                    <div class="flex justify-end gap-3">
+                        <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold hover:bg-gray-300 transition-colors">Cancelar</button>
+                        <button id="modal-confirm-btn" class="px-4 py-2 bg-red-600 text-white rounded-full font-semibold hover:bg-red-700 transition-colors">Confirmar</button>
+                    </div>
+                </div>
+            `;
+            modal.querySelector('#modal-cancel-btn').onclick = () => {
+                modal.classList.remove('active');
+                backdrop.classList.remove('active');
+            };
+            modal.querySelector('#modal-confirm-btn').onclick = () => {
+                onConfirm();
+                modal.classList.remove('active');
+                backdrop.classList.remove('active');
+            };
+            modal.classList.add('active');
+            backdrop.classList.add('active');
+        };
 
-      <section id="pedagogico-dashboard" class="hidden" style="margin-top:18px">
-        <div class="card center">Recursos pedagógicos em breve.</div>
-      </section>
-    </div>
+        // Função de navegação
+        function navigateTo(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            if (historyStack[historyStack.length - 1] !== pageId) {
+                historyStack.push(pageId);
+            }
+        }
 
-    <!-- Cadastro Aluno -->
-    <div id="cadastro-page" class="page">
-      <div class="card">
-        <h2>Cadastro de Aluno</h2>
-        <form id="cadastro-form" class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px">
-          <input type="text" id="nome" class="input" placeholder="Nome completo" required>
-          <input type="text" id="rg" class="input" placeholder="RG">
-          <input type="text" id="cpf" class="input" placeholder="CPF">
-          <input type="email" id="email" class="input" placeholder="E-mail">
-          <input type="tel" id="telefone" class="input" placeholder="Telefone">
-          <input type="date" id="datanascimento" class="input" placeholder="Data de nascimento">
-          <input type="text" id="localnascimento" class="input" placeholder="Local de nascimento (Cidade - UF)">
-          <input type="text" id="endereco" class="input" placeholder="Endereço completo">
-          <div class="actions" style="grid-column:1/-1">
-            <button type="button" class="secondary" id="cad-voltar">Voltar</button>
-            <button type="submit" class="primary">Cadastrar</button>
-          </div>
-        </form>
-      </div>
-    </div>
+        // --- Funções de Dados e Renderização ---
 
-    <!-- Detalhes do aluno -->
-    <div id="student-details-page" class="page"></div>
+        // Função para carregar dados do Supabase
+        async function loadData() {
+            showLoading();
+            try {
+                // Carregar dados de alunos
+                const { data: alunosData, error: alunosError } = await supabase
+                    .from('alunos')
+                    .select('*');
+                if (alunosError) throw alunosError;
+                window.alunos = alunosData;
+                document.getElementById('alunos-count').textContent = window.alunos.length;
 
-    <!-- Novo Curso -->
-    <div id="curso-new-page" class="page"></div>
+                // Carregar dados de cursos (mantendo a estrutura do seu código original)
+                const { data: cursosData, error: cursosError } = await supabase
+                    .from('cursos')
+                    .select('data')
+                    .eq('id', 'cursos_id')
+                    .single();
+                if (cursosError) {
+                    console.error('Erro ao carregar dados de cursos, usando dados padrão:', cursosError);
+                    window.cursosDisponiveis = {
+                         // Dados de exemplo, para caso o banco de dados esteja vazio
+                        'Fundamental': {
+                            description: 'Ensino Fundamental do 6º ao 9º ano.',
+                            anos: {
+                                '6º ano': {
+                                    disciplinas: {
+                                        'Linguagens': [{ nome: 'Língua Portuguesa', cargaHoraria: 80 }, { nome: 'Arte', cargaHoraria: 40 }],
+                                        'Matemática': [{ nome: 'Matemática', cargaHoraria: 80 }],
+                                        'Ciências Humanas': [{ nome: 'História', cargaHoraria: 60 }, { nome: 'Geografia', cargaHoraria: 60 }]
+                                    }
+                                }
+                            }
+                        }
+                    };
+                } else {
+                    window.cursosDisponiveis = cursosData.data;
+                }
+                
+                // Carregar contador de matrícula
+                const { data: counterData, error: counterError } = await supabase
+                    .from('matricula_counter')
+                    .select('count')
+                    .eq('id', 1)
+                    .single();
+                window.matriculaCounter = counterData ? counterData.count : 0;
+                
+                renderCursosDashboard();
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                showMessageModal('Erro', 'Ocorreu um erro ao carregar os dados. Verifique a conexão do Supabase.');
+            } finally {
+                hideLoading();
+            }
+        }
 
-    <!-- Matrículas curso -->
-    <div id="curso-enroll-page" class="page"></div>
-  </main>
+        // Função para salvar dados de cursos no Supabase
+        async function saveCoursesData() {
+            showLoading('Salvando...');
+            const { error } = await supabase
+                .from('cursos')
+                .upsert({ id: 'cursos_id', data: window.cursosDisponiveis });
 
-  <script type="module" src="js/app.js"></script>
+            if (error) {
+                console.error('Erro ao salvar cursos:', error);
+                showMessageModal('Erro', 'Erro ao salvar os cursos.');
+            }
+            hideLoading();
+        }
+
+        // Renderiza a lista de cursos no dashboard
+        function renderCursosDashboard() {
+            const container = document.getElementById('cursos-list-container');
+            const courseKeys = Object.keys(window.cursosDisponiveis).sort();
+            if (courseKeys.length === 0) {
+                container.innerHTML = `<p class="text-center text-gray-500 col-span-full">Nenhum curso cadastrado ainda.</p>`;
+                return;
+            }
+            container.innerHTML = courseKeys.map(courseName => `
+                <div class="bg-white rounded-2xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer" data-course-name="${courseName}">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl font-bold text-gray-800">${courseName}</h3>
+                    </div>
+                    <div class="mt-4">
+                        <p class="text-sm text-gray-500">${Object.keys(window.cursosDisponiveis[courseName].anos || {}).join(', ')}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Renderiza a lista de alunos
+        function renderAlunosList() {
+            const container = document.getElementById('alunos-list-page');
+            const studentCards = window.alunos.map(aluno => `
+                <div class="bg-white p-4 rounded-lg shadow-md cursor-pointer hover:shadow-xl transition-shadow" data-aluno-id="${aluno.id}">
+                    <div class="flex items-center">
+                        <img src="https://i.pravatar.cc/150?u=${aluno.id}" alt="Foto do Aluno" class="w-16 h-16 rounded-full mr-4 border-2 border-gray-200">
+                        <div>
+                            <h3 class="font-bold text-lg text-gray-800">${aluno.nome}</h3>
+                            <p class="text-sm text-gray-500">Matrícula: ${aluno.matricula}</p>
+                            <p class="text-sm text-gray-500">Cadastro: ${new Date(aluno.created_at).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            container.innerHTML = `
+                <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Alunos Cadastrados</h1>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    ${studentCards || '<p class="text-center text-gray-500 col-span-full">Nenhum aluno cadastrado ainda.</p>'}
+                </div>
+            `;
+            navigateTo('alunos-list-page');
+        }
+
+        // Renderiza a página de detalhes do aluno
+        function renderStudentDetails(alunoId) {
+            const aluno = window.alunos.find(a => a.id === alunoId);
+            if (!aluno) {
+                showMessageModal('Erro', 'Aluno não encontrado.');
+                navigateTo('alunos-list-page');
+                return;
+            }
+
+            const container = document.getElementById('student-details-page');
+            container.innerHTML = `
+                <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+                    <div class="flex flex-col sm:flex-row items-center sm:items-start">
+                        <img src="https://i.pravatar.cc/150?u=${aluno.id}" alt="Foto do Aluno" class="w-32 h-32 rounded-full mb-6 sm:mb-0 sm:mr-8 border-4 border-blue-200">
+                        <div class="text-center sm:text-left flex-grow">
+                            <h1 class="text-3xl font-bold text-gray-800">${aluno.nome}</h1>
+                            <p class="text-gray-500">Matrícula: ${aluno.matricula}</p>
+                            <p class="text-gray-500">Data de Matrícula: ${new Date(aluno.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <div class="mt-4 sm:mt-0 flex gap-2">
+                            <button id="edit-student-btn" class="p-2 rounded-full hover:bg-gray-200" data-aluno-id="${aluno.id}">
+                                <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg>
+                            </button>
+                            <button id="remove-student-btn" class="p-2 rounded-full hover:bg-red-200" data-aluno-id="${aluno.id}">
+                                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                            <button id="download-student-btn" class="p-2 rounded-full hover:bg-blue-200" data-aluno-id="${aluno.id}">
+                                <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-8 border-t pt-6 grid grid-cols-1 md:grid-cols-2 gap-6" id="student-info-container">
+                        ${renderStudentInfo(aluno)}
+                    </div>
+                </div>
+            `;
+            navigateTo('student-details-page');
+        }
+
+        function renderStudentInfo(aluno, isEditing = false) {
+            return `
+                <div><strong class="text-gray-600">Nome:</strong> ${isEditing ? `<input type="text" id="edit-nome" value="${aluno.nome}" class="form-input">` : aluno.nome}</div>
+                <div><strong class="text-gray-600">RG:</strong> ${isEditing ? `<input type="text" id="edit-rg" value="${aluno.rg || ''}" class="form-input">` : (aluno.rg || 'N/A')}</div>
+                <div><strong class="text-gray-600">CPF:</strong> ${isEditing ? `<input type="text" id="edit-cpf" value="${aluno.cpf || ''}" class="form-input">` : (aluno.cpf || 'N/A')}</div>
+                <div><strong class="text-gray-600">Data de Nasc.:</strong> ${isEditing ? `<input type="date" id="edit-dataNascimento" value="${aluno.dataNascimento || ''}" class="form-input">` : (aluno.dataNascimento || 'N/A')}</div>
+                <div><strong class="text-gray-600">Local de Nasc.:</strong> ${isEditing ? `<input type="text" id="edit-localNascimento" value="${aluno.localNascimento || ''}" class="form-input">` : (aluno.localNascimento || 'N/A')}</div>
+                <div><strong class="text-gray-600">E-mail:</strong> ${isEditing ? `<input type="email" id="edit-email" value="${aluno.email || ''}" class="form-input">` : (aluno.email || 'N/A')}</div>
+                <div><strong class="text-gray-600">Telefone:</strong> ${isEditing ? `<input type="tel" id="edit-telefone" value="${aluno.telefone || ''}" class="form-input">` : (aluno.telefone || 'N/A')}</div>
+                <div class="md:col-span-2"><strong class="text-gray-600">Endereço:</strong> ${isEditing ? `<input type="text" id="edit-endereco" value="${aluno.endereco || ''}" class="form-input">` : (aluno.endereco || 'N/A')}</div>
+                ${isEditing ? `
+                    <div class="md:col-span-2 flex justify-end gap-2 mt-4">
+                        <button id="cancel-edit-btn" class="px-4 py-2 bg-gray-300 rounded-full">Cancelar</button>
+                        <button id="save-edit-btn" class="px-4 py-2 bg-blue-600 text-white rounded-full">Salvar</button>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        // Renderiza a página de anos do curso
+        function renderCourseYears(courseName) {
+            const course = window.cursosDisponiveis[courseName];
+            if (!course) {
+                showMessageModal('Erro', 'Curso não encontrado.');
+                navigateTo('dashboard-page');
+                return;
+            }
+            const container = document.getElementById('course-years-page');
+            container.innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold text-gray-800">Anos do Ensino ${courseName}</h1>
+                    <button class="edit-course-btn p-1 rounded-full hover:bg-gray-200" data-course-name="${courseName}">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg>
+                    </button>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    ${Object.keys(course.anos).map(ano => `
+                        <div class="bg-white p-6 rounded-2xl shadow-md cursor-pointer hover:bg-blue-50 text-center transition-colors transform hover:scale-105" data-course="${courseName}" data-year="${ano}">
+                            <h3 class="font-bold text-xl text-blue-700">${ano}</h3>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            navigateTo('course-years-page');
+        }
+
+        // Renderiza a página de disciplinas do ano
+        function renderYearSubjects(courseName, year) {
+            const course = window.cursosDisponiveis[courseName];
+            if (!course || !course.anos[year]) {
+                showMessageModal('Erro', 'Ano ou curso não encontrado.');
+                navigateTo('dashboard-page');
+                return;
+            }
+            const container = document.getElementById('year-subjects-page');
+            const disciplinasDoAno = course.anos[year].disciplinas;
+            let content = `
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold text-gray-800">${year} - ${courseName}</h1>
+                </div>`;
+
+            for (const area in disciplinasDoAno) {
+                content += `<h2 class="text-2xl font-semibold text-gray-700 mt-6 mb-3 border-b-2 pb-2">${area}</h2>`;
+                content += '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
+                content += disciplinasDoAno[area].map(disciplina => `
+                    <div class="bg-gray-100 p-4 rounded-lg shadow-sm cursor-pointer hover:bg-gray-200 transition-colors" data-course="${courseName}" data-year="${year}" data-subject="${disciplina.nome}">
+                        <p class="font-semibold text-gray-800">${disciplina.nome}</p>
+                    </div>
+                `).join('');
+                content += '</div>';
+            }
+            container.innerHTML = content;
+            navigateTo('year-subjects-page');
+        }
+        
+        // Renderiza a página de alunos e notas por disciplina
+        async function renderSubjectStudents(courseName, year, subject) {
+            const subjectKey = `${courseName}-${year}-${subject}`;
+            
+            showLoading('Carregando notas...');
+            
+            const { data: notasData, error: notasError } = await supabase
+                .from('notas')
+                .select('*')
+                .eq('subject_key', subjectKey);
+
+            hideLoading();
+
+            const notasMap = notasData.reduce((acc, nota) => {
+                acc[nota.aluno_id] = nota;
+                return acc;
+            }, {});
+
+            const studentsInSubject = window.alunos.map(aluno => ({
+                ...aluno,
+                notas: notasMap[aluno.id] || null
+            }));
+
+            const container = document.getElementById('subject-students-page');
+            container.innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800">${subject}</h1>
+                        <p class="text-gray-500">${year} - ${courseName}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-lg font-semibold">Alunos com Notas</p>
+                        <p class="text-3xl font-bold text-blue-600">${studentsInSubject.filter(s => s.notas).length}</p>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center mb-6">
+                    <button id="add-student-to-subject-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full flex items-center gap-2" data-subject-key="${subjectKey}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        Adicionar Aluno
+                    </button>
+                    <button id="download-subject-grades" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full flex items-center gap-2">
+                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                         Download Relatório
+                    </button>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-md">
+                    <ul class="divide-y divide-gray-200">
+                        ${studentsInSubject.map(aluno => `
+                            <li class="py-3 flex justify-between items-center">
+                                <div class="flex items-center">
+                                    <img src="https://i.pravatar.cc/150?u=${aluno.id}" class="w-10 h-10 rounded-full mr-3">
+                                    <div>
+                                        <p class="font-semibold">${aluno.nome}</p>
+                                        <p class="text-sm text-gray-500">Matrícula: ${aluno.matricula}</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2 items-center">
+                                    ${aluno.notas ? `
+                                        <span class="text-sm font-semibold text-gray-700">Média: ${aluno.notas.media_final.toFixed(1)}</span>
+                                        <button class="edit-grades-btn p-2 rounded-full hover:bg-gray-200" data-aluno-id="${aluno.id}" data-subject-key="${subjectKey}">
+                                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg>
+                                        </button>
+                                        <button class="remove-grades-btn p-2 rounded-full hover:bg-red-200" data-aluno-id="${aluno.id}" data-subject-key="${subjectKey}">
+                                            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
+                                    ` : `
+                                        <span class="text-sm text-gray-500">Sem notas</span>
+                                    `}
+                                </div>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            `;
+            navigateTo('subject-students-page');
+        }
+
+        // --- Lógica dos Modais e Interações ---
+
+        function openCreateCourseModal() {
+            const modal = document.getElementById('generic-modal');
+            const backdrop = document.getElementById('generic-modal-backdrop');
+            
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg">
+                    <h2 class="text-xl font-bold mb-4">Novo Curso</h2>
+                    <form id="create-course-form" class="space-y-4">
+                        <input type="text" id="new-course-name" placeholder="Nome do Curso (Ex: Ensino Médio)" required class="form-input">
+                        <input type="text" id="new-course-description" placeholder="Descrição (opcional)" class="form-input">
+                        <div class="flex justify-end gap-3 mt-6">
+                            <button type="button" id="cancel-create-course" class="px-4 py-2 bg-gray-200 rounded-full">Cancelar</button>
+                            <button type="submit" id="save-create-course" class="px-4 py-2 bg-blue-600 text-white rounded-full">Criar Curso</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            modal.classList.add('active');
+            backdrop.classList.add('active');
+
+            document.getElementById('cancel-create-course').onclick = () => {
+                modal.classList.remove('active');
+                backdrop.classList.remove('active');
+            };
+
+            document.getElementById('create-course-form').onsubmit = async (e) => {
+                e.preventDefault();
+                const newCourseName = document.getElementById('new-course-name').value.trim();
+                const newCourseDescription = document.getElementById('new-course-description').value.trim();
+
+                if (window.cursosDisponiveis[newCourseName]) {
+                    showMessageModal('Erro', 'Este curso já existe.');
+                    return;
+                }
+
+                window.cursosDisponiveis[newCourseName] = {
+                    description: newCourseDescription,
+                    anos: {} // Inicializa sem anos
+                };
+                
+                await saveCoursesData();
+                modal.classList.remove('active');
+                backdrop.classList.remove('active');
+                renderCursosDashboard();
+                showMessageModal('Sucesso', 'Curso criado com sucesso!');
+            };
+        }
+        
+        function openEditCourseModal(courseName) {
+            const course = window.cursosDisponiveis[courseName];
+            if (!course) return;
+
+            const modal = document.getElementById('generic-modal');
+            const backdrop = document.getElementById('generic-modal-backdrop');
+            
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold">Editar Curso: ${courseName}</h2>
+                        <button id="delete-course-btn" class="p-2 rounded-full text-red-500 hover:bg-red-100 disabled:opacity-50" data-course-name="${courseName}">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-1 12H5L4 7m5 0V4a1 1 0 011-1h4a1 1 0 011 1v3M9 7h6"></path></svg>
+                        </button>
+                    </div>
+                    <div id="course-editor-container" class="space-y-4 max-h-80 overflow-y-auto">
+                        <input type="text" id="edit-course-name-input" class="form-input mb-4 font-bold text-xl" value="${courseName}">
+                        <input type="text" id="edit-course-description-input" class="form-input mb-4" value="${course.description || ''}" placeholder="Descrição do Curso">
+                        <div id="years-editor-container">
+                            ${Object.keys(course.anos).map(anoName => `
+                                <div class="year-editor border p-4 rounded-md bg-gray-100 mb-4">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <input type="text" class="year-name-input form-input font-semibold text-lg" value="${anoName}">
+                                        <button type="button" class="remove-year-btn text-red-500 hover:text-red-700 p-2">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-1 12H5L4 7m5 0V4a1 1 0 011-1h4a1 1 0 011 1v3M9 7h6"></path></svg>
+                                        </button>
+                                    </div>
+                                    <div class="disciplines-container space-y-2">
+                                        ${Object.keys(course.anos[anoName].disciplinas).map(areaName => `
+                                            <div class="discipline-area-editor p-2 rounded-md bg-white">
+                                                <div class="flex items-center gap-2 mb-2">
+                                                    <input type="text" class="discipline-area-name form-input font-bold" value="${areaName}">
+                                                    <button type="button" class="remove-area-btn text-red-500 hover:text-red-700 p-2">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                    </button>
+                                                </div>
+                                                <div class="discipline-inputs space-y-1 ml-4">
+                                                    ${course.anos[anoName].disciplinas[areaName].map(disciplina => `
+                                                        <div class="flex gap-2 items-center">
+                                                            <input type="text" class="discipline-name-input form-input" value="${disciplina.nome}">
+                                                            <input type="number" class="discipline-hours-input form-input w-20" value="${disciplina.cargaHoraria}">
+                                                            <button type="button" class="remove-discipline-btn p-1 text-red-500 hover:text-red-700">
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                            </button>
+                                                        </div>
+                                                    `).join('')}
+                                                    <button type="button" class="add-discipline-btn mt-2 w-full bg-gray-200 hover:bg-gray-300 rounded-md py-1 text-sm flex items-center justify-center gap-1">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                                        Adicionar Disciplina
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                        <button type="button" class="add-area-btn mt-4 w-full bg-gray-300 hover:bg-gray-400 rounded-md py-2 text-sm">Adicionar Área</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <button type="button" id="add-new-year-btn" class="mt-4 w-full bg-gray-300 hover:bg-gray-400 rounded-md py-2 text-sm">Adicionar Ano</button>
+                    </div>
+                    <div class="mt-6 flex justify-end gap-3">
+                        <button type="button" id="cancel-edit-course" class="px-4 py-2 bg-gray-200 rounded-full">Cancelar</button>
+                        <button type="button" id="save-edit-course" class="px-4 py-2 bg-blue-600 text-white rounded-full">Salvar Mudanças</button>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.add('active');
+            backdrop.classList.add('active');
+            
+            const hasAssociatedNotes = window.alunos.some(aluno =>
+                Object.keys(aluno.matriculas || {}).some(key => key.startsWith(courseName))
+            );
+            document.getElementById('delete-course-btn').disabled = hasAssociatedNotes;
+
+            document.getElementById('cancel-edit-course').onclick = () => {
+                modal.classList.remove('active');
+                backdrop.classList.remove('active');
+            };
+
+            document.getElementById('delete-course-btn').onclick = () => {
+                showConfirmationModal(
+                    'Confirmar Exclusão',
+                    `Tem certeza que deseja excluir o curso "${courseName}"? Esta ação é irreversível.`,
+                    async () => {
+                        const { data: { data: currentData } } = await supabase.from('cursos').select('data').eq('id', 'cursos_id').single();
+                        delete currentData[courseName];
+                        await supabase.from('cursos').update({ data: currentData }).eq('id', 'cursos_id');
+                        window.cursosDisponiveis = currentData;
+                        renderCursosDashboard();
+                        modal.classList.remove('active');
+                        backdrop.classList.remove('active');
+                        showMessageModal('Sucesso', 'Curso excluído com sucesso!');
+                    }
+                );
+            };
+
+            document.getElementById('save-edit-course').onclick = async () => {
+                const newCourseName = document.getElementById('edit-course-name-input').value.trim();
+                if (!newCourseName) { showMessageModal('Erro', 'O nome do curso não pode ser vazio.'); return; }
+                
+                const anos = {};
+                document.querySelectorAll('.year-editor').forEach(yearEditor => {
+                    const yearName = yearEditor.querySelector('.year-name-input').value.trim();
+                    if (!yearName) return;
+                    
+                    const disciplines = {};
+                    yearEditor.querySelectorAll('.discipline-area-editor').forEach(areaEditor => {
+                        const areaName = areaEditor.querySelector('.discipline-area-name').value.trim();
+                        if (!areaName) return;
+                        
+                        const areaDisciplines = [];
+                        areaEditor.querySelectorAll('.discipline-inputs > div.flex').forEach(disciplineInput => {
+                            const nome = disciplineInput.querySelector('.discipline-name-input').value.trim();
+                            const cargaHoraria = parseInt(disciplineInput.querySelector('.discipline-hours-input').value) || 0;
+                            if (nome) areaDisciplines.push({ nome, cargaHoraria });
+                        });
+                        disciplines[areaName] = areaDisciplines;
+                    });
+                    anos[yearName] = { disciplinas: disciplines };
+                });
+
+                if (courseName !== newCourseName) {
+                    delete window.cursosDisponiveis[courseName];
+                }
+                window.cursosDisponiveis[newCourseName] = {
+                    description: document.getElementById('edit-course-description-input').value.trim(),
+                    anos: anos
+                };
+                
+                await saveCoursesData();
+                modal.classList.remove('active');
+                backdrop.classList.remove('active');
+                renderCourseYears(newCourseName);
+                showMessageModal('Sucesso', 'Curso atualizado com sucesso!');
+            };
+
+            modal.addEventListener('click', (e) => {
+                const addDisciplineBtn = e.target.closest('.add-discipline-btn');
+                if (addDisciplineBtn) {
+                    const disciplineInputsContainer = addDisciplineBtn.closest('.discipline-area-editor').querySelector('.discipline-inputs');
+                    disciplineInputsContainer.insertAdjacentHTML('beforeend', `
+                        <div class="flex gap-2 items-center">
+                            <input type="text" class="discipline-name-input form-input" placeholder="Nome da Disciplina">
+                            <input type="number" class="discipline-hours-input form-input w-20" placeholder="CH">
+                            <button type="button" class="remove-discipline-btn p-1 text-red-500 hover:text-red-700">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                    `);
+                    return;
+                }
+                const removeDisciplineBtn = e.target.closest('.remove-discipline-btn');
+                if (removeDisciplineBtn) {
+                    removeDisciplineBtn.closest('.flex.gap-2.items-center').remove();
+                    return;
+                }
+                const addAreaBtn = e.target.closest('.add-area-btn');
+                if (addAreaBtn) {
+                    const disciplinesContainer = addAreaBtn.closest('.disciplines-container');
+                    disciplinesContainer.insertAdjacentHTML('afterbegin', `
+                        <div class="discipline-area-editor p-2 rounded-md bg-white">
+                            <div class="flex items-center gap-2 mb-2">
+                                <input type="text" class="discipline-area-name form-input font-bold" placeholder="Área (ex: Linguagens)">
+                                <button type="button" class="remove-area-btn text-red-500 hover:text-red-700 p-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+                            <div class="discipline-inputs space-y-1 ml-4">
+                                <button type="button" class="add-discipline-btn mt-2 w-full bg-gray-200 hover:bg-gray-300 rounded-md py-1 text-sm flex items-center justify-center gap-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                    Adicionar Disciplina
+                                </button>
+                            </div>
+                        </div>`);
+                    return;
+                }
+                const removeAreaBtn = e.target.closest('.remove-area-btn');
+                if (removeAreaBtn) {
+                    removeAreaBtn.closest('.discipline-area-editor').remove();
+                    return;
+                }
+                const removeYearBtn = e.target.closest('.remove-year-btn');
+                if (removeYearBtn) {
+                    removeYearBtn.closest('.year-editor').remove();
+                    return;
+                }
+            });
+
+            document.getElementById('add-new-year-btn').onclick = () => {
+                document.getElementById('years-editor-container').insertAdjacentHTML('beforeend', `
+                    <div class="year-editor border p-4 rounded-md bg-gray-100 mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <input type="text" class="year-name-input form-input font-semibold text-lg" placeholder="Ex: 1º Ano">
+                            <button type="button" class="remove-year-btn text-red-500 hover:text-red-700 p-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-1 12H5L4 7m5 0V4a1 1 0 011-1h4a1 1 0 011 1v3M9 7h6"></path></svg>
+                            </button>
+                        </div>
+                        <div class="disciplines-container space-y-2">
+                            <button type="button" class="add-area-btn mt-4 w-full bg-gray-300 hover:bg-gray-400 rounded-md py-2 text-sm">Adicionar Área</button>
+                        </div>
+                    </div>`);
+            };
+        }
+
+        function openEditGradesModal(alunoId, subjectKey) {
+            const aluno = window.alunos.find(a => a.id === alunoId);
+            if (!aluno) return;
+
+            const modal = document.getElementById('generic-modal');
+            const backdrop = document.getElementById('generic-modal-backdrop');
+            
+            const notas = {};
+            if (aluno.matriculas && aluno.matriculas[subjectKey] && aluno.matriculas[subjectKey].notas) {
+                Object.assign(notas, aluno.matriculas[subjectKey].notas);
+            } else {
+                notas.atv1 = 0;
+                notas.rec1 = 0;
+                notas.atv2 = 0;
+                notas.rec2 = 0;
+                notas.final = 0;
+                notas.recFinal = 0;
+            }
+
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg">
+                    <h2 class="text-xl font-bold mb-4">Editar Notas de ${aluno.nome}</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${Object.keys(notas).map(key => `
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 uppercase">${key}</label>
+                                <input type="number" id="grade-${key}" value="${notas[key]}" class="form-input mt-1" min="0" max="10" step="0.1">
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="mt-6 flex justify-end gap-3">
+                        <button id="cancel-edit-grades" class="px-4 py-2 bg-gray-200 rounded-full">Cancelar</button>
+                        <button id="save-edit-grades" class="px-4 py-2 bg-blue-600 text-white rounded-full">Salvar</button>
+                    </div>
+                </div>
+            `;
+            modal.classList.add('active');
+            backdrop.classList.add('active');
+
+            document.getElementById('cancel-edit-grades').onclick = () => {
+                modal.classList.remove('active');
+                backdrop.classList.remove('active');
+            };
+
+            document.getElementById('save-edit-grades').onclick = async () => {
+                const updatedNotas = {};
+                Object.keys(notas).forEach(key => {
+                    updatedNotas[key] = parseFloat(document.getElementById(`grade-${key}`).value) || 0;
+                });
+
+                // Calcula a média final
+                const nota1 = Math.max(updatedNotas.atv1, updatedNotas.rec1);
+                const nota2 = Math.max(updatedNotas.atv2, updatedNotas.rec2);
+                const notaFinal = Math.max(updatedNotas.final, updatedNotas.recFinal);
+                const mediaFinal = (nota1 + nota2 + notaFinal) / 3;
+
+                // Prepara o objeto para upsert
+                const notaObject = {
+                    aluno_id: alunoId,
+                    subject_key: subjectKey,
+                    notas: updatedNotas,
+                    media_final: mediaFinal
+                };
+
+                showLoading('Salvando notas...');
+                const { error } = await supabase.from('notas').upsert([notaObject]);
+                hideLoading();
+
+                if (error) {
+                    console.error('Erro ao salvar notas:', error);
+                    showMessageModal('Erro', 'Erro ao salvar as notas.');
+                } else {
+                    showMessageModal('Sucesso', 'Notas salvas com sucesso!');
+                    const [courseName, year, subject] = subjectKey.split('-');
+                    renderSubjectStudents(courseName, year, subject);
+                    modal.classList.remove('active');
+                    backdrop.classList.remove('active');
+                }
+            };
+        }
+
+        // Função de download de PDF
+        function generatePDF(alunosParaPDF, filename) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(22);
+            doc.text('Boletim Escolar', 105, 25, { align: 'center' });
+
+            const logo = new Image();
+            logo.src = 'https://i.imgur.com/b6s5rvB.png';
+            logo.onload = function() {
+                const logoData = this.src;
+                doc.addImage(logoData, 'PNG', 15, 15, 20, 20);
+
+                let startY = 40;
+                alunosParaPDF.forEach((aluno, index) => {
+                    if (index > 0 && startY > 250) {
+                        doc.addPage();
+                        startY = 20;
+                    }
+                    
+                    doc.setFontSize(14);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(`${aluno.nome}`, 15, startY);
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(`Matrícula: ${aluno.matricula}`, 15, startY + 5);
+
+                    if (aluno.notas && Object.keys(aluno.notas).length > 0) {
+                        const notesTable = Object.entries(aluno.notas.notas).map(([key, value]) => [key.toUpperCase(), value.toFixed(1)]);
+                        const finalGrade = [['Média Final', aluno.notas.media_final.toFixed(1)]];
+                        
+                        doc.autoTable({
+                            startY: startY + 10,
+                            head: [['Tipo de Nota', 'Nota']],
+                            body: notesTable.concat(finalGrade),
+                            theme: 'striped',
+                            headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+                            styles: { overflow: 'linebreak' },
+                            columnStyles: {
+                                0: { cellWidth: 50 },
+                                1: { cellWidth: 30 }
+                            },
+                        });
+                    } else {
+                        doc.text('Nenhuma nota cadastrada.', 15, startY + 10);
+                    }
+                    startY = doc.lastAutoTable?.finalY + 15 || startY + 20;
+                });
+                doc.save(`${filename}.pdf`);
+            };
+            logo.onerror = function() {
+                console.error("Erro ao carregar a imagem do logo.");
+                showMessageModal('Erro no PDF', 'Não foi possível carregar a imagem do logo para o PDF.');
+            };
+        }
+
+        function openDownloadSelectionModal() {
+            const modal = document.getElementById('generic-modal');
+            const backdrop = document.getElementById('generic-modal-backdrop');
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+                    <h2 class="text-xl font-bold mb-4">Gerar Relatório</h2>
+                    <p class="text-gray-600 mb-6">Selecione o tipo de relatório que deseja gerar:</p>
+                    <div class="space-y-4">
+                        <button id="download-all-students-btn" class="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full transition-colors">
+                            Boletim Geral de Todos os Alunos
+                        </button>
+                    </div>
+                    <div class="flex justify-end mt-6">
+                        <button id="cancel-download-btn" class="px-4 py-2 bg-gray-200 rounded-full">Cancelar</button>
+                    </div>
+                </div>
+            `;
+            modal.classList.add('active');
+            backdrop.classList.add('active');
+
+            document.getElementById('cancel-download-btn').onclick = () => {
+                modal.classList.remove('active');
+                backdrop.classList.remove('active');
+            };
+
+            document.getElementById('download-all-students-btn').onclick = async () => {
+                const { data: notasData, error: notasError } = await supabase.from('notas').select('*');
+                if (notasError) {
+                    showMessageModal('Erro', 'Não foi possível carregar as notas para gerar o relatório.');
+                    return;
+                }
+                const notasMap = notasData.reduce((acc, nota) => {
+                    if (!acc[nota.aluno_id]) acc[nota.aluno_id] = { notas: {}, media_final: 0 };
+                    acc[nota.aluno_id] = nota;
+                    return acc;
+                }, {});
+
+                const alunosComNotas = window.alunos.map(aluno => ({
+                    ...aluno,
+                    notas: notasMap[aluno.id] || null
+                }));
+
+                generatePDF(alunosComNotas, 'Boletim-Geral');
+                modal.classList.remove('active');
+                backdrop.classList.remove('active');
+            };
+        }
+
+        function generateStudentPDF(aluno) {
+            showLoading('Gerando PDF...');
+            // Simular um array de alunos para a função de PDF
+            generatePDF([aluno], `Boletim-${aluno.nome.replace(/\s/g, '-')}`);
+            hideLoading();
+        }
+
+        // --- Event Listeners ---
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+        });
+
+        document.getElementById('home-button').addEventListener('click', () => {
+            historyStack = ['dashboard-page'];
+            navigateTo('dashboard-page');
+            loadData();
+        });
+
+        document.getElementById('back-button').addEventListener('click', () => {
+            if (historyStack.length > 1) {
+                historyStack.pop();
+                const previousPage = historyStack[historyStack.length - 1];
+                navigateTo(previousPage);
+            }
+        });
+
+        document.querySelectorAll('.nav-button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                document.querySelectorAll('.dashboard-content').forEach(content => content.classList.add('hidden'));
+                document.getElementById(button.dataset.target).classList.remove('hidden');
+            });
+        });
+        
+        document.getElementById('card-alunos-list').addEventListener('click', renderAlunosList);
+        document.getElementById('card-novo-aluno').addEventListener('click', () => navigateTo('cadastro-page'));
+        document.getElementById('card-boletim').addEventListener('click', () => showMessageModal('Funcionalidade', 'Em desenvolvimento!')); // Placeholder
+        document.getElementById('card-download-boletim').addEventListener('click', openDownloadSelectionModal);
+
+        document.getElementById('cursos-list-container').addEventListener('click', (e) => {
+            const card = e.target.closest('[data-course-name]');
+            if (card) {
+                renderCourseYears(card.dataset.courseName);
+            }
+        });
+        
+        document.getElementById('course-years-page').addEventListener('click', (e) => {
+            const courseYearCard = e.target.closest('[data-course][data-year]');
+            if (courseYearCard) {
+                renderYearSubjects(courseYearCard.dataset.course, courseYearCard.dataset.year);
+            }
+            const editCourseBtn = e.target.closest('.edit-course-btn');
+            if(editCourseBtn) {
+                openEditCourseModal(editCourseBtn.dataset.courseName);
+            }
+        });
+        
+        document.getElementById('year-subjects-page').addEventListener('click', (e) => {
+            const yearSubjectCard = e.target.closest('[data-course][data-year][data-subject]');
+            if (yearSubjectCard) {
+                renderSubjectStudents(yearSubjectCard.dataset.course, yearSubjectCard.dataset.year, yearSubjectCard.dataset.subject);
+            }
+        });
+        
+        document.getElementById('subject-students-page').addEventListener('click', (e) => {
+            const addStudentBtn = e.target.closest('#add-student-to-subject-btn');
+            if (addStudentBtn) {
+                openAddStudentToSubjectModal(addStudentBtn.dataset.subjectKey);
+            }
+            const editGradesBtn = e.target.closest('.edit-grades-btn');
+            if (editGradesBtn) {
+                openEditGradesModal(editGradesBtn.dataset.alunoId, editGradesBtn.dataset.subjectKey);
+            }
+            const removeGradesBtn = e.target.closest('.remove-grades-btn');
+            if (removeGradesBtn) {
+                showConfirmationModal(
+                    'Confirmar Exclusão',
+                    'Tem certeza que deseja remover as notas deste aluno?',
+                    async () => {
+                        const { error } = await supabase.from('notas').delete().eq('aluno_id', removeGradesBtn.dataset.alunoId).eq('subject_key', removeGradesBtn.dataset.subjectKey);
+                        if (error) {
+                            console.error('Erro ao remover notas:', error);
+                            showMessageModal('Erro', 'Não foi possível remover as notas.');
+                        } else {
+                            const [courseName, year, subject] = removeGradesBtn.dataset.subjectKey.split('-');
+                            renderSubjectStudents(courseName, year, subject);
+                            showMessageModal('Sucesso', 'Notas removidas com sucesso!');
+                        }
+                    }
+                );
+            }
+        });
+
+        document.getElementById('alunos-list-page').addEventListener('click', (e) => {
+            const studentCard = e.target.closest('[data-aluno-id]');
+            if(studentCard) {
+                renderStudentDetails(studentCard.dataset.alunoId);
+            }
+        });
+
+        document.getElementById('student-details-page').addEventListener('click', (e) => {
+            const editBtn = e.target.closest('#edit-student-btn');
+            if (editBtn) {
+                const aluno = window.alunos.find(a => a.id === editBtn.dataset.alunoId);
+                const container = document.getElementById('student-info-container');
+                container.innerHTML = renderStudentInfo(aluno, true);
+                
+                document.getElementById('save-edit-btn').onclick = async () => {
+                    showLoading('Salvando...');
+                    const updatedData = {
+                        nome: document.getElementById('edit-nome').value,
+                        rg: document.getElementById('edit-rg').value,
+                        cpf: document.getElementById('edit-cpf').value,
+                        email: document.getElementById('edit-email').value,
+                        telefone: document.getElementById('edit-telefone').value,
+                        dataNascimento: document.getElementById('edit-dataNascimento').value,
+                        localNascimento: document.getElementById('edit-localNascimento').value,
+                        endereco: document.getElementById('edit-endereco').value,
+                    };
+                    const { error } = await supabase.from('alunos').update(updatedData).eq('id', aluno.id);
+                    hideLoading();
+                    if (error) {
+                        console.error('Erro ao salvar alterações:', error);
+                        showMessageModal('Erro', 'Não foi possível salvar as alterações.');
+                    } else {
+                        showMessageModal('Sucesso', 'Dados do aluno atualizados!');
+                        renderStudentDetails(aluno.id);
+                    }
+                };
+
+                document.getElementById('cancel-edit-btn').onclick = () => {
+                    container.innerHTML = renderStudentInfo(aluno, false);
+                };
+            }
+
+            const removeBtn = e.target.closest('#remove-student-btn');
+            if (removeBtn) {
+                showConfirmationModal('Confirmar Exclusão', 'Tem certeza que deseja remover este aluno? Esta ação é irreversível e removerá todas as notas associadas.', async () => {
+                    const { error } = await supabase.from('alunos').delete().eq('id', removeBtn.dataset.alunoId);
+                    if (error) {
+                        console.error('Erro ao remover aluno:', error);
+                        showMessageModal('Erro', 'Não foi possível remover o aluno.');
+                    } else {
+                        showMessageModal('Sucesso', 'Aluno removido com sucesso!');
+                        navigateTo('dashboard-page');
+                        loadData();
+                    }
+                });
+            }
+        });
+
+        document.getElementById('cadastro-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const novoAluno = {
+                matricula: `MAT-${++window.matriculaCounter}`,
+                nome: document.getElementById('nome').value,
+                rg: document.getElementById('rg').value,
+                cpf: document.getElementById('cpf').value,
+                email: document.getElementById('email').value,
+                telefone: document.getElementById('telefone').value,
+                dataNascimento: document.getElementById('dataNascimento').value,
+                localNascimento: document.getElementById('localNascimento').value,
+                endereco: document.getElementById('endereco').value,
+                created_at: new Date().toISOString()
+            };
+
+            showLoading('Cadastrando...');
+            const { data, error } = await supabase
+                .from('alunos')
+                .insert([novoAluno]);
+            
+            if (error) {
+                hideLoading();
+                showMessageModal('Erro', 'Erro ao cadastrar aluno.');
+                console.error('Erro ao cadastrar aluno:', error);
+            } else {
+                await supabase.from('matricula_counter').upsert({ id: 1, count: window.matriculaCounter });
+                hideLoading();
+                showMessageModal('Sucesso', 'Aluno cadastrado com sucesso!');
+                e.target.reset();
+                navigateTo('dashboard-page');
+            }
+        });
+        
+        async function openAddStudentToSubjectModal(subjectKey) {
+            const modal = document.getElementById('generic-modal');
+            const backdrop = document.getElementById('generic-modal-backdrop');
+            
+            const { data: notasData } = await supabase.from('notas').select('aluno_id').eq('subject_key', subjectKey);
+            const matriculadosIds = new Set(notasData.map(n => n.aluno_id));
+            
+            const studentListHtml = window.alunos.map(aluno => `
+                <li class="py-2 flex items-center justify-between">
+                    <span>${aluno.nome}</span>
+                    <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded" data-aluno-id="${aluno.id}" ${matriculadosIds.has(aluno.id) ? 'checked' : ''}>
+                </li>
+            `).join('');
+
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+                    <h2 class="text-xl font-bold mb-4">Adicionar Aluno à Disciplina</h2>
+                    <ul class="max-h-80 overflow-y-auto divide-y divide-gray-200">
+                        ${studentListHtml || '<li class="text-center text-gray-500 py-4">Nenhum aluno para adicionar.</li>'}
+                    </ul>
+                    <div class="mt-6 flex justify-end gap-3">
+                        <button id="cancel-add-student" class="px-4 py-2 bg-gray-200 rounded-full">Cancelar</button>
+                        <button id="confirm-add-student" class="px-4 py-2 bg-blue-600 text-white rounded-full">Salvar</button>
+                    </div>
+                </div>
+            `;
+            modal.classList.add('active');
+            backdrop.classList.add('active');
+
+            document.getElementById('cancel-add-student').onclick = () => {
+                modal.classList.remove('active');
+                backdrop.classList.remove('active');
+            };
+
+            document.getElementById('confirm-add-student').onclick = async () => {
+                const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
+                const updates = [];
+                const deletions = [];
+                
+                checkboxes.forEach(cb => {
+                    if (cb.checked && !matriculadosIds.has(cb.dataset.alunoId)) {
+                        updates.push({
+                            aluno_id: cb.dataset.aluno_id,
+                            subject_key: subjectKey,
+                            notas: { atv1: 0, rec1: 0, atv2: 0, rec2: 0, final: 0, recFinal: 0 },
+                            media_final: 0
+                        });
+                    } else if (!cb.checked && matriculadosIds.has(cb.dataset.aluno_id)) {
+                        deletions.push(cb.dataset.aluno_id);
+                    }
+                });
+                
+                showLoading('Atualizando...');
+                if (updates.length > 0) {
+                    await supabase.from('notas').insert(updates);
+                }
+                if (deletions.length > 0) {
+                    await supabase.from('notas').delete().eq('subject_key', subjectKey).in('aluno_id', deletions);
+                }
+                hideLoading();
+
+                modal.classList.remove('active');
+                backdrop.classList.remove('active');
+                
+                const [courseName, year, subject] = subjectKey.split('-');
+                renderSubjectStudents(courseName, year, subject);
+                showMessageModal('Sucesso', 'Lista de alunos atualizada!');
+            };
+        }
+    </script>
 </body>
 </html>
