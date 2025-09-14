@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Debug Supabase — Escola da Barra</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <div class="max-w-4xl mx-auto p-6">
+    <header class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold">Diagnóstico Supabase</h1>
+      <a href="index.html" class="text-blue-600 underline">← Voltar ao Index</a>
+    </header>
+
+    <section class="mb-6 grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow p-4">
+        <h2 class="font-semibold mb-2">Credenciais carregadas</h2>
+        <div class="text-sm">
+          <div><span class="font-mono text-slate-600">SUPABASE_URL</span>: <span id="url" class="font-mono"></span></div>
+          <div><span class="font-mono text-slate-600">ANON KEY</span>: <span id="anon" class="font-mono break-all"></span></div>
+          <div><span class="font-mono text-slate-600">Ref</span>: <span id="ref" class="font-mono"></span></div>
+        </div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4">
+        <h2 class="font-semibold mb-2">Ações rápidas</h2>
+        <div class="flex flex-col gap-2">
+          <button id="btn-select" class="px-3 py-2 rounded bg-blue-600 text-white">Testar SELECT alunos (count)</button>
+          <button id="btn-insert" class="px-3 py-2 rounded bg-emerald-600 text-white">Testar INSERT alunos (registro de teste)</button>
+          <button id="btn-clean" class="px-3 py-2 rounded bg-orange-600 text-white">Tentar apagar último registro de teste</button>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">Obs.: DELETE pode falhar se não houver policy de delete liberada.</p>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-xl shadow p-4 mb-6">
+      <h2 class="font-semibold mb-2">Resultado</h2>
+      <pre id="out" class="text-sm whitespace-pre-wrap"></pre>
+    </section>
+
+    <section class="bg-white rounded-xl shadow p-4">
+      <h2 class="font-semibold mb-2">SQL sugerido (copie e rode no Supabase → SQL Editor)</h2>
+      <pre class="text-xs bg-slate-50 p-3 rounded overflow-auto"><code>create extension if not exists "pgcrypto";
+
+create table if not exists public.alunos (
+  id uuid primary key default gen_random_uuid(),
+  nome text not null,
+  rg text,
+  cpf text,
+  email text,
+  telefone text,
+  "dataNascimento" date,
+  "localNascimento" text,
+  endereco text,
+  "dataCadastro" timestamptz not null default now()
+);
+
+alter table public.alunos enable row level security;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname='public' and tablename='alunos' and policyname='alunos_select_public'
+  ) then
+    create policy "alunos_select_public" on public.alunos
+      for select using (true);
+  end if;
+
+  if not exists (
+    select 1 from pg_policies
+    where schemaname='public' and tablename='alunos' and policyname='alunos_insert_public'
+  ) then
+    create policy "alunos_insert_public" on public.alunos
+      for insert with check (true);
+  end if;
+end $$;</code></pre>
+    </section>
+  </div>
+
+  <script type="module">
+    import { supabase } from './supabaseClient.js';
+
+    const out = document.getElementById('out');
+    const urlEl = document.getElementById('url');
+    const anonEl = document.getElementById('anon');
+    const refEl = document.getElementById('ref');
+
+    const URL = "https://tbkmwmnxfzlsqnjgwsuo.supabase.co";
+    const ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRia213bW54Znpsc3Fuamd3c3VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3MzEzNTQsImV4cCI6MjA3MzMwNzM1NH0.Xc9AuxFfkdyELaXvhqiDku6TaM75vuY4-Ju88BneSXI";
+    urlEl.textContent = URL;
+    anonEl.textContent = ANON.slice(0, 12) + '…' + ANON.slice(-8);
+    refEl.textContent = URL.split('https://')[1]?.split('.')[0] || '';
+
+    let lastInsertedId = null;
+
+    function log(title, data) {
+      const time = new Date().toLocaleTimeString();
+      out.textContent = `[${time}] ${title}\n` + JSON.stringify(data, null, 2) + "\n\n" + out.textContent;
+    }
+
+    document.getElementById('btn-select').addEventListener('click', async () => {
+      const res = await supabase.from('alunos').select('*', { count: 'exact', head: true });
+      log('SELECT alunos (count)', res);
+    });
+
+    document.getElementById('btn-insert').addEventListener('click', async () => {
+      const novo = {
+        nome: 'TESTE DEBUG ' + new Date().toISOString(),
+        email: 'debug@example.com',
+        dataCadastro: new Date().toISOString()
+      };
+      const { data, error } = await supabase.from('alunos').insert([novo]).select();
+      if (data && data.length) lastInsertedId = data[0].id || null;
+      log('INSERT alunos', { data, error });
+    });
+
+    document.getElementById('btn-clean').addEventListener('click', async () => {
+      if (!lastInsertedId) { log('DELETE skip', {reason: 'nada para apagar'}); return; }
+      const res = await supabase.from('alunos').delete().eq('id', lastInsertedId);
+      log('DELETE alunos (último teste)', res);
+    });
+  </script>
+</body>
+</html>
