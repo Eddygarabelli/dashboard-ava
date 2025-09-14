@@ -61,11 +61,11 @@
                 
                 <div id="alunos-dashboard" class="dashboard-content active">
                     <div class="grid md:grid-cols-2 gap-6">
-                        <a href="#" class="bg-blue-500 text-white rounded-xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer">
+                        <a href="alunos.html" class="bg-blue-500 text-white rounded-xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer">
                             <h3 class="text-lg">Alunos Cadastrados</h3>
                             <p id="alunos-count" class="text-5xl font-extrabold mt-2">0</p>
                         </a>
-                        <a href="#" class="bg-green-500 text-white rounded-xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer flex flex-col justify-center items-center">
+                        <a href="cadastro.html" class="bg-green-500 text-white rounded-xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer flex flex-col justify-center items-center">
                             <h3 class="text-lg">Novo Aluno</h3>
                             <p class="text-5xl font-extrabold mt-2">+</p>
                         </a>
@@ -127,8 +127,8 @@
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
         // Variáveis de ambiente
-        const SUPABASE_URL = 'https://your-supabase-url.supabase.co'; // Substitua pelo seu URL do Supabase
-        const SUPABASE_ANON_KEY = 'your-anon-key'; // Substitua pela sua chave anônima
+        const SUPABASE_URL = 'https://tbkmwmnxfzlsqnjgwsuo.supabase.co'; // Substitua pelo seu URL do Supabase
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRia213bW54Znpsc3Fuamd3c3VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3MzEzNTQsImV4cCI6MjA3MzMwNzM1NH0.Xc9AuxFfkdyELaXvhqiDku6TaM75vuY4-Ju88BneSXI'; // Substitua pela sua chave anônima
         
         // Inicializa o cliente Supabase
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -177,34 +177,5 @@
             });
         });
     </script>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  var novo = document.getElementById('card-novo-aluno');
-  if (novo) novo.addEventListener('click', function(){ window.location.href = 'cadastro.html'; });
-  var lista = document.getElementById('card-alunos-matriculados');
-  if (lista) lista.addEventListener('click', function(){ window.location.href = 'alunos.html'; });
-  var buttons = document.querySelectorAll('.nav-button');
-  if (buttons && buttons.length) {
-    buttons.forEach(function(button){
-      button.addEventListener('click', function(e){
-        e.preventDefault();
-        document.querySelectorAll('.nav-button').forEach(function(b){ b.classList.remove('active'); });
-        button.classList.add('active');
-        var target = button.dataset.target;
-        document.querySelectorAll('.dashboard-content').forEach(function(c){ c.classList.add('hidden'); });
-        if (target) {
-          var el = document.getElementById(target);
-          if (el) el.classList.remove('hidden');
-        }
-      });
-    });
-  }
-});
-</script>
-
-<script type="module">
-  import { supabase } from './supabaseClient.js';
-</script>
-
 </body>
 </html>
