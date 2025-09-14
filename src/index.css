@@ -1,3 +1,4 @@
+:root{ --brand:#2010ff; --accent:#ef233c; }
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -10,3 +11,14 @@
   .input{ @apply pl-3 pr-3 py-2 border rounded-xl w-full bg-white; }
   .label{ @apply text-xs font-semibold text-slate-600; }
 }
+
+
+/* Tema da Escola da Barra */
+:root{ --brand:#2010ff; --accent:#ef233c; }
+.header-brand { border-bottom: 3px solid var(--brand); }
+.btn-primary{ background: var(--brand); color: #fff; border-color: transparent; }
+.btn-primary:hover{ filter: brightness(0.95); }
+.btn-danger{ @apply border-transparent text-white; background: var(--accent); }
+.btn-danger:hover{ filter: brightness(0.95); }
+.brand-badge{ @apply text-xs font-semibold px-2 py-1 rounded-full border; border-color: rgba(32,16,255,.2); color:#1f1f1f; background: rgba(32,16,255,.06); }
+

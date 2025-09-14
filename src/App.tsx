@@ -158,6 +158,36 @@ export default function App(){
   const [query, setQuery] = useState("");  const filteredCourses = useMemo(()=>filterCourses(courses, query), [courses, query]);
   const [studentQuery, setStudentQuery] = useState("");  const filteredStudents = useMemo(()=>filterStudents(students, studentQuery), [students, studentQuery]);
   const enrollCount = (id:string)=> students.filter(s=>s.courseIds.includes(id)).length;
+  // Remoção de aluno + foto (se houver)
+  function storageKeyFromPublicUrl(u?: string | null): string | null {
+    if (!u) return null;
+    try {
+      const url = new URL(u);
+      const prefix = "/storage/v1/object/public/students/";
+      const i = url.pathname.indexOf(prefix);
+      if (i === -1) return null;
+      return url.pathname.slice(i + prefix.length);
+    } catch {
+      const prefix = "/storage/v1/object/public/students/";
+      const i = u.indexOf(prefix);
+      return i === -1 ? null : u.slice(i + prefix.length);
+    }
+  }
+  async function handleDeleteStudent(s: Student){
+    const ok = window.confirm(`Excluir o aluno "${s.name}"? Esta ação não pode ser desfeita.`);
+    if (!ok) return;
+    // Remove foto, se existir
+    const key = storageKeyFromPublicUrl(s.photo_url || undefined);
+    if (key) {
+      await supabase.storage.from('students').remove([key]);
+    }
+    // Remove o aluno
+    const { error } = await supabase.from('students').delete().eq('id', s.id);
+    if (error) { console.error(error); alert('Falha ao excluir aluno'); return; }
+    // Otimista: remove da lista local (Realtime também atualizará)
+    setStudents(prev => prev.filter(x => x.id !== s.id));
+  }
+
 
   // Form Novo Aluno + Upload + Máscaras
   const [firstName, setFirstName] = useState("");
@@ -240,10 +270,10 @@ export default function App(){
   return (
     <div className="min-h-screen text-slate-800">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b">
+      <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b header-brand">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-slate-900 text-white grid place-content-center shadow"><GraduationCap className="h-5 w-5" /></div>
+            <img src="/logo.png" alt="Escola da Barra" className="h-10 w-10 rounded-full object-contain bg-white ring-2 ring-[--brand] p-1 shadow" />
             <div>
               <h1 className="text-xl font-bold">Painel de Cursos</h1>
               <p className="text-sm text-slate-500">Gerencie alunos e trilhas de aprendizagem</p>
