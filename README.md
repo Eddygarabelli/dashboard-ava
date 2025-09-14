@@ -1,33 +1,25 @@
 
-# AVA Clean V3 – Cursos + Matrículas (Supabase)
+# AVA · Escola da Barra (v4)
 
-## Novidades
-- **Botão "Novo Curso"** na aba Cursos.
-- **Criação de cursos** com: *nome*, *descrição*, *label* (exibida no card), e estrutura **Ano → Componentes → Disciplinas**.
-- **Cursos salvos no Supabase** (`courses.structure` em JSONB).
-- **Página final de matrículas** por **Ano**: selecione alunos (da tabela `alunos`) e salve em `enrollments`.
-- **Cursos** agora carregam do **Supabase**; lápis para editar **nome/descrição/label** rapidamente (prompts).
+## O que tem de novo
+- **Matrícula por Disciplina** (várias disciplinas por aluno, por Ano) – matriz Alunos × Disciplinas.
+- **Upload de Foto** do aluno (bucket Storage `avatars`), salvando a URL em `alunos.foto_url`.
+- **CSS separado** (`assets/app.css`) e layout com as cores da sua logo.
+- Código organizado em módulos ES: `js/students.js`, `js/courses.js`, `js/app.js`.
+- **Tudo estático** (sem build). Perfeito para GitHub + Vercel.
 
-## Como usar
-1. Rode o `schema.sql` no Supabase (SQL Editor) **uma vez**.
-2. Publique os arquivos no GitHub/Vercel (Framework: *Other*, Build Command: vazio, Output: `.`).
-3. No site:
-   - Abra a aba **Cursos** → **Novo Curso**;
-   - Preencha **Nome/Descrição/Label**;
-   - Clique **+ Ano**, **+ Componente**, **+ Disciplina** (adicione o que precisar);
-   - **Salvar Curso** → você será levado à página de **Matrículas**;
-   - Escolha o **Ano**, filtre por nome e marque os alunos; clique **Salvar Matrículas**.
+## Como publicar
+1. Rode `schema.sql` no Supabase (SQL Editor). Também crie um bucket público `avatars` no Storage.
+2. Edite `js/supabaseClient.js` caso mude URL/Anon Key.
+3. Publique os arquivos no GitHub.
+4. No Vercel:
+   - Framework: **Other**
+   - Build Command: *(vazio)*
+   - Output Directory: **.**
+   - Redeploy com **Clear build cache**.
 
-## Requisitos de banco
-- Tabela `alunos` já existente (conforme sua instância).
-- Novas tabelas:
-  - `courses(id, name, label, description, structure, created_at)`
-  - `enrollments(id, course_id, aluno_id, year, subject, created_at, unique(course_id, aluno_id, year, subject))`
-- RLS habilitada com políticas de acesso liberadas (ajuste conforme segurança do seu projeto).
-
-## Env de Supabase
-As credenciais foram embutidas em `supabaseClient.js` para facilitar; você pode mover para variáveis de ambiente depois.
-
-- URL: https://tbkmwmnxfzlsqnjgwsuo.supabase.co
-- ANON KEY: eyJhbGciOiJI... (truncada)
-
+## Fluxo
+- **Alunos** → cards → clique abre **Detalhes** com **Editar** e **Editar foto**.
+- **Novo Aluno** (card verde) → Cadastro → grava em `alunos`.
+- **Cursos** → **Novo Curso** → crie Anos > Componentes > Disciplinas → Salvar.
+- Após salvar → **Matrículas por Disciplina**: escolha o **Ano**, marque checkboxes e **Salvar**.

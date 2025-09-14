@@ -1,0 +1,71 @@
+
+:root{
+  --brand-blue:#1d1ed8;
+  --brand-blue-700:#1b28b3;
+  --brand-red:#e11d48;
+  --text:#0f172a;
+  --muted:#6b7280;
+  --bg:#f4f6fb;
+  --card:#ffffff;
+  --ring: rgba(29,30,216,.15);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Poppins, Ubuntu, Cantarell, Noto Sans, 'Helvetica Neue', Arial, 'Apple Color Emoji','Segoe UI Emoji';
+  color:var(--text);
+  background: radial-gradient(1200px 800px at -10% -10%, rgba(29,30,216,.06), transparent 50%),
+              radial-gradient(900px 600px at 110% -10%, rgba(225,29,72,.05), transparent 50%),
+              var(--bg);
+}
+
+/* layout */
+.header{
+  position:sticky; top:0; z-index:30; background:var(--card);
+  box-shadow:0 1px 0 rgba(15,23,42,.06);
+}
+.container{max-width:1120px; margin:0 auto; padding:0 16px}
+.header-row{display:flex; align-items:center; justify-content:space-between; height:64px}
+.brand{display:flex; align-items:center; gap:12px; font-weight:700}
+.brand img{width:40px; height:40px; border-radius:999px; box-shadow:0 0 0 3px rgba(29,30,216,.08)}
+.nav{display:flex; gap:8px}
+.btn{appearance:none; border:0; background:#eef2ff; color:#1e293b; padding:8px 14px; border-radius:999px; font-weight:600; cursor:pointer; transition:.2s}
+.btn:hover{transform:translateY(-1px); box-shadow:0 6px 12px rgba(0,0,0,.06)}
+.btn.active{background:var(--brand-blue); color:#fff; box-shadow:0 8px 16px var(--ring)}
+.icon-btn{display:inline-grid; place-items:center; width:36px; height:36px; border-radius:10px; background:#f1f5f9; border:1px solid #e2e8f0; cursor:pointer}
+.icon-btn:hover{box-shadow:0 4px 10px rgba(0,0,0,.06)}
+.main{padding:24px 16px}
+.page{display:none}
+.page.active{display:block}
+
+/* cards & grids */
+.grid{display:grid; gap:16px}
+.grid-2{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card{background:var(--card); border:1px solid #e5e7eb; border-radius:16px; padding:16px; box-shadow:0 6px 18px rgba(0,0,0,.04)}
+.card.kpi{color:#fff; cursor:pointer; transition:.25s}
+.kpi.blue{background:linear-gradient(135deg, var(--brand-blue), #3b82f6)}
+.kpi.green{background:linear-gradient(135deg, #16a34a, #22c55e)}
+.kpi:hover{transform:translateY(-2px) scale(1.01)}
+
+/* forms */
+.input, select, textarea{width:100%; padding:10px 12px; border:1px solid #e2e8f0; border-radius:10px; background:#fff; outline:none; transition:border-color .2s, box-shadow .2s}
+.input:focus, select:focus, textarea:focus{border-color:var(--brand-blue); box-shadow:0 0 0 4px var(--ring)}
+.actions{display:flex; justify-content:space-between; gap:12px; margin-top:16px}
+.primary{background:var(--brand-blue); color:#fff; border-radius:10px; padding:10px 14px; border:none; cursor:pointer; font-weight:700}
+.secondary{background:#e2e8f0; color:#111827; border-radius:10px; padding:10px 14px; border:none; cursor:pointer; font-weight:600}
+.badge{display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; background:#eef2ff; color:var(--brand-blue-700); font-weight:700}
+.table{width:100%; border-collapse:separate; border-spacing:0; overflow:auto}
+.table th,.table td{padding:10px 12px; border-bottom:1px solid #e5e7eb; text-align:left; font-size:14px}
+.table th{color:#475569; font-weight:700; background:#f8fafc; position:sticky; top:0}
+
+/* student profile */
+.profile{display:flex; gap:16px}
+.avatar{width:96px; height:96px; border-radius:999px; object-fit:cover; box-shadow:0 0 0 4px rgba(29,30,216,.12)}
+.uploader{display:flex; align-items:center; gap:8px}
+.link{color:var(--brand-blue); cursor:pointer; text-decoration:none}
+.link:hover{text-decoration:underline}
+
+/* helpers */
+.hidden{display:none !important}
+.center{text-align:center; color:var(--muted)}

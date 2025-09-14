@@ -1,663 +1,94 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Sistema de Gestão Escolar</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); }
-    .page { display: none; }
-    .page.active { display: block; }
-    .nav-button.active { background-color: #2563eb; color: white; box-shadow: 0 4px 6px rgba(37,99,235,0.3); }
-    .nav-button { transition: all .2s ease-in-out; }
-    .nav-button:hover { transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0,0,0,.1); }
-    .form-input { width: 100%; padding: .75rem; border: 1px solid #d1d5db; border-radius: .375rem; }
-    .form-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.3); }
-    .icon-btn { padding:.5rem; border-radius:.5rem; }
-    .icon-btn:hover { background:#f3f4f6; }
-    .badge { padding:.125rem .5rem; border-radius:.5rem; font-size:.75rem; }
-  </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Escola da Barra · AVA</title>
+  <link rel="stylesheet" href="assets/app.css">
 </head>
-<body class="bg-gray-100 min-h-screen">
-  <header class="bg-white shadow-md sticky top-0 z-30">
-    <div class="max-w-6xl mx-auto px-4">
-      <div class="flex items-center justify-between h-16">
-        <div class="flex items-center gap-2">
-          <button id="home-button" class="icon-btn" title="Início" aria-label="Home">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-            </svg>
-          </button>
-          <button id="back-button" class="icon-btn" title="Voltar" aria-label="Voltar">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-            </svg>
-          </button>
-          <div class="flex items-center">
-            <img src="https://i.imgur.com/b6s5rvB.png" alt="Logo" class="h-10 w-10 mr-3">
-            <span class="text-xl font-bold text-gray-800">Escola da Barra</span>
-          </div>
+<body>
+  <header class="header">
+    <div class="container">
+      <div class="header-row">
+        <div class="brand">
+          <button id="home-button" class="icon-btn" title="Início" aria-label="Home">🏠</button>
+          <button id="back-button" class="icon-btn" title="Voltar" aria-label="Voltar">↩️</button>
+          <img src="assets/logo.png" alt="Logo Escola da Barra">
+          <span>Escola da Barra</span>
         </div>
-        <div class="flex gap-2">
-          <button class="nav-button px-4 py-2 rounded-full font-semibold text-gray-700 bg-gray-100" data-target="alunos-dashboard">Alunos</button>
-          <button class="nav-button px-4 py-2 rounded-full font-semibold text-gray-700 bg-gray-100" data-target="cursos-dashboard">Cursos</button>
-          <button class="nav-button px-4 py-2 rounded-full font-semibold text-gray-700 bg-gray-100" data-target="pedagogico-dashboard">Pedagógico</button>
-        </div>
+        <nav class="nav">
+          <button class="btn active" data-target="alunos-dashboard">Alunos</button>
+          <button class="btn" data-target="cursos-dashboard">Cursos</button>
+          <button class="btn" data-target="pedagogico-dashboard">Pedagógico</button>
+        </nav>
       </div>
     </div>
   </header>
 
-  <main class="max-w-6xl mx-auto p-4 sm:p-6">
+  <main class="main container">
     <div id="dashboard-page" class="page active">
-      <div class="flex justify-center flex-wrap gap-4 mb-8">
-        <button class="nav-button active px-6 py-2 rounded-full font-semibold text-gray-700 bg-gray-100" data-target="alunos-dashboard">Alunos</button>
-        <button class="nav-button px-6 py-2 rounded-full font-semibold text-gray-700 bg-gray-100" data-target="cursos-dashboard">Cursos</button>
-        <button class="nav-button px-6 py-2 rounded-full font-semibold text-gray-700 bg-gray-100" data-target="pedagogico-dashboard">Pedagógico</button>
-      </div>
-
-      <!-- ALUNOS -->
-      <div id="alunos-dashboard" class="dashboard-content">
-        <div class="grid md:grid-cols-2 gap-6">
-          <div class="bg-blue-500 text-white rounded-xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer" id="card-alunos-matriculados">
-            <h3 class="text-lg">Alunos Matriculados</h3>
-            <p id="alunos-count" class="text-5xl font-extrabold mt-2">0</p>
-          </div>
-          <div class="bg-green-500 text-white rounded-xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer" id="card-novo-aluno">
-            <h3 class="text-lg">Novo Aluno</h3>
-            <p class="text-5xl font-extrabold mt-2">+</p>
-          </div>
+      <div class="grid grid-2">
+        <div class="card kpi blue" id="card-alunos-matriculados">
+          <div>Alunos Matriculados</div>
+          <div id="alunos-count" style="font-size:42px; font-weight:900; margin-top:6px">0</div>
+        </div>
+        <div class="card kpi green" id="card-novo-aluno">
+          <div>Novo Aluno</div>
+          <div style="font-size:42px; font-weight:900; margin-top:6px">+</div>
         </div>
       </div>
 
-      <!-- CURSOS -->
-      <div id="cursos-dashboard" class="dashboard-content hidden">
-        <div class="flex items-center justify-between mb-4">
-          <h1 class="text-2xl font-bold">Cursos</h1>
-          <button id="btn-novo-curso" class="px-4 py-2 rounded bg-blue-600 text-white shadow">Novo Curso</button>
-        </div>
-        <div id="cursos-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-      </div>
+      <section id="alunos-dashboard" style="margin-top:18px">
+        <div id="alunos-list-page" class="card"></div>
+      </section>
 
-      <!-- PEDAGÓGICO (placeholder) -->
-      <div id="pedagogico-dashboard" class="dashboard-content hidden">
-        <div class="text-center text-gray-500">Recursos pedagógicos em breve.</div>
-      </div>
+      <section id="cursos-dashboard" class="hidden" style="margin-top:18px">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+            <h2 style="margin:0">Cursos</h2>
+            <button id="btn-novo-curso" class="primary">Novo Curso</button>
+          </div>
+          <div id="cursos-grid" class="grid grid-2"></div>
+        </div>
+      </section>
+
+      <section id="pedagogico-dashboard" class="hidden" style="margin-top:18px">
+        <div class="card center">Recursos pedagógicos em breve.</div>
+      </section>
     </div>
 
-    <!-- PÁGINA: CADASTRO ALUNO -->
+    <!-- Cadastro Aluno -->
     <div id="cadastro-page" class="page">
-      <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Cadastro de Aluno</h1>
-      <form id="cadastro-form" class="space-y-4 max-w-lg mx-auto">
-        <input type="text" id="nome" placeholder="Nome Completo" required class="form-input">
-        <input type="text" id="rg" placeholder="RG" class="form-input">
-        <input type="text" id="cpf" placeholder="CPF" class="form-input">
-        <input type="email" id="email" placeholder="E-mail" class="form-input">
-        <input type="tel" id="telefone" placeholder="Telefone" class="form-input">
-        <input type="date" id="datanascimento" placeholder="Data de Nascimento" class="form-input">
-        <input type="text" id="localnascimento" placeholder="Local de Nascimento (Cidade - UF)" class="form-input">
-        <input type="text" id="endereco" placeholder="Endereço Completo" class="form-input">
-        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md transition-colors shadow-sm">Cadastrar Aluno</button>
-      </form>
+      <div class="card">
+        <h2>Cadastro de Aluno</h2>
+        <form id="cadastro-form" class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px">
+          <input type="text" id="nome" class="input" placeholder="Nome completo" required>
+          <input type="text" id="rg" class="input" placeholder="RG">
+          <input type="text" id="cpf" class="input" placeholder="CPF">
+          <input type="email" id="email" class="input" placeholder="E-mail">
+          <input type="tel" id="telefone" class="input" placeholder="Telefone">
+          <input type="date" id="datanascimento" class="input" placeholder="Data de nascimento">
+          <input type="text" id="localnascimento" class="input" placeholder="Local de nascimento (Cidade - UF)">
+          <input type="text" id="endereco" class="input" placeholder="Endereço completo">
+          <div class="actions" style="grid-column:1/-1">
+            <button type="button" class="secondary" id="cad-voltar">Voltar</button>
+            <button type="submit" class="primary">Cadastrar</button>
+          </div>
+        </form>
+      </div>
     </div>
 
-    <!-- PÁGINA: LISTA ALUNOS -->
-    <div id="alunos-list-page" class="page"></div>
-
-    <!-- PÁGINA: DETALHES DO ALUNO (com edição) -->
+    <!-- Detalhes do aluno -->
     <div id="student-details-page" class="page"></div>
 
-    <!-- PÁGINA: NOVO CURSO -->
+    <!-- Novo Curso -->
     <div id="curso-new-page" class="page"></div>
 
-    <!-- PÁGINA: MATRÍCULAS DO CURSO -->
+    <!-- Matrículas curso -->
     <div id="curso-enroll-page" class="page"></div>
   </main>
 
-  <script type="module">
-    import { supabase } from './supabaseClient.js';
-
-    // ======= Navegação =======
-    const historyStack = ['dashboard-page'];
-
-    function navigateTo(pageId){
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.getElementById(pageId)?.classList.add('active');
-      if (historyStack[historyStack.length-1] !== pageId) historyStack.push(pageId);
-    }
-    function navigateBack(){
-      if (historyStack.length > 1){
-        historyStack.pop();
-        const prev = historyStack[historyStack.length-1];
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById(prev)?.classList.add('active');
-      }
-    }
-    function showDashboardTab(targetId){
-      document.querySelectorAll('.dashboard-content').forEach(el => el.classList.add('hidden'));
-      document.getElementById(targetId)?.classList.remove('hidden');
-      document.querySelectorAll('.nav-button').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.nav-button[data-target="'+targetId+'"]').forEach(b => b.classList.add('active'));
-    }
-
-    // ======= Header actions =======
-    document.getElementById('home-button')?.addEventListener('click', () => {
-      historyStack.length = 0;
-      historyStack.push('dashboard-page');
-      navigateTo('dashboard-page');
-      showDashboardTab('alunos-dashboard');
-    });
-    document.getElementById('back-button')?.addEventListener('click', navigateBack);
-
-    // ======= Dashboard binds =======
-    document.querySelectorAll('.nav-button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        showDashboardTab(btn.dataset.target);
-        if (btn.dataset.target === 'cursos-dashboard') renderCursos();
-      });
-    });
-    document.getElementById('card-novo-aluno')?.addEventListener('click', () => navigateTo('cadastro-page'));
-    document.getElementById('card-alunos-matriculados')?.addEventListener('click', () => renderAlunosList());
-    document.getElementById('btn-novo-curso')?.addEventListener('click', openCreateCourse);
-
-    // ======= Supabase helpers =======
-    async function countAlunos(){
-      const { count, error } = await supabase.from('alunos').select('*', { count:'exact', head:true });
-      if (error) throw error;
-      return count ?? 0;
-    }
-    function geraMatricula(){
-      return 'MAT-' + (Date.now().toString().slice(-6));
-    }
-    async function updateAlunosCountUI(){
-      const el = document.getElementById('alunos-count');
-      try { el.textContent = String(await countAlunos()); }
-      catch { el.textContent = '0'; }
-    }
-
-    // ======= Cadastro aluno =======
-    document.getElementById('cadastro-form')?.addEventListener('submit', onSubmitCadastro);
-    async function onSubmitCadastro(e){
-      e.preventDefault();
-      const form = e.currentTarget;
-      const payload = {
-        matricula: geraMatricula(),
-        nome: document.getElementById('nome')?.value?.trim() || '',
-        rg: document.getElementById('rg')?.value?.trim() || '',
-        cpf: document.getElementById('cpf')?.value?.trim() || '',
-        email: document.getElementById('email')?.value?.trim() || '',
-        telefone: document.getElementById('telefone')?.value?.trim() || '',
-        datanascimento: document.getElementById('datanascimento')?.value || null,
-        localnascimento: document.getElementById('localnascimento')?.value?.trim() || '',
-        endereco: document.getElementById('endereco')?.value?.trim() || '',
-        datacadastro: new Date().toISOString()
-      };
-      try{
-        const { data, error } = await supabase.from('alunos').insert([payload]).select('*');
-        if (error) throw error;
-        alert('Aluno cadastrado com sucesso!');
-        form.reset();
-        await updateAlunosCountUI();
-        renderAlunosList();
-      }catch(err){
-        console.error('Erro ao cadastrar aluno:', err);
-        alert('Erro ao cadastrar aluno.');
-      }
-    }
-
-    // ======= Lista de alunos =======
-    async function renderAlunosList(){
-      const container = document.getElementById('alunos-list-page');
-      navigateTo('alunos-list-page');
-      container.innerHTML = '<div class="text-center text-gray-500">Carregando...</div>';
-      try{
-        const { data, error } = await supabase.from('alunos').select('id, nome, matricula, datacadastro').order('datacadastro', { ascending: false });
-        if (error) throw error;
-        if (!data || !data.length){
-          container.innerHTML = '<div class="text-center text-gray-500">Nenhum aluno cadastrado ainda.</div>';
-          return;
-        }
-        container.innerHTML = `
-          <div class="flex items-center justify-between mb-4">
-            <h1 class="text-2xl font-bold">Alunos Matriculados</h1>
-          </div>
-          <div id="alunos-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            ${data.map(a => `
-              <button class="bg-white p-4 rounded-lg shadow-md text-left hover:shadow-lg transition" data-id="${a.id}">
-                <div class="flex items-center">
-                  <img src="https://i.pravatar.cc/150?u=${a.id}" alt="Foto" class="w-16 h-16 rounded-full mr-4">
-                  <div>
-                    <h3 class="font-bold text-lg text-gray-800">${a.nome ?? ''}</h3>
-                    <p class="text-sm text-gray-500">Matrícula: ${a.matricula ?? '-'}</p>
-                    <p class="text-sm text-gray-500">Cadastro: ${a.datacadastro ? new Date(a.datacadastro).toLocaleDateString() : '-'}</p>
-                  </div>
-                </div>
-              </button>
-            `).join('')}
-          </div>`;
-
-        // click para detalhes
-        container.querySelectorAll('[data-id]').forEach(btn => {
-          btn.addEventListener('click', () => openStudentDetails(btn.getAttribute('data-id')));
-        });
-      }catch(e){
-        console.error('Erro listando alunos:', e);
-        container.innerHTML = '<div class="text-center text-red-600">Erro ao carregar alunos.</div>';
-      }
-    }
-
-    // ======= Detalhes / Edição do aluno =======
-    async function openStudentDetails(id){
-      navigateTo('student-details-page');
-      const root = document.getElementById('student-details-page');
-      root.innerHTML = '<div class="text-center text-gray-500">Carregando...</div>';
-      try{
-        const { data, error } = await supabase.from('alunos').select('*').eq('id', id).single();
-        if (error) throw error;
-        renderStudentDetails(data);
-      }catch(e){
-        console.error('Erro carregando aluno:', e);
-        root.innerHTML = '<div class="text-center text-red-600">Erro ao carregar aluno.</div>';
-      }
-    }
-    function renderStudentDetails(a){
-      const root = document.getElementById('student-details-page');
-      root.innerHTML = `
-        <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow">
-          <div class="flex items-start gap-4">
-            <img src="https://i.pravatar.cc/150?u=${a.id}" class="w-24 h-24 rounded-full border-4 border-blue-100" alt="Foto">
-            <div class="flex-1">
-              <h1 class="text-2xl font-bold">${a.nome ?? ''}</h1>
-              <p class="text-gray-600">Matrícula: ${a.matricula ?? '-'}</p>
-            </div>
-          </div>
-          <div id="student-view" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><b>RG:</b> ${a.rg ?? '-'}</div>
-            <div><b>CPF:</b> ${a.cpf ?? '-'}</div>
-            <div><b>E-mail:</b> ${a.email ?? '-'}</div>
-            <div><b>Telefone:</b> ${a.telefone ?? '-'}</div>
-            <div><b>Nascimento:</b> ${a.datanascimento ?? '-'}</div>
-            <div><b>Local Nascimento:</b> ${a.localnascimento ?? '-'}</div>
-            <div class="md:col-span-2"><b>Endereço:</b> ${a.endereco ?? '-'}</div>
-          </div>
-          <form id="student-edit" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
-            <input id="e-nome" class="form-input" type="text" placeholder="Nome" value="${a.nome ?? ''}" required>
-            <input id="e-matricula" class="form-input" type="text" placeholder="Matrícula" value="${a.matricula ?? ''}" required>
-            <input id="e-rg" class="form-input" type="text" placeholder="RG" value="${a.rg ?? ''}">
-            <input id="e-cpf" class="form-input" type="text" placeholder="CPF" value="${a.cpf ?? ''}">
-            <input id="e-email" class="form-input" type="email" placeholder="E-mail" value="${a.email ?? ''}">
-            <input id="e-telefone" class="form-input" type="tel" placeholder="Telefone" value="${a.telefone ?? ''}">
-            <input id="e-datanascimento" class="form-input" type="date" placeholder="Data de Nascimento" value="${a.datanascimento ?? ''}">
-            <input id="e-localnascimento" class="form-input" type="text" placeholder="Local de Nascimento" value="${a.localnascimento ?? ''}">
-            <input id="e-endereco" class="form-input md:col-span-2" type="text" placeholder="Endereço" value="${a.endereco ?? ''}">
-          </form>
-          <div class="mt-6 flex justify-between">
-            <button id="btn-voltar" class="px-3 py-2 rounded bg-gray-200">Voltar</button>
-            <div class="flex gap-2">
-              <button id="btn-editar" class="px-3 py-2 rounded bg-blue-600 text-white">Editar</button>
-              <button id="btn-salvar" class="px-3 py-2 rounded bg-green-600 text-white hidden">Salvar</button>
-              <button id="btn-cancelar" class="px-3 py-2 rounded bg-gray-300 hidden">Cancelar</button>
-            </div>
-          </div>
-        </div>`;
-
-      // binds
-      root.querySelector('#btn-voltar')?.addEventListener('click', navigateBack);
-      root.querySelector('#btn-editar')?.addEventListener('click', () => {
-        root.querySelector('#student-view')?.classList.add('hidden');
-        root.querySelector('#student-edit')?.classList.remove('hidden');
-        root.querySelector('#btn-editar')?.classList.add('hidden');
-        root.querySelector('#btn-salvar')?.classList.remove('hidden');
-        root.querySelector('#btn-cancelar')?.classList.remove('hidden');
-      });
-      root.querySelector('#btn-cancelar')?.addEventListener('click', () => {
-        root.querySelector('#student-view')?.classList.remove('hidden');
-        root.querySelector('#student-edit')?.classList.add('hidden');
-        root.querySelector('#btn-editar')?.classList.remove('hidden');
-        root.querySelector('#btn-salvar')?.classList.add('hidden');
-        root.querySelector('#btn-cancelar')?.classList.add('hidden');
-      });
-      root.querySelector('#btn-salvar')?.addEventListener('click', async () => {
-        const upd = {
-          nome: root.querySelector('#e-nome')?.value?.trim() || '',
-          matricula: root.querySelector('#e-matricula')?.value?.trim() || '',
-          rg: root.querySelector('#e-rg')?.value?.trim() || '',
-          cpf: root.querySelector('#e-cpf')?.value?.trim() || '',
-          email: root.querySelector('#e-email')?.value?.trim() || '',
-          telefone: root.querySelector('#e-telefone')?.value?.trim() || '',
-          datanascimento: root.querySelector('#e-datanascimento')?.value || null,
-          localnascimento: root.querySelector('#e-localnascimento')?.value?.trim() || '',
-          endereco: root.querySelector('#e-endereco')?.value?.trim() || ''
-        };
-        try{
-          const { error } = await supabase.from('alunos').update(upd).eq('id', a.id);
-          if (error) throw error;
-          alert('Dados atualizados!');
-          openStudentDetails(a.id);
-          updateAlunosCountUI();
-        }catch(e){
-          console.error('Erro ao salvar edição:', e);
-          alert('Erro ao salvar.');
-        }
-      });
-    }
-
-    // ======= Cursos (Supabase) =======
-    async function renderCursos(){
-      const grid = document.getElementById('cursos-grid');
-      grid.innerHTML = '<div class="text-gray-500">Carregando cursos...</div>';
-      try{
-        const { data, error } = await supabase.from('courses').select('id, name, label, description, created_at').order('created_at', { ascending:false });
-        if (error) throw error;
-        if (!data?.length){
-          grid.innerHTML = '<div class="text-gray-500">Nenhum curso cadastrado ainda.</div>';
-          return;
-        }
-        grid.innerHTML = data.map(c => `
-          <div class="bg-white rounded-xl p-6 shadow relative">
-            ${c.label ? `<span class="badge bg-blue-100 text-blue-700 absolute top-3 right-3">${c.label}</span>` : ''}
-            <button class="absolute top-3 right-12 p-2 rounded hover:bg-gray-100" title="Editar" data-edit="${c.id}">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"/>
-              </svg>
-            </button>
-            <h3 class="text-xl font-bold text-gray-800">${c.name}</h3>
-            <p class="text-sm text-gray-600 mt-1">${c.description ?? ''}</p>
-            <div class="mt-4 flex gap-2">
-              <button class="px-3 py-2 rounded bg-blue-600 text-white" data-enroll="${c.id}">Matricular Alunos</button>
-            </div>
-          </div>
-        `).join('');
-
-        grid.querySelectorAll('[data-edit]').forEach(btn => {
-          btn.addEventListener('click', () => openEditCourse(btn.getAttribute('data-edit')));
-        });
-        grid.querySelectorAll('[data-enroll]').forEach(btn => {
-          btn.addEventListener('click', () => openEnrollPage(btn.getAttribute('data-enroll')));
-        });
-      }catch(e){
-        console.error('Erro carregando cursos:', e);
-        grid.innerHTML = '<div class="text-red-600">Erro ao carregar cursos.</div>';
-      }
-    }
-
-    function openCreateCourse(){
-      const root = document.getElementById('curso-new-page');
-      navigateTo('curso-new-page');
-      root.innerHTML = `
-        <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow">
-          <h1 class="text-2xl font-bold mb-4">Novo Curso</h1>
-          <div class="grid gap-3">
-            <input id="c-name" class="form-input" placeholder="Nome do curso" />
-            <input id="c-label" class="form-input" placeholder="Label para o card (ex: Fundamental, Médio...)" />
-            <textarea id="c-desc" class="form-input" placeholder="Descrição do curso"></textarea>
-          </div>
-
-          <h2 class="text-xl font-semibold mt-6 mb-2">Estrutura</h2>
-          <div id="years-box" class="space-y-4"></div>
-          <button id="add-year" class="mt-2 px-3 py-1 rounded bg-gray-200">+ Ano</button>
-
-          <div class="mt-6 flex justify-between">
-            <button class="px-3 py-2 rounded bg-gray-200" id="c-voltar">Voltar</button>
-            <button class="px-3 py-2 rounded bg-green-600 text-white" id="c-salvar">Salvar Curso</button>
-          </div>
-        </div>
-      `;
-
-      const yearsBox = root.querySelector('#years-box');
-      const addYearBtn = root.querySelector('#add-year');
-      const backBtn = root.querySelector('#c-voltar');
-      const saveBtn = root.querySelector('#c-salvar');
-
-      backBtn.addEventListener('click', navigateBack);
-
-      addYearBtn.addEventListener('click', () => {
-        const y = document.createElement('div');
-        y.className = 'border rounded-md p-3';
-        y.innerHTML = `
-          <div class="flex items-center gap-2 mb-2">
-            <input class="form-input flex-1" placeholder="Ano (ex: 1º ano)" />
-            <button class="px-2 py-1 rounded bg-gray-100" data-rm="year">Remover</button>
-          </div>
-          <div class="space-y-3" data-areas></div>
-          <button class="px-2 py-1 rounded bg-gray-200" data-add-area>+ Componente</button>
-        `;
-        yearsBox.appendChild(y);
-
-        y.querySelector('[data-rm="year"]').addEventListener('click', () => y.remove());
-        y.querySelector('[data-add-area]').addEventListener('click', () => {
-          const a = document.createElement('div');
-          a.className = 'rounded bg-gray-50 p-3';
-          a.innerHTML = `
-            <div class="flex items-center gap-2 mb-2">
-              <input class="form-input flex-1" placeholder="Componente (ex: Linguagens)" />
-              <button class="px-2 py-1 rounded bg-gray-100" data-rm="area">Remover</button>
-            </div>
-            <div class="space-y-2" data-disc></div>
-            <button class="px-2 py-1 rounded bg-gray-200" data-add-disc>+ Disciplina</button>
-          `;
-          a.querySelector('[data-rm="area"]').addEventListener('click', () => a.remove());
-          a.querySelector('[data-add-disc]').addEventListener('click', () => {
-            const d = document.createElement('div');
-            d.className = 'flex items-center gap-2';
-            d.innerHTML = `
-              <input class="form-input flex-1" placeholder="Nome da disciplina" />
-              <input class="form-input w-24" type="number" placeholder="CH" />
-              <button class="px-2 py-1 rounded bg-gray-100" data-rm="disc">x</button>
-            `;
-            d.querySelector('[data-rm="disc"]').addEventListener('click', () => d.remove());
-            a.querySelector('[data-disc]').appendChild(d);
-          });
-          y.querySelector('[data-areas]').appendChild(a);
-        });
-      });
-
-      saveBtn.addEventListener('click', async () => {
-        const name = root.querySelector('#c-name')?.value?.trim();
-        if (!name){ alert('Informe o nome do curso.'); return; }
-        const label = root.querySelector('#c-label')?.value?.trim() || null;
-        const description = root.querySelector('#c-desc')?.value?.trim() || null;
-
-        // monta estrutura JSON
-        const anos = {};
-        root.querySelectorAll('#years-box > div').forEach(yearDiv => {
-          const anoName = yearDiv.querySelector('input')?.value?.trim();
-          if (!anoName) return;
-          const componentes = {};
-          yearDiv.querySelectorAll('[data-areas] > div').forEach(areaDiv => {
-            const areaName = areaDiv.querySelector('input')?.value?.trim();
-            if (!areaName) return;
-            const discList = [];
-            areaDiv.querySelectorAll('[data-disc] > div').forEach(d => {
-              const nome = d.querySelector('input:nth-child(1)')?.value?.trim();
-              const ch = parseInt(d.querySelector('input:nth-child(2)')?.value || '0', 10) || 0;
-              if (nome) discList.push({ nome, cargaHoraria: ch });
-            });
-            componentes[areaName] = discList;
-          });
-          anos[anoName] = { componentes };
-        });
-
-        const structure = { anos }; // flexível
-
-        try{
-          const { data, error } = await supabase.from('courses').insert([{ name, label, description, structure }]).select('id');
-          if (error) throw error;
-          const courseId = data?.[0]?.id;
-          if (!courseId) throw new Error('Falha ao criar curso.');
-          alert('Curso criado! Agora selecione os alunos para matrícula.');
-          openEnrollPage(courseId);
-        }catch(e){
-          console.error('Erro criando curso:', e);
-          alert('Erro ao criar curso.');
-        }
-      });
-    }
-
-    async function openEditCourse(courseId){
-      // edita apenas nome/descr/label via prompt (rápido/clean)
-      try{
-        const { data, error } = await supabase.from('courses').select('*').eq('id', courseId).single();
-        if (error) throw error;
-        const novoNome = prompt('Nome do curso:', data.name) ?? data.name;
-        const novoLabel = prompt('Label:', data.label ?? '') ?? data.label;
-        const novaDesc = prompt('Descrição:', data.description ?? '') ?? data.description;
-        const upd = { name: (novoNome||'').trim() or data.name, label: (novoLabel or '').trim() if novoLabel is not None else data.label, description: (novaDesc or '').trim() if novaDesc is not None else data.description }
-      }catch(e){
-        // fallback via inline JS (não consigo usar python aqui). Vamos implementar direto no DOM abaixo.
-      }
-      // Implementação DOM (sem await externo):
-      (async () => {
-        try{
-          const { data, error } = await supabase.from('courses').select('*').eq('id', courseId).single();
-          if (error) throw error;
-          let novoNome = prompt('Nome do curso:', data.name);
-          if (novoNome === null) return; // cancelou
-          let novoLabel = prompt('Label:', data.label ?? '');
-          if (novoLabel === null) novoLabel = data.label ?? '';
-          let novaDesc = prompt('Descrição:', data.description ?? '');
-          if (novaDesc === null) novaDesc = data.description ?? '';
-          const upd = {
-            name: (novoNome || '').trim() || data.name,
-            label: (novoLabel || '').trim(),
-            description: (novaDesc || '').trim()
-          };
-          const { error: e2 } = await supabase.from('courses').update(upd).eq('id', courseId);
-          if (e2) throw e2;
-          alert('Curso atualizado!');
-          renderCursos();
-        }catch(err){
-          console.error('Erro ao editar curso:', err);
-          alert('Erro ao editar curso.');
-        }
-      })();
-    }
-
-    // ======= Matrículas do curso =======
-    async function openEnrollPage(courseId){
-      navigateTo('curso-enroll-page');
-      const root = document.getElementById('curso-enroll-page');
-      root.innerHTML = '<div class="text-center text-gray-500">Carregando...</div>';
-      try{
-        const [{ data: course, error: e1 }, { data: alunos, error: e2 }] = await Promise.all([
-          supabase.from('courses').select('*').eq('id', courseId).single(),
-          supabase.from('alunos').select('id, nome, matricula').order('nome')
-        ]);
-        if (e1) throw e1;
-        if (e2) throw e2;
-
-        const anos = Object.keys(course.structure?.anos || {});
-        const initialYear = anos[0] || '';
-
-        root.innerHTML = `
-          <div class="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow">
-            <div class="flex items-center justify-between mb-4">
-              <div>
-                <h1 class="text-2xl font-bold">Matrículas - ${course.name}</h1>
-                <p class="text-gray-500">${course.label ? `<span class="badge bg-blue-100 text-blue-700">${course.label}</span>` : ''}</p>
-              </div>
-              <button id="enroll-voltar" class="px-3 py-2 rounded bg-gray-200">Voltar</button>
-            </div>
-            <div class="flex items-center gap-3 mb-4">
-              <label>Ano:</label>
-              <select id="year-select" class="form-input w-48">${anos.map(a => `<option value="${a}">${a}</option>`).join('')}</select>
-            </div>
-            <div class="mb-3">
-              <input id="filtro" class="form-input" placeholder="Pesquisar aluno por nome" />
-            </div>
-            <div id="alunos-box" class="space-y-2 max-h-[50vh] overflow-auto border rounded p-2 bg-gray-50"></div>
-            <div class="mt-4 flex justify-end">
-              <button id="save-enroll" class="px-4 py-2 rounded bg-green-600 text-white">Salvar Matrículas</button>
-            </div>
-          </div>
-        `;
-
-        const alunosBox = root.querySelector('#alunos-box');
-        const filtro = root.querySelector('#filtro');
-        const yearSel = root.querySelector('#year-select');
-        const backBtn = root.querySelector('#enroll-voltar');
-        const saveBtn = root.querySelector('#save-enroll');
-
-        backBtn.addEventListener('click', navigateBack);
-
-        // carrega matriculas existentes
-        async function loadEnrollmentsAndRender(){
-          const year = yearSel.value || initialYear || null;
-          const { data: enrolls, error } = await supabase
-            .from('enrollments')
-            .select('aluno_id')
-            .eq('course_id', courseId)
-            .eq('year', year);
-          if (error) { console.error(error); return; }
-          const set = new Set((enrolls||[]).map(e => e.aluno_id));
-
-          const q = (filtro.value || '').toLowerCase();
-          const filtered = alunos.filter(a => (a.nome||'').toLowerCase().includes(q));
-          alunosBox.innerHTML = filtered.map(a => `
-            <label class="flex items-center justify-between bg-white p-2 rounded shadow-sm">
-              <div>
-                <div class="font-semibold">${a.nome}</div>
-                <div class="text-xs text-gray-500">Mat.: ${a.matricula || '-'}</div>
-              </div>
-              <input type="checkbox" data-id="${a.id}" class="w-5 h-5" ${set.has(a.id) ? 'checked' : ''} />
-            </label>
-          `).join('');
-        }
-
-        filtro.addEventListener('input', loadEnrollmentsAndRender);
-        yearSel.addEventListener('change', loadEnrollmentsAndRender);
-        await loadEnrollmentsAndRender();
-
-        saveBtn.addEventListener('click', async () => {
-          const year = yearSel.value;
-          // pega estado atual (checkboxes) e estado salvo
-          const { data: saved, error: e3 } = await supabase
-            .from('enrollments')
-            .select('aluno_id')
-            .eq('course_id', courseId)
-            .eq('year', year);
-          if (e3){ alert('Erro ao ler matrículas'); return; }
-          const savedSet = new Set((saved||[]).map(x => x.aluno_id));
-          const inputs = Array.from(alunosBox.querySelectorAll('input[type="checkbox"]'));
-          const nowSet = new Set(inputs.filter(i => i.checked).map(i => i.getAttribute('data-id')));
-
-          const toAdd = [...nowSet].filter(id => !savedSet.has(id)).map(id => ({
-            course_id: courseId, aluno_id: id, year
-          }));
-          const toDel = [...savedSet].filter(id => !nowSet.has(id));
-
-          try{
-            if (toAdd.length){
-              const { error: eAdd } = await supabase.from('enrollments').insert(toAdd);
-              if (eAdd) throw eAdd;
-            }
-            if (toDel.length){
-              const { error: eDel } = await supabase
-                .from('enrollments')
-                .delete()
-                .eq('course_id', courseId)
-                .eq('year', year)
-                .in('aluno_id', toDel);
-              if (eDel) throw eDel;
-            }
-            alert('Matrículas salvas!');
-          }catch(err){
-            console.error('Erro salvando matrículas:', err);
-            alert('Erro ao salvar matrículas.');
-          }
-        });
-      }catch(e){
-        console.error('Erro abrindo página de matrículas:', e);
-        root.innerHTML = '<div class="text-center text-red-600">Erro ao abrir matrículas.</div>';
-      }
-    }
-
-    // ======= Start =======
-    document.addEventListener('DOMContentLoaded', async () => {
-      showDashboardTab('alunos-dashboard');
-      await updateAlunosCountUI();
-    });
-  </script>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>
