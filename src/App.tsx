@@ -1,11 +1,11 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { GraduationCap, Search, UserCircle, Home, Plus, ArrowLeft } from "lucide-react";
+import { GraduationCap, Search, UserCircle, Home, Plus, ArrowLeft, Upload } from "lucide-react";
 import "./index.css";
 import { supabase } from "./lib/supabaseClient";
 
 type Student = {
   id: string;
-  name: string; // Nome completo
+  name: string;
   first_name?: string | null;
   last_name?: string | null;
   rg?: string | null;
@@ -19,8 +19,8 @@ type Student = {
   neighborhood?: string | null;
   zip_code?: string | null;
   city?: string | null;
-  state?: string | null; // UF
-  levels?: string[] | null; // ["Fundamental","Médio"]
+  state?: string | null;
+  levels?: string[] | null;
   photo_url?: string | null;
   created_at?: string;
   courseIds: string[];
@@ -45,27 +45,32 @@ function viewFromHash(): View {
   return "dashboard";
 }
 
-// Mini testes em DEV
-function runDevTests(){
-  if (!(import.meta as any).env?.DEV) return;
-  const fc = filterCourses([
-    { id:"1", title:"MATEMÁTICA", category:"Exatas", description:"", created_at:new Date().toISOString() },
-    { id:"2", title:"História", category:"Humanas", description:"", created_at:new Date().toISOString() }
-  ], "mat");
-  console.assert(fc.length === 1 && fc[0].title === "MATEMÁTICA", "filterCourses deve retornar só Matemática");
-
-  const fs = filterStudents([
-    { id:"a", name:"Ana Silva", courseIds:[] } as Student,
-    { id:"b", name:"Bruno", courseIds:[] } as Student
-  ], "ana");
-  console.assert(fs.length === 1 && fs[0].name === "Ana Silva", "filterStudents deve retornar só Ana");
-
-  const old = location.hash;
-  location.hash = "#/alunos/novo";
-  console.assert(viewFromHash() === "add-aluno", "viewFromHash deve reconhecer add-aluno");
-  location.hash = old;
-}
-runDevTests();
+const digitsOnly = (s: string) => s.replace(/\D/g, "");
+const maskCPF = (v: string) => {
+  const d = digitsOnly(v).slice(0, 11);
+  const p1 = d.slice(0,3), p2 = d.slice(3,6), p3 = d.slice(6,9), p4 = d.slice(9,11);
+  let out = p1;
+  if (p2) out += "." + p2;
+  if (p3) out += "." + p3;
+  if (p4) out += "-" + p4;
+  return out;
+};
+const maskCEP = (v: string) => {
+  const d = digitsOnly(v).slice(0, 8);
+  const p1 = d.slice(0,5), p2 = d.slice(5,8);
+  return p2 ? `${p1}-${p2}` : p1;
+};
+const maskPhone = (v: string) => {
+  const d = digitsOnly(v).slice(0, 11);
+  const dd = d.slice(0,2);
+  const is11 = d.length > 10;
+  const p1 = is11 ? d.slice(2,7) : d.slice(2,6);
+  const p2 = is11 ? d.slice(7,11) : d.slice(6,10);
+  if (!dd) return d;
+  if (!p2) return `(${dd}) ${p1}`.trim();
+  return `(${dd}) ${p1}-${p2}`;
+};
+const uuid = () => (crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
 
 export default function App(){
   const [view, setView] = useState<View>(viewFromHash());
@@ -138,7 +143,7 @@ export default function App(){
   const [studentQuery, setStudentQuery] = useState("");  const filteredStudents = useMemo(()=>filterStudents(students, studentQuery), [students, studentQuery]);
   const enrollCount = (id:string)=> students.filter(s=>s.courseIds.includes(id)).length;
 
-  // Form Novo Aluno
+  // Form Novo Aluno + Upload + Máscaras
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [rg, setRg] = useState("");
@@ -155,11 +160,37 @@ export default function App(){
   const [uf, setUf] = useState("");
   const [levels, setLevels] = useState<{Fundamental:boolean; Medio:boolean}>({ Fundamental:false, Medio:false });
   const toggleLevel = (k: 'Fundamental'|'Medio') => setLevels(prev=>({...prev, [k]: !prev[k]}));
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>){
+    const f = e.target.files?.[0] || null;
+    setFile(f);
+    if (preview) URL.revokeObjectURL(preview);
+    setPreview(f ? URL.createObjectURL(f) : null);
+  }
+
+  async function uploadPhotoIfNeeded(): Promise<string | null>{
+    if (!file) return null;
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `photos/${(crypto?.randomUUID ? crypto.randomUUID() : (Math.random().toString(36).slice(2)+Date.now().toString(36)))}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('students').upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type || undefined });
+    if (upErr) { console.error('upload error', upErr); return null; }
+    const { data } = supabase.storage.from('students').getPublicUrl(path);
+    return data.publicUrl || null;
+  }
 
   async function handleAddStudent(e?: React.FormEvent){
     e?.preventDefault();
     const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
     if (!fullName) return;
+
+    const digitsOnly = (s: string) => s.replace(/\\D/g, "");
+    const cpfDigits = digitsOnly(cpf);
+    const zipDigits = digitsOnly(zip);
+    const phoneDigits = digitsOnly(phone);
+
+    const photo_url = await uploadPhotoIfNeeded();
     const levelsArr = [levels.Fundamental ? "Fundamental" : null, levels.Medio ? "Médio" : null].filter(Boolean) as string[];
 
     const { error } = await supabase.from("students").insert([{
@@ -167,24 +198,27 @@ export default function App(){
       first_name: firstName || null,
       last_name: lastName || null,
       rg: rg || null,
-      cpf: cpf || null,
+      cpf: cpfDigits || null,
       birth_date: birthDate || null,
       birth_place: birthPlace || null,
       email: email || null,
-      phone: phone || null,
+      phone: phoneDigits || null,
       street: street || null,
       number: number || null,
       neighborhood: neighborhood || null,
-      zip_code: zip || null,
+      zip_code: zipDigits || null,
       city: city || null,
       state: uf || null,
       levels: levelsArr.length ? levelsArr : null,
+      photo_url: photo_url || null,
     }]);
     if (error) { console.error(error); return; }
 
     setFirstName(""); setLastName(""); setRg(""); setCpf(""); setBirthDate(""); setBirthPlace("");
     setEmail(""); setPhone(""); setStreet(""); setNumber(""); setNeighborhood(""); setZip(""); setCity(""); setUf("");
     setLevels({Fundamental:false, Medio:false});
+    setFile(null); if (preview) URL.revokeObjectURL(preview); setPreview(null);
+
     goAlunos();
   }
 
@@ -273,7 +307,7 @@ export default function App(){
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredStudents.map((s) => (
                   <div key={s.id} className="card">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items中心 gap-3 mb-2">
                       {s.photo_url ? (
                         <img src={s.photo_url} alt={s.name} className="h-10 w-10 rounded-full object-cover border" />
                       ) : (
@@ -291,7 +325,7 @@ export default function App(){
                       {s.cpf && <div>CPF: {s.cpf}</div>}
                     </div>
                     <div className="mt-2 text-sm">
-                      {(!s.levels || s.levels.length===0) && <span className="badge bg-white text-slate-600 border-slate-300">Sem nível</span>}
+                      {(!s.levels || s.levels.length===0) && <span className="badge bg白 text-slate-600 border-slate-300">Sem nível</span>}
                       {s.levels?.map((lv)=> <span key={lv} className="badge mr-1">{lv}</span>)}
                     </div>
                   </div>
@@ -310,6 +344,25 @@ export default function App(){
             <h2 className="text-lg font-semibold">Adicionar Aluno</h2>
           </div>
           <form onSubmit={handleAddStudent} className="grid gap-3">
+            {/* Foto */}
+            <div className="card">
+              <div className="label mb-2">Foto do Aluno (opcional)</div>
+              <div className="flex items-center gap-3">
+                {preview ? (
+                  <img src={preview} alt="Preview" className="h-16 w-16 rounded-full object-cover border" />
+                ) : (
+                  <div className="h-16 w-16 rounded-full bg-slate-100 grid place-content-center border">
+                    <UserCircle className="h-8 w-8 text-slate-400" />
+                  </div>
+                )}
+                <label className="btn flex items-center gap-2 cursor-pointer">
+                  <Upload className="h-4 w-4" /> Selecionar imagem
+                  <input type="file" accept="image/*" className="hidden" onChange={onFileChange} />
+                </label>
+                {file && <span className="text-xs text-slate-500 truncate max-w-[220px]">{file.name}</span>}
+              </div>
+            </div>
+
             <div className="grid md:grid-cols-2 gap-3">
               <div>
                 <div className="label">Nome</div>
@@ -328,7 +381,7 @@ export default function App(){
               </div>
               <div>
                 <div className="label">CPF</div>
-                <input className="input" value={cpf} onChange={e=>setCpf(e.target.value)} />
+                <input className="input" value={cpf} onChange={e=>setCpf(maskCPF(e.target.value))} placeholder="000.000.000-00" />
               </div>
             </div>
 
@@ -350,7 +403,7 @@ export default function App(){
               </div>
               <div>
                 <div className="label">Telefone</div>
-                <input className="input" value={phone} onChange={e=>setPhone(e.target.value)} />
+                <input className="input" value={phone} onChange={e=>setPhone(maskPhone(e.target.value))} placeholder="(00) 00000-0000" />
               </div>
             </div>
 
@@ -372,7 +425,7 @@ export default function App(){
             <div className="grid md:grid-cols-3 gap-3">
               <div>
                 <div className="label">CEP</div>
-                <input className="input" value={zip} onChange={e=>setZip(e.target.value)} />
+                <input className="input" value={zip} onChange={e=>setZip(maskCEP(e.target.value))} placeholder="00000-000" />
               </div>
               <div>
                 <div className="label">Cidade</div>

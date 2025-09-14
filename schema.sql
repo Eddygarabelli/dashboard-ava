@@ -1,13 +1,28 @@
 -- Extensão
 create extension if not exists "pgcrypto";
 
--- Tabelas (idempotente)
+-- Tabelas base + campos extras
 create table if not exists public.students (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   email text,
   photo_url text,
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  -- extras do formulário
+  first_name text,
+  last_name  text,
+  rg         text,
+  cpf        text,
+  birth_date date,
+  birth_place text,
+  phone      text,
+  street     text,
+  number     text,
+  neighborhood text,
+  zip_code   text,
+  city       text,
+  state      text,
+  levels     text[]
 );
 create table if not exists public.courses (
   id uuid primary key default gen_random_uuid(),
@@ -24,29 +39,41 @@ create table if not exists public.enrollments (
   unique (student_id, course_id)
 );
 
--- Colunas extras do formulário
-alter table public.students
-  add column if not exists first_name text,
-  add column if not exists last_name  text,
-  add column if not exists rg         text,
-  add column if not exists cpf        text,
-  add column if not exists birth_date date,
-  add column if not exists birth_place text,
-  add column if not exists phone      text,
-  add column if not exists street     text,
-  add column if not exists number     text,
-  add column if not exists neighborhood text,
-  add column if not exists zip_code   text,
-  add column if not exists city       text,
-  add column if not exists state      text,
-  add column if not exists levels     text[];
-
--- RLS ativado (policies ficam a seu critério)
+-- RLS
 alter table public.students enable row level security;
 alter table public.courses enable row level security;
 alter table public.enrollments enable row level security;
 
--- Realtime publish
+-- Realtime
 do $$ begin alter publication supabase_realtime add table public.students;   exception when duplicate_object then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.courses;    exception when duplicate_object then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.enrollments; exception when duplicate_object then null; end $$;
+
+-- Storage: bucket e políticas
+insert into storage.buckets (id, name, public)
+values ('students','students', true)
+on conflict (id) do nothing;
+
+alter table storage.objects enable row level security;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'storage' and tablename = 'objects' and policyname = 'students_public_read'
+  ) then
+    create policy students_public_read on storage.objects
+      for select using (bucket_id = 'students');
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'storage' and tablename = 'objects' and policyname = 'students_anon_insert'
+  ) then
+    create policy students_anon_insert on storage.objects
+      for insert to anon with check (bucket_id = 'students');
+  end if;
+end $$;

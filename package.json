@@ -1,6 +1,6 @@
 {
-  "name": "dashboard-ava-supabase",
-  "version": "2.4.0",
+  "name": "ava-dashboard",
+  "version": "3.1.0",
   "private": true,
   "scripts": {
     "dev": "vite",
