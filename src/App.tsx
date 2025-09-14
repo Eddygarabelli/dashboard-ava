@@ -138,7 +138,7 @@ export default function App(){
         photo_url: s.photo_url ?? null,
         created_at: s.created_at,
         courseIds: byStudent.get(s.id) ?? [],
-      }))));
+      })) );
     };
     load();
 
