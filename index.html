@@ -175,9 +175,11 @@
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
         
-        // Credenciais do Supabase. Substitua com as suas chaves reais
-        const supabaseUrl = "https://tbkmwmnxfzlsqnjgwsuo.supabase.co";
-        const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRia213bW54Znpsc3Fuamd3c3VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3MzEzNTQsImV4cCI6MjA3MzMwNzM1NH0.Xc9AuxFfkdyELaXvhqiDku6TaM75vuY4-Ju88BneSXI";
+        // As credenciais agora são lidas das variáveis de ambiente.
+        // Se a variável não existir (em um ambiente de desenvolvimento local, por exemplo),
+        // ele usará as credenciais fixas. Em produção no Vercel, as variáveis serão usadas.
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://tbkmwmnxfzlsqnjgwsuo.supabase.co";
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRia213bW54Znpsc3Fuamd3c3VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3MzEzNTQsImV4cCI6MjA3MzMwNzM1NH0.Xc9AuxFfkdyELaXvhqiDku6TaM75vuY4-Ju88BneSXI";
         
         window.supabase = createClient(supabaseUrl, supabaseAnonKey);
         
