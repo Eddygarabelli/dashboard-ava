@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes do Aluno</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Cabeçalho -->
+    <header class="bg-white shadow-md sticky top-0 z-30">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex items-center">
+                    <img id="logo-img" src="https://i.imgur.com/b6s5rvB.png" alt="Logo Escola da Barra" class="h-14 w-14 mr-4">
+                    <span class="text-xl sm:text-2xl font-bold text-gray-800">Escola da Barra</span>
+                </div>
+                <div class="flex items-center space-x-2 sm:space-x-4">
+                    <a href="index.html" class="p-2 rounded-full text-gray-600 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <div id="app-container" class="bg-white rounded-xl shadow-lg p-6 sm:p-8 w-full">
+            <div id="student-details-page">
+                <!-- Detalhes do aluno serão renderizados aqui -->
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { supabase } from './supabaseClient.js';
+
+        async function getAluno(alunoId) {
+            let { data: aluno, error } = await supabase
+                .from('alunos')
+                .select('*')
+                .eq('id', alunoId)
+                .single();
+
+            if (error) {
+                console.error('Erro ao buscar aluno:', error);
+                return null;
+            }
+            return aluno;
+        }
+
+        async function renderStudentDetails(alunoId) {
+            const aluno = await getAluno(alunoId);
+            if (!aluno) return;
+
+            const container = document.getElementById('student-details-page');
+            container.innerHTML = `
+                <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+                    <div class="flex flex-col sm:flex-row items-center sm:items-start">
+                        <img src="https://i.pravatar.cc/150?u=${aluno.id}" alt="Foto do Aluno" class="w-32 h-32 rounded-full mb-6 sm:mb-0 sm:mr-8 border-4 border-blue-200">
+                        <div class="text-center sm:text-left flex-grow">
+                            <h1 class="text-3xl font-bold text-gray-800">${aluno.nome}</h1>
+                            <p class="text-gray-500">Matrícula: ${aluno.matricula}</p>
+                            <p class="text-gray-500">Data de Matrícula: ${new Date(aluno.dataCadastro).toLocaleDateString()}</p>
+                        </div>
+                        <div class="mt-4 sm:mt-0 flex gap-2">
+                            <button id="edit-student-btn" class="p-2 rounded-full hover:bg-gray-200" data-aluno-id="${aluno.id}">
+                                <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg>
+                            </button>
+                            <button id="remove-student-btn" class="p-2 rounded-full hover:bg-red-200" data-aluno-id="${aluno.id}">
+                                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-8 border-t pt-6 grid grid-cols-1 md:grid-cols-2 gap-6" id="student-info-container">
+                        ${renderStudentInfo(aluno)}
+                    </div>
+                    <div class="mt-8 border-t pt-6">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4">Documentos</h2>
+                        <div class="space-y-4">
+                            ${['RG', 'CPF', 'COMP. Endereço', 'Certidão de Nascimento', 'Histórico Escolar Anterior'].map(doc => `
+                                <div class="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+                                    <span class="text-gray-700">${doc}</span>
+                                    <label class="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-4 rounded-md transition-colors">
+                                        Upload
+                                        <input type="file" class="hidden" disabled>
+                                    </label>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            const editButton = document.getElementById('edit-student-btn');
+            const removeButton = document.getElementById('remove-student-btn');
+
+            editButton.addEventListener('click', () => {
+                document.getElementById('student-info-container').innerHTML = renderStudentInfo(aluno, true);
+                
+                const saveBtn = document.getElementById('save-edit-btn');
+                const cancelBtn = document.getElementById('cancel-edit-btn');
+
+                saveBtn.addEventListener('click', async () => {
+                    const updatedAluno = {
+                        nome: document.getElementById('edit-nome').value,
+                        rg: document.getElementById('edit-rg').value,
+                        cpf: document.getElementById('edit-cpf').value,
+                        email: document.getElementById('edit-email').value,
+                        telefone: document.getElementById('edit-telefone').value,
+                        dataNascimento: document.getElementById('edit-dataNascimento').value,
+                        localNascimento: document.getElementById('edit-localNascimento').value,
+                        endereco: document.getElementById('edit-endereco').value
+                    };
+
+                    const { error } = await supabase
+                        .from('alunos')
+                        .update(updatedAluno)
+                        .eq('id', alunoId);
+
+                    if (error) {
+                        alert('Erro ao salvar as alterações.');
+                        console.error('Erro ao atualizar aluno:', error);
+                    } else {
+                        alert('Dados do aluno atualizados com sucesso!');
+                        renderStudentDetails(alunoId);
+                    }
+                });
+
+                cancelBtn.addEventListener('click', () => {
+                    document.getElementById('student-info-container').innerHTML = renderStudentInfo(aluno, false);
+                });
+            });
+
+            removeButton.addEventListener('click', () => {
+                 if (confirm(`Tem certeza que deseja remover o aluno ${aluno.nome}? Esta ação é irreversível.`)) {
+                     alert('Lógica de exclusão ainda a ser implementada.');
+                }
+            });
+        }
+
+        function renderStudentInfo(aluno, isEditing = false) {
+             if (isEditing) {
+                return `
+                    <div><strong class="text-gray-600">Nome:</strong> <input type="text" id="edit-nome" value="${aluno.nome}" class="form-input"></div>
+                    <div><strong class="text-gray-600">RG:</strong> <input type="text" id="edit-rg" value="${aluno.rg || ''}" class="form-input"></div>
+                    <div><strong class="text-gray-600">CPF:</strong> <input type="text" id="edit-cpf" value="${aluno.cpf || ''}" class="form-input"></div>
+                    <div><strong class="text-gray-600">E-mail:</strong> <input type="email" id="edit-email" value="${aluno.email || ''}" class="form-input"></div>
+                    <div><strong class="text-gray-600">Telefone:</strong> <input type="tel" id="edit-telefone" value="${aluno.telefone || ''}" class="form-input"></div>
+                    <div><strong class="text-gray-600">Data de Nasc.:</strong> <input type="date" id="edit-dataNascimento" value="${aluno.dataNascimento || ''}" class="form-input"></div>
+                    <div><strong class="text-gray-600">Local de Nasc.:</strong> <input type="text" id="edit-localNascimento" value="${aluno.localNascimento || ''}" class="form-input"></div>
+                    <div class="md:col-span-2"><strong class="text-gray-600">Endereço:</strong> <input type="text" id="edit-endereco" value="${aluno.endereco || ''}" class="form-input"></div>
+                    <div class="md:col-span-2 flex justify-end gap-2 mt-4">
+                        <button id="cancel-edit-btn" class="px-4 py-2 bg-gray-300 rounded-md">Cancelar</button>
+                        <button id="save-edit-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md">Salvar</button>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div><strong class="text-gray-600">Nome:</strong> ${aluno.nome || 'Não informado'}</div>
+                    <div><strong class="text-gray-600">RG:</strong> ${aluno.rg || 'Não informado'}</div>
+                    <div><strong class="text-gray-600">CPF:</strong> ${aluno.cpf || 'Não informado'}</div>
+                    <div><strong class="text-gray-600">Data de Nasc.:</strong> ${aluno.dataNascimento || 'Não informado'}</div>
+                    <div><strong class="text-gray-600">Local de Nasc.:</strong> ${aluno.localNascimento || 'Não informado'}</div>
+                    <div><strong class="text-gray-600">E-mail:</strong> ${aluno.email || 'Não informado'}</div>
+                    <div><strong class="text-gray-600">Telefone:</strong> ${aluno.telefone || 'Não informado'}</div>
+                    <div class="md:col-span-2"><strong class="text-gray-600">Endereço:</strong> ${aluno.endereco || 'Não informado'}</div>
+                `;
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const alunoId = urlParams.get('id');
+            if (alunoId) {
+                renderStudentDetails(alunoId);
+            }
+        });
+    </script>
+</body>
+</html>
