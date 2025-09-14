@@ -1,12 +1,24 @@
-# Escola da Barra — Site estático
-Projeto pronto para GitHub + Vercel (sem build).
 
-## Como publicar
-1. Suba estes arquivos para um repositório no GitHub (branch `main`).
-2. No Vercel: **Add New → Project** e escolha este repo.
-   - Framework: **Other**
-   - Build Command: **(deixe em branco)**
-   - Output Directory: **.**
-3. Deploy. Pronto!
+# AVA Clean (Single Page)
 
-> O Tailwind é via CDN. Não há `package.json`.
+- Layout único (index.html) com abas internas e sem injeções de fallback.
+- Integração Supabase via `supabaseClient.js` com URL/key já configuradas.
+- Campos do formulário: **nome, rg, cpf, email, telefone, datanascimento, localnascimento, endereco**.
+- `matricula` é gerada automaticamente no envio.
+- Contador e lista carregam do Supabase.
+
+## Deploy Vercel
+- Framework: **Other**
+- Build Command: *(vazio)*
+- Output Directory: `.`
+
+## Banco esperado
+Tabela `public.alunos` com colunas:
+`id uuid default gen_random_uuid() primary key`,
+`matricula text not null`,
+`nome text not null`,
+`rg text`, `cpf text`, `email text`, `telefone text`,
+`datanascimento date`, `localnascimento text`, `endereco text`,
+`datacadastro timestamptz not null default now()`
+e RLS liberada para `select`/`insert`.
+
