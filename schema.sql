@@ -1,3 +1,4 @@
+
 -- Extensão
 create extension if not exists "pgcrypto";
 
@@ -24,6 +25,7 @@ create table if not exists public.students (
   state      text,
   levels     text[]
 );
+
 create table if not exists public.courses (
   id uuid primary key default gen_random_uuid(),
   title text not null,
@@ -31,6 +33,7 @@ create table if not exists public.courses (
   description text,
   created_at timestamptz default now()
 );
+
 create table if not exists public.enrollments (
   id uuid primary key default gen_random_uuid(),
   student_id uuid references public.students(id) on delete cascade,
@@ -49,31 +52,43 @@ do $$ begin alter publication supabase_realtime add table public.students;   exc
 do $$ begin alter publication supabase_realtime add table public.courses;    exception when duplicate_object then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.enrollments; exception when duplicate_object then null; end $$;
 
--- Storage: bucket e políticas
+-- ============================
+-- Storage (Bucket + Policies)
+-- ============================
+
+-- Cria bucket 'students' como público (se não existir)
 insert into storage.buckets (id, name, public)
 values ('students','students', true)
 on conflict (id) do nothing;
 
-alter table storage.objects enable row level security;
+-- NÃO alterar storage.objects aqui (evita erro de ownership)
 
+-- Permitir leitura pública de objetos do bucket 'students'
 do $$
 begin
   if not exists (
     select 1 from pg_policies
-    where schemaname = 'storage' and tablename = 'objects' and policyname = 'students_public_read'
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'students_public_read'
   ) then
     create policy students_public_read on storage.objects
-      for select using (bucket_id = 'students');
+      for select
+      using (bucket_id = 'students');
   end if;
 end $$;
 
+-- Permitir upload (INSERT) via role 'anon' somente no bucket 'students'
 do $$
 begin
   if not exists (
     select 1 from pg_policies
-    where schemaname = 'storage' and tablename = 'objects' and policyname = 'students_anon_insert'
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'students_anon_insert'
   ) then
     create policy students_anon_insert on storage.objects
-      for insert to anon with check (bucket_id = 'students');
+      for insert to anon
+      with check (bucket_id = 'students');
   end if;
 end $$;

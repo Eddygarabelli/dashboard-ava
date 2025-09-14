@@ -1,22 +1,28 @@
-# AVA — Dashboard com Supabase (Vercel Ready)
+
+# AVA — Dashboard (Vercel Ready)
 
 - Vite + React + TS + Tailwind
 - Supabase (Realtime) + Storage (upload de foto)
 - Máscaras (CPF/CEP/Telefone)
 - Roteamento por hash: `#/` (Dashboard), `#/alunos`, `#/alunos/novo`
 
-## Rodar
-1) Copie `.env.example` para `.env` e preencha:
-   - VITE_SUPABASE_URL
-   - VITE_SUPABASE_ANON_KEY
-2) `npm install`
-3) `npm run dev`
+## Como rodar
+1. Copie `.env.example` para `.env` (já está pronto aqui no zip com seus valores).
+2. `npm install`
+3. `npm run dev`
 
-## Deploy Vercel
+## Deploy no Vercel
 - Framework Preset: **Vite**
-- Build: `npm run build`
-- Output: `dist`
-- Environment Variables: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+- Build Command: `npm run build`
+- Output Directory: `dist`
+- Em **Environment Variables**, adicione:
+  - `VITE_SUPABASE_URL` = https://tbkmwmnxfzlsqnjgwsuo.supabase.co
+  - `VITE_SUPABASE_ANON_KEY` = SUA ANON KEY
+  (cole os mesmos valores do seu `.env`)
 
-## Banco/Storage
-- No Supabase → SQL Editor, rode `schema.sql` (idempotente). Cria tabelas e bucket `students` com policies.
+## Banco/Storage (Supabase)
+Abra **SQL Editor** e rode `schema.sql` (idempotente). Ele cria as tabelas, ativa Realtime e:
+- cria bucket `students` (público) se não existir
+- cria policies de leitura pública e insert por `anon`
+
+> ATENÇÃO: este `schema.sql` **não** usa `ALTER TABLE storage.objects`, evitando o erro de permissão.

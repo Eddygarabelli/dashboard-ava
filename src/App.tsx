@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState, useEffect } from "react";
 import { GraduationCap, Search, UserCircle, Home, Plus, ArrowLeft, Upload } from "lucide-react";
 import "./index.css";
@@ -45,9 +46,9 @@ function viewFromHash(): View {
   return "dashboard";
 }
 
-const digitsOnly = (s: string) => s.replace(/\D/g, "");
+const onlyDigits = (s: string) => s.replace(/\D/g, "");
 const maskCPF = (v: string) => {
-  const d = digitsOnly(v).slice(0, 11);
+  const d = onlyDigits(v).slice(0, 11);
   const p1 = d.slice(0,3), p2 = d.slice(3,6), p3 = d.slice(6,9), p4 = d.slice(9,11);
   let out = p1;
   if (p2) out += "." + p2;
@@ -56,12 +57,12 @@ const maskCPF = (v: string) => {
   return out;
 };
 const maskCEP = (v: string) => {
-  const d = digitsOnly(v).slice(0, 8);
+  const d = onlyDigits(v).slice(0, 8);
   const p1 = d.slice(0,5), p2 = d.slice(5,8);
   return p2 ? `${p1}-${p2}` : p1;
 };
 const maskPhone = (v: string) => {
-  const d = digitsOnly(v).slice(0, 11);
+  const d = onlyDigits(v).slice(0, 11);
   const dd = d.slice(0,2);
   const is11 = d.length > 10;
   const p1 = is11 ? d.slice(2,7) : d.slice(2,6);
@@ -173,7 +174,7 @@ export default function App(){
   async function uploadPhotoIfNeeded(): Promise<string | null>{
     if (!file) return null;
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-    const path = `photos/${(crypto?.randomUUID ? crypto.randomUUID() : (Math.random().toString(36).slice(2)+Date.now().toString(36)))}.${ext}`;
+    const path = `photos/${uuid()}.${ext}`;
     const { error: upErr } = await supabase.storage.from('students').upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type || undefined });
     if (upErr) { console.error('upload error', upErr); return null; }
     const { data } = supabase.storage.from('students').getPublicUrl(path);
@@ -185,10 +186,9 @@ export default function App(){
     const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
     if (!fullName) return;
 
-    const digitsOnly = (s: string) => s.replace(/\\D/g, "");
-    const cpfDigits = digitsOnly(cpf);
-    const zipDigits = digitsOnly(zip);
-    const phoneDigits = digitsOnly(phone);
+    const cpfDigits = onlyDigits(cpf);
+    const zipDigits = onlyDigits(zip);
+    const phoneDigits = onlyDigits(phone);
 
     const photo_url = await uploadPhotoIfNeeded();
     const levelsArr = [levels.Fundamental ? "Fundamental" : null, levels.Medio ? "Médio" : null].filter(Boolean) as string[];
@@ -307,7 +307,7 @@ export default function App(){
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredStudents.map((s) => (
                   <div key={s.id} className="card">
-                    <div className="flex items中心 gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-2">
                       {s.photo_url ? (
                         <img src={s.photo_url} alt={s.name} className="h-10 w-10 rounded-full object-cover border" />
                       ) : (
@@ -325,7 +325,7 @@ export default function App(){
                       {s.cpf && <div>CPF: {s.cpf}</div>}
                     </div>
                     <div className="mt-2 text-sm">
-                      {(!s.levels || s.levels.length===0) && <span className="badge bg白 text-slate-600 border-slate-300">Sem nível</span>}
+                      {(!s.levels || s.levels.length===0) && <span className="badge bg-white text-slate-600 border-slate-300">Sem nível</span>}
                       {s.levels?.map((lv)=> <span key={lv} className="badge mr-1">{lv}</span>)}
                     </div>
                   </div>
