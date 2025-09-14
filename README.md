@@ -1,19 +1,33 @@
 
-# AVA Clean V2 (Single Page)
+# AVA Clean V3 – Cursos + Matrículas (Supabase)
 
-## O que tem de novo
-1. **Edição de aluno**: clique em um aluno na lista para abrir a página de detalhes, com **Editar / Salvar / Cancelar**. Atualiza no Supabase.
-2. **Botões de navegação**: 
-   - **Home (casinha)** fixo no cabeçalho (leva para o dashboard/aba Alunos).
-   - **Voltar** em todas as páginas (retorna à anterior).
-3. **Cursos**: aba **Cursos** funcional, cards limpos com **lápis** para editar título e descrição (persistidos em `localStorage`).
+## Novidades
+- **Botão "Novo Curso"** na aba Cursos.
+- **Criação de cursos** com: *nome*, *descrição*, *label* (exibida no card), e estrutura **Ano → Componentes → Disciplinas**.
+- **Cursos salvos no Supabase** (`courses.structure` em JSONB).
+- **Página final de matrículas** por **Ano**: selecione alunos (da tabela `alunos`) e salve em `enrollments`.
+- **Cursos** agora carregam do **Supabase**; lápis para editar **nome/descrição/label** rapidamente (prompts).
 
-## Deploy no Vercel
-- Framework: **Other**
-- Build command: *(vazio)*
-- Output directory: `.`
+## Como usar
+1. Rode o `schema.sql` no Supabase (SQL Editor) **uma vez**.
+2. Publique os arquivos no GitHub/Vercel (Framework: *Other*, Build Command: vazio, Output: `.`).
+3. No site:
+   - Abra a aba **Cursos** → **Novo Curso**;
+   - Preencha **Nome/Descrição/Label**;
+   - Clique **+ Ano**, **+ Componente**, **+ Disciplina** (adicione o que precisar);
+   - **Salvar Curso** → você será levado à página de **Matrículas**;
+   - Escolha o **Ano**, filtre por nome e marque os alunos; clique **Salvar Matrículas**.
 
-## Banco esperado (tabela `public.alunos`)
-Colunas: `id uuid default gen_random_uuid() primary key`, `matricula text not null`, `nome text not null`,
-`rg text`, `cpf text`, `email text`, `telefone text`, `datanascimento date`, `localnascimento text`,
-`endereco text`, `datacadastro timestamptz not null default now()` com RLS para select/insert/update liberadas.
+## Requisitos de banco
+- Tabela `alunos` já existente (conforme sua instância).
+- Novas tabelas:
+  - `courses(id, name, label, description, structure, created_at)`
+  - `enrollments(id, course_id, aluno_id, year, subject, created_at, unique(course_id, aluno_id, year, subject))`
+- RLS habilitada com políticas de acesso liberadas (ajuste conforme segurança do seu projeto).
+
+## Env de Supabase
+As credenciais foram embutidas em `supabaseClient.js` para facilitar; você pode mover para variáveis de ambiente depois.
+
+- URL: https://tbkmwmnxfzlsqnjgwsuo.supabase.co
+- ANON KEY: eyJhbGciOiJI... (truncada)
+
