@@ -1,24 +1,19 @@
 
-# AVA Clean (Single Page)
+# AVA Clean V2 (Single Page)
 
-- Layout único (index.html) com abas internas e sem injeções de fallback.
-- Integração Supabase via `supabaseClient.js` com URL/key já configuradas.
-- Campos do formulário: **nome, rg, cpf, email, telefone, datanascimento, localnascimento, endereco**.
-- `matricula` é gerada automaticamente no envio.
-- Contador e lista carregam do Supabase.
+## O que tem de novo
+1. **Edição de aluno**: clique em um aluno na lista para abrir a página de detalhes, com **Editar / Salvar / Cancelar**. Atualiza no Supabase.
+2. **Botões de navegação**: 
+   - **Home (casinha)** fixo no cabeçalho (leva para o dashboard/aba Alunos).
+   - **Voltar** em todas as páginas (retorna à anterior).
+3. **Cursos**: aba **Cursos** funcional, cards limpos com **lápis** para editar título e descrição (persistidos em `localStorage`).
 
-## Deploy Vercel
+## Deploy no Vercel
 - Framework: **Other**
-- Build Command: *(vazio)*
-- Output Directory: `.`
+- Build command: *(vazio)*
+- Output directory: `.`
 
-## Banco esperado
-Tabela `public.alunos` com colunas:
-`id uuid default gen_random_uuid() primary key`,
-`matricula text not null`,
-`nome text not null`,
-`rg text`, `cpf text`, `email text`, `telefone text`,
-`datanascimento date`, `localnascimento text`, `endereco text`,
-`datacadastro timestamptz not null default now()`
-e RLS liberada para `select`/`insert`.
-
+## Banco esperado (tabela `public.alunos`)
+Colunas: `id uuid default gen_random_uuid() primary key`, `matricula text not null`, `nome text not null`,
+`rg text`, `cpf text`, `email text`, `telefone text`, `datanascimento date`, `localnascimento text`,
+`endereco text`, `datacadastro timestamptz not null default now()` com RLS para select/insert/update liberadas.
