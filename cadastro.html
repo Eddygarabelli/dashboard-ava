@@ -93,5 +93,45 @@
             }
         });
     </script>
+
+<script type="module">
+// __FIX_CADASTRO_SUBMIT__
+import { supabase } from './supabaseClient.js';
+
+function byId(id){ return document.getElementById(id); }
+
+document.addEventListener('DOMContentLoaded', () => {
+  const form = byId('cadastro-form');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const novoAluno = {
+      nome: byId('nome')?.value?.trim() || '',
+      rg: byId('rg')?.value?.trim() || '',
+      cpf: byId('cpf')?.value?.trim() || '',
+      email: byId('email')?.value?.trim() || '',
+      telefone: byId('telefone')?.value?.trim() || '',
+      datanascimento: byId('dataNascimento')?.value || null,
+      localnascimento: byId('localNascimento')?.value?.trim() || '',
+      endereco: byId('endereco')?.value?.trim() || '',
+      datacadastro: new Date().toISOString()
+    };
+    try {
+      const { data, error } = await supabase.from('alunos').insert([novoAluno]).select();
+      if (error) {
+        alert('Erro ao cadastrar aluno. Veja o console.');
+        console.error(error);
+        return;
+      }
+      alert('Aluno cadastrado com sucesso!');
+      window.location.href = 'index.html';
+    } catch (err) {
+      alert('Erro inesperado.');
+      console.error(err);
+    }
+  });
+});
+</script>
+
 </body>
 </html>

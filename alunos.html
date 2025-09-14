@@ -72,5 +72,38 @@
 
         document.addEventListener('DOMContentLoaded', renderAlunosList);
     </script>
+
+<script type="module">
+// __FIX_ALUNOS_LIST__
+import { supabase } from './supabaseClient.js';
+document.addEventListener('DOMContentLoaded', async () => {
+  const listEl = document.getElementById('alunos-list');
+  const goCadastro = document.getElementById('go-cadastro');
+  if (goCadastro) goCadastro.onclick = () => { window.location.href = 'cadastro.html'; };
+
+  try {
+    const { data, error } = await supabase.from('alunos').select('*').order('datacadastro', { ascending: false });
+    if (error) throw error;
+    if (!listEl) return;
+    if (!data || !data.length) {
+      listEl.innerHTML = '<p class="text-gray-500">Nenhum aluno cadastrado.</p>';
+      return;
+    }
+    listEl.innerHTML = data.map(a => `
+      <div class="p-4 bg-white rounded shadow flex items-center justify-between">
+        <div>
+          <div class="font-semibold">${a.nome || ''}</div>
+          <div class="text-sm text-gray-500">Matrícula: ${a.matricula || '-'}</div>
+        </div>
+        <a class="text-blue-600 underline" href="aluno_detalhes.html?id=${a.id}">Detalhes</a>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Erro listando alunos:', err);
+    if (listEl) listEl.innerHTML = '<p class="text-red-600">Erro ao carregar alunos.</p>';
+  }
+});
+</script>
+
 </body>
 </html>

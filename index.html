@@ -177,5 +177,50 @@
             });
         });
     </script>
+
+<script>
+// __FIX_NAV_AND_CARDS__
+document.addEventListener('DOMContentLoaded', function(){
+  try {
+    var novo = document.getElementById('card-novo-aluno');
+    if (novo) {
+      novo.style.cursor = 'pointer';
+      novo.setAttribute('role','link');
+      novo.tabIndex = 0;
+      var goCad = function(){ window.location.href = 'cadastro.html'; };
+      novo.onclick = goCad;
+      novo.onkeypress = function(e){ if(e.key==='Enter' || e.key===' ') goCad(); };
+    }
+    var lista = document.getElementById('card-alunos-matriculados');
+    if (lista) {
+      lista.style.cursor = 'pointer';
+      lista.setAttribute('role','link');
+      lista.tabIndex = 0;
+      var goList = function(){ window.location.href = 'alunos.html'; };
+      lista.onclick = goList;
+      lista.onkeypress = function(e){ if(e.key==='Enter' || e.key===' ') goList(); };
+    }
+    var buttons = document.querySelectorAll('.nav-button');
+    if (buttons && buttons.length){
+      buttons.forEach(function(btn){
+        btn.addEventListener('click', function(e){
+          e.preventDefault();
+          document.querySelectorAll('.nav-button').forEach(function(b){ b.classList.remove('active'); });
+          btn.classList.add('active');
+          var target = btn.dataset.target;
+          document.querySelectorAll('.dashboard-content').forEach(function(c){ c.classList.add('hidden'); });
+          if (target) {
+            var el = document.getElementById(target);
+            if (el) el.classList.remove('hidden');
+          }
+        });
+      });
+    }
+  } catch (err) {
+    console.error('Erro nav/cards:', err);
+  }
+});
+</script>
+
 </body>
 </html>
