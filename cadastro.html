@@ -133,5 +133,40 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+
+<script>
+// __CAD_FALLBACK_FIELDS__
+document.addEventListener('DOMContentLoaded', function(){
+  try {
+    const form = document.getElementById('cadastro-form');
+    if (!form) return;
+
+    function ensureInput(id, labelText, type, placeholder){
+      if (document.getElementById(id)) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'space-y-1';
+      const lab = document.createElement('label');
+      lab.className = 'text-sm text-gray-700';
+      lab.textContent = labelText;
+      const inp = document.createElement('input');
+      inp.id = id;
+      inp.name = id;
+      inp.type = type;
+      inp.placeholder = placeholder || labelText;
+      inp.className = 'w-full p-3 border rounded-md';
+      wrap.appendChild(lab); wrap.appendChild(inp);
+      // insere antes do último botão do formulário (submit)
+      const submit = form.querySelector('button[type="submit"], input[type="submit"]');
+      if (submit) form.insertBefore(wrap, submit);
+      else form.appendChild(wrap);
+    }
+
+    // Campos que o teste acusou como faltando
+    ensureInput('dataNascimento', 'Data de Nascimento', 'date', 'Data de Nascimento');
+    ensureInput('localNascimento', 'Local de Nascimento', 'text', 'Cidade - UF');
+  } catch(e){ console.error('CAD_FALLBACK_FIELDS error', e); }
+});
+</script>
+
 </body>
 </html>

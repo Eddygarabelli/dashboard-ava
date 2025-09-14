@@ -105,5 +105,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 </script>
 
+
+<script>
+// __ALUNOS_FALLBACK_BTN__
+document.addEventListener('DOMContentLoaded', function(){
+  try {
+    let btn = document.getElementById('go-cadastro');
+    if (!btn) {
+      const bar = document.createElement('div');
+      bar.className = 'flex justify-end max-w-4xl mx-auto p-3';
+      bar.innerHTML = '<a id="go-cadastro" href="cadastro.html" class="px-4 py-2 bg-blue-600 text-white rounded shadow">Novo Aluno</a>';
+      document.body.prepend(bar);
+      btn = bar.querySelector('#go-cadastro');
+    }
+    if (btn) btn.onclick = () => { location.href = 'cadastro.html'; };
+
+    // barra fixa como extra segurança
+    if (!document.getElementById('__fixedNavAlunos')) {
+      const fixed = document.createElement('div');
+      fixed.id='__fixedNavAlunos';
+      fixed.className='fixed bottom-4 right-4 z-50';
+      fixed.innerHTML = '<a href="cadastro.html" class="px-4 py-2 rounded bg-blue-600 text-white shadow">Novo Aluno</a>';
+      document.body.appendChild(fixed);
+    }
+  } catch(e){ console.error('ALUNOS_FALLBACK_BTN error', e); }
+});
+</script>
+
 </body>
 </html>

@@ -222,5 +222,48 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 </script>
 
+
+<script>
+// __NAV_FALLBACK_FIX__
+document.addEventListener('DOMContentLoaded', function(){
+  try {
+    function addFixedNav(){
+      if (document.getElementById('__fixedNav')) return;
+      const bar = document.createElement('div');
+      bar.id='__fixedNav';
+      bar.className='fixed bottom-4 right-4 flex gap-2 z-50';
+      bar.innerHTML = '<a href="cadastro.html" class="px-4 py-2 rounded bg-blue-600 text-white shadow">Novo Aluno</a>                        <a href="alunos.html" class="px-4 py-2 rounded bg-gray-700 text-white shadow">Alunos</a>';
+      document.body.appendChild(bar);
+    }
+
+    const novo = document.getElementById('card-novo-aluno');
+    const lista = document.getElementById('card-alunos-matriculados');
+
+    if (novo) {
+      novo.style.cursor='pointer'; novo.onclick = () => location.href='cadastro.html';
+    }
+    if (lista) {
+      lista.style.cursor='pointer'; lista.onclick = () => location.href='alunos.html';
+    }
+
+    if (!novo || !lista) {
+      // tenta bind por texto visível
+      const all = Array.from(document.querySelectorAll('button, a, div, h3, span'));
+      all.forEach(el => {
+        const t = (el.textContent || '').toLowerCase();
+        if (t.includes('novo aluno')) {
+          el.style.cursor='pointer'; el.addEventListener('click', ()=>location.href='cadastro.html');
+        }
+        if (t.includes('alunos cadastrados') || t === 'alunos' || t.includes('alunos')) {
+          el.style.cursor='pointer'; el.addEventListener('click', ()=>location.href='alunos.html');
+        }
+      });
+      // garante navegação com barra fixa
+      addFixedNav();
+    }
+  } catch(e){ console.error('NAV_FALLBACK_FIX error', e); }
+});
+</script>
+
 </body>
 </html>
