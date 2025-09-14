@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Events Probe</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    iframe{ width:100%; height:60vh; border:1px solid #e5e7eb; border-radius:0.5rem; }
+    .ok{ color:#065f46 } .bad{ color:#991b1b }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <div class="max-w-5xl mx-auto p-6 space-y-6">
+    <h1 class="text-2xl font-bold">Verificador de Páginas & Eventos</h1>
+    <p class="text-sm text-slate-600">Use para checar se cada página contém os elementos necessários e se os cliques principais funcionam.</p>
+
+    <div class="space-y-4">
+      <div class="p-4 bg-white rounded shadow">
+        <div class="flex items-center justify-between"><h2 class="font-semibold">Index</h2><button id="test-index" class="px-3 py-1 rounded bg-blue-600 text-white text-sm">Testar</button></div>
+        <iframe id="frame-index" src="index.html"></iframe>
+        <pre id="log-index" class="text-xs bg-slate-100 p-2 rounded mt-2 h-32 overflow-auto"></pre>
+      </div>
+
+      <div class="p-4 bg-white rounded shadow">
+        <div class="flex items-center justify-between"><h2 class="font-semibold">Cadastro</h2><button id="test-cadastro" class="px-3 py-1 rounded bg-blue-600 text-white text-sm">Testar</button></div>
+        <iframe id="frame-cadastro" src="cadastro.html"></iframe>
+        <pre id="log-cadastro" class="text-xs bg-slate-100 p-2 rounded mt-2 h-32 overflow-auto"></pre>
+      </div>
+
+      <div class="p-4 bg-white rounded shadow">
+        <div class="flex items-center justify-between"><h2 class="font-semibold">Alunos</h2><button id="test-alunos" class="px-3 py-1 rounded bg-blue-600 text-white text-sm">Testar</button></div>
+        <iframe id="frame-alunos" src="alunos.html"></iframe>
+        <pre id="log-alunos" class="text-xs bg-slate-100 p-2 rounded mt-2 h-32 overflow-auto"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function log(el, msg){ el.textContent += msg + "\n"; }
+    function ok(b){ return b ? "✅ OK" : "❌ FALTOU"; }
+
+    document.getElementById('test-index').onclick = () => {
+      const f = document.getElementById('frame-index');
+      const L = document.getElementById('log-index'); L.textContent = "";
+      const w = f.contentWindow, d = w.document;
+      const novo = d.getElementById('card-novo-aluno');
+      const lista = d.getElementById('card-alunos-matriculados');
+      log(L, "card-novo-aluno: " + ok(!!novo));
+      log(L, "card-alunos-matriculados: " + ok(!!lista));
+      if(novo){
+        const before = f.contentWindow.location.href;
+        novo.click();
+        setTimeout(() => {
+          const after = f.contentWindow.location.href;
+          log(L, "Clique em NOVO deveria ir para cadastro.html → " + (after.endsWith('cadastro.html') ? "✅" : "❌ atual: "+after));
+          // volta o iframe
+          f.src = "index.html";
+        }, 600);
+      }
+      if(lista){
+        setTimeout(() => {
+          const before = f.contentWindow.location.href;
+          lista.click();
+          setTimeout(() => {
+            const after = f.contentWindow.location.href;
+            log(L, "Clique em ALUNOS deveria ir para alunos.html → " + (after.endsWith('alunos.html') ? "✅" : "❌ atual: "+after));
+            f.src = "index.html";
+          }, 600);
+        }, 900);
+      }
+    };
+
+    document.getElementById('test-cadastro').onclick = () => {
+      const f = document.getElementById('frame-cadastro');
+      const L = document.getElementById('log-cadastro'); L.textContent = "";
+      const d = f.contentWindow.document;
+      const form = d.getElementById('cadastro-form');
+      log(L, "cadastro-form: " + ok(!!form));
+      ['nome','rg','cpf','email','telefone','dataNascimento','localNascimento','endereco'].forEach(id => {
+        log(L, id + ": " + ok(!!d.getElementById(id)));
+      });
+      const btn = d.querySelector('button[type="submit"],input[type="submit"]');
+      log(L, "botão submit: " + ok(!!btn));
+    };
+
+    document.getElementById('test-alunos').onclick = () => {
+      const f = document.getElementById('frame-alunos');
+      const L = document.getElementById('log-alunos'); L.textContent = "";
+      const d = f.contentWindow.document;
+      const list = d.getElementById('alunos-list');
+      const goCad = d.getElementById('go-cadastro');
+      log(L, "alunos-list: " + ok(!!list));
+      log(L, "botão go-cadastro: " + ok(!!goCad));
+      if(goCad){
+        goCad.click();
+        setTimeout(() => {
+          const after = f.contentWindow.location.href;
+          log(L, "Clique em NOVO ALUNO deveria ir para cadastro.html → " + (after.endsWith('cadastro.html') ? "✅" : "❌ atual: "+after));
+          f.src = "alunos.html";
+        }, 600);
+      }
+    };
+  </script>
+</body>
+</html>
