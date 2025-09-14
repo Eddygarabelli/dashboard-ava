@@ -23,6 +23,9 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 10px rgba(0,0,0,0.1);
         }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -36,7 +39,7 @@
                     <span class="text-xl sm:text-2xl font-bold text-gray-800">Escola da Barra</span>
                 </div>
                 <div class="flex items-center space-x-2 sm:space-x-4">
-                    <a href="index.html" class="p-2 rounded-full text-gray-600 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <a href="#" class="p-2 rounded-full text-gray-600 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                     </a>
                 </div>
@@ -51,18 +54,18 @@
             <!-- Página: Dashboard -->
             <div id="dashboard-page" class="page active">
                 <div class="flex justify-center flex-wrap gap-4 mb-8">
-                    <a href="alunos.html" class="nav-button active px-6 py-2 rounded-full font-semibold text-gray-700 bg-gray-100">Alunos</a>
-                    <a href="cursos.html" class="nav-button px-6 py-2 rounded-full font-semibold text-gray-700 bg-gray-100">Cursos</a>
+                    <button data-target="alunos-dashboard" class="nav-button active px-6 py-2 rounded-full font-semibold text-gray-700 bg-gray-100">Alunos</button>
+                    <button data-target="cursos-dashboard" class="nav-button px-6 py-2 rounded-full font-semibold text-gray-700 bg-gray-100">Cursos</button>
                     <button data-target="pedagogico-dashboard" class="nav-button px-6 py-2 rounded-full font-semibold text-gray-700 bg-gray-100">Pedagógico</button>
                 </div>
                 
                 <div id="alunos-dashboard" class="dashboard-content active">
                     <div class="grid md:grid-cols-2 gap-6">
-                        <a href="alunos.html" class="bg-blue-500 text-white rounded-xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer">
+                        <a href="#" class="bg-blue-500 text-white rounded-xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer">
                             <h3 class="text-lg">Alunos Cadastrados</h3>
                             <p id="alunos-count" class="text-5xl font-extrabold mt-2">0</p>
                         </a>
-                        <a href="cadastro.html" class="bg-green-500 text-white rounded-xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer flex flex-col justify-center items-center">
+                        <a href="#" class="bg-green-500 text-white rounded-xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer flex flex-col justify-center items-center">
                             <h3 class="text-lg">Novo Aluno</h3>
                             <p class="text-5xl font-extrabold mt-2">+</p>
                         </a>
@@ -71,11 +74,11 @@
 
                 <div id="cursos-dashboard" class="dashboard-content hidden">
                     <div class="grid md:grid-cols-2 gap-6">
-                        <a href="cursos.html?course=Fundamental" class="bg-indigo-500 text-white rounded-xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer" data-course-name="Fundamental">
+                        <a href="#" class="bg-indigo-500 text-white rounded-xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer" data-course-name="Fundamental">
                             <h3 class="text-lg">Ensino Fundamental</h3>
                             <p class="text-2xl font-bold mt-2">6º ao 9º ano</p>
                         </a>
-                        <a href="cursos.html?course=Médio" class="bg-purple-500 text-white rounded-xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer" data-course-name="Médio">
+                        <a href="#" class="bg-purple-500 text-white rounded-xl p-6 shadow-md transform hover:scale-105 transition-transform cursor-pointer" data-course-name="Médio">
                             <h3 class="text-lg">Ensino Médio</h3>
                             <p class="text-2xl font-bold mt-2">1º ao 3º ano</p>
                         </a>
@@ -96,15 +99,13 @@
                 </div>
             </div>
 
-            <div id="alunos-list-page" class="page"></div>
-            <div id="student-details-page" class="page"></div>
-            <div id="boletim-geral-page" class="page"></div>
+            <div id="alunos-list-page" class="page hidden"></div>
+            <div id="student-details-page" class="page hidden"></div>
+            <div id="boletim-geral-page" class="page hidden"></div>
+            <div id="cadastro-page" class="page hidden"></div>
 
         </div>
     </main>
-    
-    <div id="download-selection-modal" class="modal fixed inset-0 items-center justify-center z-50"></div>
-    <div id="download-selection-backdrop" class="modal-backdrop"></div>
     
     <style>
         .form-input {
@@ -123,45 +124,57 @@
     </style>
 
     <script type="module">
-        import { supabase } from './supabaseClient.js';
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-        async function getAlunosCount() {
+        // Variáveis de ambiente
+        const SUPABASE_URL = 'https://your-supabase-url.supabase.co'; // Substitua pelo seu URL do Supabase
+        const SUPABASE_ANON_KEY = 'your-anon-key'; // Substitua pela sua chave anônima
+        
+        // Inicializa o cliente Supabase
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Função para atualizar a contagem de alunos
+        async function updateAlunosCount() {
+            console.log('Buscando contagem de alunos...');
             const { count, error } = await supabase
                 .from('alunos')
                 .select('*', { count: 'exact', head: true });
 
             if (error) {
                 console.error('Erro ao buscar a contagem de alunos:', error);
-                return 0;
+                document.getElementById('alunos-count').textContent = 'Erro';
+                return;
             }
-            return count;
-        }
-        
-        async function updateDashboard() {
-            const count = await getAlunosCount();
+            
             document.getElementById('alunos-count').textContent = count;
+            console.log(`Contagem de alunos atualizada: ${count}`);
         }
         
         document.addEventListener('DOMContentLoaded', () => {
-            updateDashboard();
-        });
+            updateAlunosCount();
 
-        document.querySelectorAll('.nav-button').forEach(button => {
-            button.addEventListener('click', () => {
-                document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                
-                document.querySelectorAll('.dashboard-content').forEach(content => content.classList.add('hidden'));
-                document.getElementById(button.dataset.target).classList.remove('hidden');
+            // Lógica para navegação entre os dashboards
+            document.querySelectorAll('.nav-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    // Previne a navegação para um novo arquivo
+                    e.preventDefault(); 
+                    document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    
+                    document.querySelectorAll('.dashboard-content').forEach(content => content.classList.add('hidden'));
+                    const targetId = button.dataset.target;
+                    document.getElementById(targetId).classList.remove('hidden');
+                });
             });
-        });
 
-        document.getElementById('card-boletim').addEventListener('click', () => {
-            alert('Funcionalidade ainda não implementada.');
-        });
+            // Mensagens de funcionalidade não implementada
+            document.getElementById('card-boletim').addEventListener('click', () => {
+                console.log('Boletim: Funcionalidade ainda não implementada.');
+            });
 
-        document.getElementById('card-download-boletim').addEventListener('click', () => {
-            alert('Funcionalidade ainda não implementada.');
+            document.getElementById('card-download-boletim').addEventListener('click', () => {
+                console.log('Download: Funcionalidade ainda não implementada.');
+            });
         });
     </script>
 </body>
