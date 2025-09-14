@@ -8,18 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter para uma tipografia moderna -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Supabase Client para conexão com o banco de dados -->
-    <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-        
-        // As credenciais do Supabase serão injetadas aqui.
-        // As variáveis __supabase_url e __supabase_anon_key serão populadas em tempo de execução.
-        const supabaseUrl = typeof __supabase_url !== 'undefined' ? __supabase_url : 'https://your-supabase-url.supabase.co';
-        const supabaseAnonKey = typeof __supabase_anon_key !== 'undefined' ? __supabase_anon_key : 'your-supabase-anon-key';
-        
-        // Expor o cliente Supabase para o escopo global do script
-        window.supabase = createClient(supabaseUrl, supabaseAnonKey);
-    </script>
     <!-- jsPDF e Autotable para geração de PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
@@ -185,8 +173,13 @@
     <div id="loading-modal-backdrop" class="modal-backdrop"></div>
 
     <script type="module">
-        // Injeção de dependências do Supabase
-        const supabase = window.supabase;
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        
+        // Credenciais do Supabase. Substitua com as suas chaves reais
+        const supabaseUrl = "https://tbkmwmnxfzlsqnjgwsuo.supabase.co";
+        const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRia213bW54Znpsc3Fuamd3c3VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3MzEzNTQsImV4cCI6MjA3MzMwNzM1NH0.Xc9AuxFfkdyELaXvhqiDku6TaM75vuY4-Ju88BneSXI";
+        
+        window.supabase = createClient(supabaseUrl, supabaseAnonKey);
         
         let historyStack = ['dashboard-page'];
         let isLoading = false;
@@ -989,13 +982,9 @@
             };
 
             document.getElementById('download-all-students-btn').onclick = async () => {
-                const { data: notasData, error: notasError } = await supabase.from('notas').select('*');
-                if (notasError) {
-                    showMessageModal('Erro', 'Não foi possível carregar as notas para gerar o relatório.');
-                    return;
-                }
+                const { data: notasData } = await supabase.from('notas').select('*');
                 const notasMap = notasData.reduce((acc, nota) => {
-                    if (!acc[nota.aluno_id]) acc[nota.aluno_id] = { notas: {}, media_final: 0 };
+                    if (!acc[nota.aluno_id]) acc[nota.aluno_id] = {};
                     acc[nota.aluno_id] = nota;
                     return acc;
                 }, {});
@@ -1245,7 +1234,7 @@
                             notas: { atv1: 0, rec1: 0, atv2: 0, rec2: 0, final: 0, recFinal: 0 },
                             media_final: 0
                         });
-                    } else if (!cb.checked && matriculadosIds.has(cb.dataset.aluno_id)) {
+                    } else if (!cb.checked && matriculadosIds.has(cb.dataset.alunoId)) {
                         deletions.push(cb.dataset.aluno_id);
                     }
                 });
