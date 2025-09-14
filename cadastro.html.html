@@ -63,20 +63,13 @@
         </div>
     </main>
 
-    <script>
-        let alunos = JSON.parse(localStorage.getItem('alunos')) || [];
-        let matriculaCounter = parseInt(localStorage.getItem('matriculaCounter')) || 1000;
+    <script type="module">
+        import { supabase } from './supabaseClient.js';
 
-        function saveData() {
-            localStorage.setItem('alunos', JSON.stringify(alunos));
-            localStorage.setItem('matriculaCounter', matriculaCounter.toString());
-        }
-
-        document.getElementById('cadastro-form').addEventListener('submit', (e) => {
+        document.getElementById('cadastro-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            
             const novoAluno = {
-                id: crypto.randomUUID(),
-                matricula: `MAT-${++matriculaCounter}`,
                 nome: document.getElementById('nome').value,
                 rg: document.getElementById('rg').value,
                 cpf: document.getElementById('cpf').value,
@@ -85,13 +78,19 @@
                 dataNascimento: document.getElementById('dataNascimento').value,
                 localNascimento: document.getElementById('localNascimento').value,
                 endereco: document.getElementById('endereco').value,
-                dataCadastro: new Date().toISOString(),
-                matriculas: {},
             };
-            alunos.push(novoAluno);
-            saveData();
-            alert('Aluno cadastrado com sucesso!');
-            window.location.href = 'index.html';
+
+            const { data, error } = await supabase
+                .from('alunos')
+                .insert([novoAluno]);
+            
+            if (error) {
+                console.error('Erro ao cadastrar aluno:', error);
+                alert('Ocorreu um erro ao cadastrar o aluno.');
+            } else {
+                alert('Aluno cadastrado com sucesso!');
+                window.location.href = 'index.html';
+            }
         });
     </script>
 </body>
