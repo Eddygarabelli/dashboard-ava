@@ -262,6 +262,24 @@ export default function App(){
           </div>
         </div>
       </header>
+      {/* Side Nav (desktop) */}
+      <aside className="hidden md:flex fixed left-0 top-[72px] bottom-0 w-56 border-r bg-white/90 backdrop-blur p-4 z-20 flex-col gap-2">
+        <button onClick={goDashboard} className="btn w-full flex items-center gap-2"><Home className="h-4 w-4"/> Dashboard</button>
+        <button onClick={goAlunos} className="btn w-full flex items-center gap-2"><UserCircle className="h-4 w-4" /> Alunos</button>
+        <button onClick={goAddAluno} className="btn btn-primary w-full flex items-center gap-2"><Plus className="h-4 w-4"/> Adicionar Aluno</button>
+      </aside>
+
+      {/* Bottom Nav (mobile) */}
+      <nav className="fixed bottom-3 inset-x-0 px-4 md:hidden z-20">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-md p-2 flex justify-around gap-2">
+          <button onClick={goAlunos} className="btn flex-1">Alunos</button>
+          <button onClick={goAddAluno} className="btn btn-primary flex-1">Adicionar Aluno</button>
+        </div>
+      </nav>
+
+      {/* Content Wrapper for sidebar spacing */}
+      <div className="md:pl-60">
+
 
       {/* Indicadores */}
       <section className="max-w-6xl mx-auto px-4 mt-4 grid gap-4 md:grid-cols-3">
@@ -467,6 +485,8 @@ export default function App(){
           </form>
         </main>
       )}
+
+      </div>
 
       <footer className="mt-10 border-t">
         <div className="max-w-6xl mx-auto px-4 py-6 text-xs text-slate-500">
