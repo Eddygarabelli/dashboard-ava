@@ -175,9 +175,8 @@
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
         
-        // As credenciais agora são lidas das variáveis de ambiente.
-        // Se a variável não existir (em um ambiente de desenvolvimento local, por exemplo),
-        // ele usará as credenciais fixas. Em produção no Vercel, as variáveis serão usadas.
+        // As credenciais do Supabase são fixas, pois o arquivo é executado diretamente no navegador.
+        // Isso garante que a conexão funcione em todos os ambientes.
         const supabaseUrl = "https://tbkmwmnxfzlsqnjgwsuo.supabase.co";
         const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRia213bW54Znpsc3Fuamd3c3VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3MzEzNTQsImV4cCI6MjA3MzMwNzM1NH0.Xc9AuxFfkdyELaXvhqiDku6TaM75vuY4-Ju88BneSXI";
         
@@ -186,6 +185,12 @@
         let historyStack = ['dashboard-page'];
         let isLoading = false;
         
+        // Variáveis globais para armazenar os dados carregados do Supabase
+        window.alunos = [];
+        window.cursosDisponiveis = {};
+        window.matriculaCounter = 0;
+        window.notas = [];
+
         // Funções para gerenciar o estado de carregamento
         const showLoading = (text = 'Carregando...') => {
             isLoading = true;
@@ -304,6 +309,13 @@
                     .eq('id', 1)
                     .single();
                 window.matriculaCounter = counterData ? counterData.count : 0;
+
+                // Carregar notas
+                const { data: notasData, error: notasError } = await supabase
+                    .from('notas')
+                    .select('*');
+                if (notasError) throw notasError;
+                window.notas = notasData;
                 
                 renderCursosDashboard();
             } catch (error) {
@@ -685,7 +697,7 @@
             backdrop.classList.add('active');
             
             const hasAssociatedNotes = window.alunos.some(aluno =>
-                Object.keys(aluno.matriculas || {}).some(key => key.startsWith(courseName))
+                window.notas.some(nota => nota.aluno_id === aluno.id && nota.subject_key.startsWith(courseName))
             );
             document.getElementById('delete-course-btn').disabled = hasAssociatedNotes;
 
@@ -701,7 +713,7 @@
                     async () => {
                         const { data: { data: currentData } } = await supabase.from('cursos').select('data').eq('id', 'cursos_id').single();
                         delete currentData[courseName];
-                        await supabase.from('cursos').update({ data: currentData }).eq('id', 'cursos_id');
+                        await supabase.from('cursos').upsert({ id: 'cursos_id', data: currentData });
                         window.cursosDisponiveis = currentData;
                         renderCursosDashboard();
                         modal.classList.remove('active');
@@ -712,6 +724,7 @@
             };
 
             document.getElementById('save-edit-course').onclick = async () => {
+                const oldCourseName = courseName;
                 const newCourseName = document.getElementById('edit-course-name-input').value.trim();
                 if (!newCourseName) { showMessageModal('Erro', 'O nome do curso não pode ser vazio.'); return; }
                 
@@ -736,8 +749,8 @@
                     anos[yearName] = { disciplinas: disciplines };
                 });
 
-                if (courseName !== newCourseName) {
-                    delete window.cursosDisponiveis[courseName];
+                if (oldCourseName !== newCourseName) {
+                    delete window.cursosDisponiveis[oldCourseName];
                 }
                 window.cursosDisponiveis[newCourseName] = {
                     description: document.getElementById('edit-course-description-input').value.trim(),
@@ -747,75 +760,8 @@
                 await saveCoursesData();
                 modal.classList.remove('active');
                 backdrop.classList.remove('active');
-                renderCourseYears(newCourseName);
+                renderCursosDashboard();
                 showMessageModal('Sucesso', 'Curso atualizado com sucesso!');
-            };
-
-            modal.addEventListener('click', (e) => {
-                const addDisciplineBtn = e.target.closest('.add-discipline-btn');
-                if (addDisciplineBtn) {
-                    const disciplineInputsContainer = addDisciplineBtn.closest('.discipline-area-editor').querySelector('.discipline-inputs');
-                    disciplineInputsContainer.insertAdjacentHTML('beforeend', `
-                        <div class="flex gap-2 items-center">
-                            <input type="text" class="discipline-name-input form-input" placeholder="Nome da Disciplina">
-                            <input type="number" class="discipline-hours-input form-input w-20" placeholder="CH">
-                            <button type="button" class="remove-discipline-btn p-1 text-red-500 hover:text-red-700">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                        </div>
-                    `);
-                    return;
-                }
-                const removeDisciplineBtn = e.target.closest('.remove-discipline-btn');
-                if (removeDisciplineBtn) {
-                    removeDisciplineBtn.closest('.flex.gap-2.items-center').remove();
-                    return;
-                }
-                const addAreaBtn = e.target.closest('.add-area-btn');
-                if (addAreaBtn) {
-                    const disciplinesContainer = addAreaBtn.closest('.disciplines-container');
-                    disciplinesContainer.insertAdjacentHTML('afterbegin', `
-                        <div class="discipline-area-editor p-2 rounded-md bg-white">
-                            <div class="flex items-center gap-2 mb-2">
-                                <input type="text" class="discipline-area-name form-input font-bold" placeholder="Área (ex: Linguagens)">
-                                <button type="button" class="remove-area-btn text-red-500 hover:text-red-700 p-2">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                </button>
-                            </div>
-                            <div class="discipline-inputs space-y-1 ml-4">
-                                <button type="button" class="add-discipline-btn mt-2 w-full bg-gray-200 hover:bg-gray-300 rounded-md py-1 text-sm flex items-center justify-center gap-1">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                    Adicionar Disciplina
-                                </button>
-                            </div>
-                        </div>`);
-                    return;
-                }
-                const removeAreaBtn = e.target.closest('.remove-area-btn');
-                if (removeAreaBtn) {
-                    removeAreaBtn.closest('.discipline-area-editor').remove();
-                    return;
-                }
-                const removeYearBtn = e.target.closest('.remove-year-btn');
-                if (removeYearBtn) {
-                    removeYearBtn.closest('.year-editor').remove();
-                    return;
-                }
-            });
-
-            document.getElementById('add-new-year-btn').onclick = () => {
-                document.getElementById('years-editor-container').insertAdjacentHTML('beforeend', `
-                    <div class="year-editor border p-4 rounded-md bg-gray-100 mb-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <input type="text" class="year-name-input form-input font-semibold text-lg" placeholder="Ex: 1º Ano">
-                            <button type="button" class="remove-year-btn text-red-500 hover:text-red-700 p-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-1 12H5L4 7m5 0V4a1 1 0 011-1h4a1 1 0 011 1v3M9 7h6"></path></svg>
-                            </button>
-                        </div>
-                        <div class="disciplines-container space-y-2">
-                            <button type="button" class="add-area-btn mt-4 w-full bg-gray-300 hover:bg-gray-400 rounded-md py-2 text-sm">Adicionar Área</button>
-                        </div>
-                    </div>`);
             };
         }
 
@@ -1019,7 +965,7 @@
         });
 
         // Ouve cliques em todo o corpo do documento
-        document.body.addEventListener('click', (e) => {
+        document.body.addEventListener('click', async (e) => {
             // Navegação e Dashboard
             if (e.target.closest('#home-button')) {
                 historyStack = ['dashboard-page'];
@@ -1048,13 +994,13 @@
             }
 
             // Ações de Cursos e Disciplinas
-            const courseCard = e.target.closest('[data-course-name]');
-            if (e.target.closest('#cursos-list-container') && courseCard) {
+            const courseCard = e.target.closest('#cursos-list-container [data-course-name]');
+            if (courseCard) {
                 renderCourseYears(courseCard.dataset.courseName);
             }
 
-            const courseYearCard = e.target.closest('[data-course][data-year]');
-            if (e.target.closest('#course-years-page') && courseYearCard) {
+            const courseYearCard = e.target.closest('#course-years-page [data-course][data-year]');
+            if (courseYearCard) {
                 renderYearSubjects(courseYearCard.dataset.course, courseYearCard.dataset.year);
             }
             const editCourseBtn = e.target.closest('.edit-course-btn');
@@ -1062,20 +1008,20 @@
                 openEditCourseModal(editCourseBtn.dataset.courseName);
             }
 
-            const yearSubjectCard = e.target.closest('[data-course][data-year][data-subject]');
-            if (e.target.closest('#year-subjects-page') && yearSubjectCard) {
-                renderSubjectStudents(yearSubjectCard.dataset.course, yearSubjectCard.dataset.year, yearSubjectCard.dataset.subject);
+            const yearSubjectCard = e.target.closest('#year-subjects-page [data-course][data-year][data-subject]');
+            if (yearSubjectCard) {
+                await renderSubjectStudents(yearSubjectCard.dataset.course, yearSubjectCard.dataset.year, yearSubjectCard.dataset.subject);
             }
 
             // Ações de Alunos
-            const studentCard = e.target.closest('[data-aluno-id]');
-            if(e.target.closest('#alunos-list-page') && studentCard) {
+            const studentCard = e.target.closest('#alunos-list-page [data-aluno-id]');
+            if(studentCard) {
                 renderStudentDetails(studentCard.dataset.alunoId);
             }
 
             // Ações na página de detalhes do aluno
-            const editBtn = e.target.closest('#edit-student-btn');
-            if (e.target.closest('#student-details-page') && editBtn) {
+            const editBtn = e.target.closest('#student-details-page #edit-student-btn');
+            if (editBtn) {
                 const aluno = window.alunos.find(a => a.id === editBtn.dataset.alunoId);
                 const container = document.getElementById('student-info-container');
                 container.innerHTML = renderStudentInfo(aluno, true);
@@ -1107,8 +1053,8 @@
                 };
             }
 
-            const removeBtn = e.target.closest('#remove-student-btn');
-            if (e.target.closest('#student-details-page') && removeBtn) {
+            const removeBtn = e.target.closest('#student-details-page #remove-student-btn');
+            if (removeBtn) {
                 showConfirmationModal('Confirmar Exclusão', 'Tem certeza que deseja remover este aluno? Esta ação é irreversível e removerá todas as notas associadas.', async () => {
                     const { error } = await supabase.from('alunos').delete().eq('id', removeBtn.dataset.alunoId);
                     if (error) {
@@ -1122,23 +1068,23 @@
                 });
             }
 
-            const downloadBtn = e.target.closest('#download-student-btn');
-            if (e.target.closest('#student-details-page') && downloadBtn) {
+            const downloadBtn = e.target.closest('#student-details-page #download-student-btn');
+            if (downloadBtn) {
                 const aluno = window.alunos.find(a => a.id === downloadBtn.dataset.alunoId);
                 generateStudentPDF(aluno);
             }
             
             // Ações de notas
-            const addStudentBtn = e.target.closest('#add-student-to-subject-btn');
-            if (e.target.closest('#subject-students-page') && addStudentBtn) {
-                openAddStudentToSubjectModal(addStudentBtn.dataset.subjectKey);
+            const addStudentBtn = e.target.closest('#subject-students-page #add-student-to-subject-btn');
+            if (addStudentBtn) {
+                await openAddStudentToSubjectModal(addStudentBtn.dataset.subjectKey);
             }
-            const editGradesBtn = e.target.closest('.edit-grades-btn');
-            if (e.target.closest('#subject-students-page') && editGradesBtn) {
-                openEditGradesModal(editGradesBtn.dataset.alunoId, editGradesBtn.dataset.subjectKey);
+            const editGradesBtn = e.target.closest('#subject-students-page .edit-grades-btn');
+            if (editGradesBtn) {
+                await openEditGradesModal(editGradesBtn.dataset.alunoId, editGradesBtn.dataset.subjectKey);
             }
-            const removeGradesBtn = e.target.closest('.remove-grades-btn');
-            if (e.target.closest('#subject-students-page') && removeGradesBtn) {
+            const removeGradesBtn = e.target.closest('#subject-students-page .remove-grades-btn');
+            if (removeGradesBtn) {
                 showConfirmationModal(
                     'Confirmar Exclusão',
                     'Tem certeza que deseja remover as notas deste aluno?',
@@ -1156,11 +1102,23 @@
                 );
             }
 
+            const downloadSubjectGradesBtn = e.target.closest('#download-subject-grades');
+            if(downloadSubjectGradesBtn) {
+                const subjectKey = downloadSubjectGradesBtn.dataset.subjectKey;
+                const { data: notasData } = await supabase.from('notas').select('*').eq('subject_key', subjectKey);
+                const alunosComNotas = notasData.map(nota => {
+                    const aluno = window.alunos.find(a => a.id === nota.aluno_id);
+                    return {...aluno, notas: nota};
+                });
+                generatePDF(alunosComNotas, `Boletim-${subjectKey}`);
+            }
+
             // Lógica de edição de curso
-            const saveEditCourseBtn = e.target.closest('#save-edit-course');
+            const saveEditCourseBtn = e.target.closest('#generic-modal #save-edit-course');
             if (saveEditCourseBtn) {
-                const courseName = document.getElementById('edit-course-name-input').value.trim();
-                if (!courseName) { showMessageModal('Erro', 'O nome do curso não pode ser vazio.'); return; }
+                const oldCourseName = document.getElementById('edit-course-name-input').value.trim();
+                const newCourseName = document.getElementById('edit-course-name-input').value.trim();
+                if (!newCourseName) { showMessageModal('Erro', 'O nome do curso não pode ser vazio.'); return; }
                 const courseDescription = document.getElementById('edit-course-description-input').value.trim();
                 const anos = {};
                 document.querySelectorAll('.year-editor').forEach(yearEditor => {
@@ -1181,41 +1139,18 @@
                     anos[yearName] = { disciplinas: disciplines };
                 });
                 
-                window.cursosDisponiveis[courseName] = { description: courseDescription, anos: anos };
-                saveCoursesData();
+                if (oldCourseName !== newCourseName) {
+                    delete window.cursosDisponiveis[oldCourseName];
+                }
+                window.cursosDisponiveis[newCourseName] = { description: courseDescription, anos: anos };
+                
+                await saveCoursesData();
                 const modal = document.getElementById('generic-modal');
                 const backdrop = document.getElementById('generic-modal-backdrop');
                 modal.classList.remove('active');
                 backdrop.classList.remove('active');
                 renderCursosDashboard();
                 showMessageModal('Sucesso', 'Curso atualizado com sucesso!');
-            }
-
-            const cancelEditCourseBtn = e.target.closest('#cancel-edit-course');
-            if (cancelEditCourseBtn) {
-                const modal = document.getElementById('generic-modal');
-                const backdrop = document.getElementById('generic-modal-backdrop');
-                modal.classList.remove('active');
-                backdrop.classList.remove('active');
-            }
-
-            const deleteCourseBtn = e.target.closest('#delete-course-btn');
-            if (deleteCourseBtn) {
-                const courseName = deleteCourseBtn.dataset.courseName;
-                showConfirmationModal(
-                    'Confirmar Exclusão',
-                    `Tem certeza que deseja excluir o curso "${courseName}"? Esta ação é irreversível.`,
-                    async () => {
-                        delete window.cursosDisponiveis[courseName];
-                        await saveCoursesData();
-                        renderCursosDashboard();
-                        const modal = document.getElementById('generic-modal');
-                        const backdrop = document.getElementById('generic-modal-backdrop');
-                        modal.classList.remove('active');
-                        backdrop.classList.remove('active');
-                        showMessageModal('Sucesso', 'Curso excluído com sucesso!');
-                    }
-                );
             }
         });
 
@@ -1250,6 +1185,7 @@
                 showMessageModal('Sucesso', 'Aluno cadastrado com sucesso!');
                 e.target.reset();
                 navigateTo('dashboard-page');
+                loadData();
             }
         });
     </script>
