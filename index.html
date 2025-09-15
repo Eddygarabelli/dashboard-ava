@@ -178,8 +178,8 @@
         // As credenciais agora são lidas das variáveis de ambiente.
         // Se a variável não existir (em um ambiente de desenvolvimento local, por exemplo),
         // ele usará as credenciais fixas. Em produção no Vercel, as variáveis serão usadas.
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://tbkmwmnxfzlsqnjgwsuo.supabase.co";
-        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRia213bW54Znpsc3Fuamd3c3VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3MzEzNTQsImV4cCI6MjA3MzMwNzM1NH0.Xc9AuxFfkdyELaXvhqiDku6TaM75vuY4-Ju88BneSXI";
+        const supabaseUrl = "https://tbkmwmnxfzlsqnjgwsuo.supabase.co";
+        const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRia213bW54Znpsc3Fuamd3c3VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3MzEzNTQsImV4cCI6MjA3MzMwNzM1NH0.Xc9AuxFfkdyELaXvhqiDku6TaM75vuY4-Ju88BneSXI";
         
         window.supabase = createClient(supabaseUrl, supabaseAnonKey);
         
@@ -827,9 +827,13 @@
             const backdrop = document.getElementById('generic-modal-backdrop');
             
             const notas = {};
-            if (aluno.matriculas && aluno.matriculas[subjectKey] && aluno.matriculas[subjectKey].notas) {
-                Object.assign(notas, aluno.matriculas[subjectKey].notas);
+            // Encontra a nota do aluno para a disciplina
+            const notaExistente = window.notas.find(n => n.aluno_id === alunoId && n.subject_key === subjectKey);
+
+            if (notaExistente) {
+                Object.assign(notas, notaExistente.notas);
             } else {
+                // Preenche com zeros se não houver notas
                 notas.atv1 = 0;
                 notas.rec1 = 0;
                 notas.atv2 = 0;
@@ -1009,105 +1013,69 @@
             hideLoading();
         }
 
-        // --- Event Listeners ---
-        
+        // --- Delegação de Eventos ---
         document.addEventListener('DOMContentLoaded', () => {
             loadData();
         });
 
-        document.getElementById('home-button').addEventListener('click', () => {
-            historyStack = ['dashboard-page'];
-            navigateTo('dashboard-page');
-            loadData();
-        });
-
-        document.getElementById('back-button').addEventListener('click', () => {
-            if (historyStack.length > 1) {
-                historyStack.pop();
-                const previousPage = historyStack[historyStack.length - 1];
-                navigateTo(previousPage);
-            }
-        });
-
-        document.querySelectorAll('.nav-button').forEach(button => {
-            button.addEventListener('click', () => {
+        // Ouve cliques em todo o corpo do documento
+        document.body.addEventListener('click', (e) => {
+            // Navegação e Dashboard
+            if (e.target.closest('#home-button')) {
+                historyStack = ['dashboard-page'];
+                navigateTo('dashboard-page');
+                loadData();
+            } else if (e.target.closest('#back-button')) {
+                if (historyStack.length > 1) {
+                    historyStack.pop();
+                    const previousPage = historyStack[historyStack.length - 1];
+                    navigateTo(previousPage);
+                }
+            } else if (e.target.closest('#card-alunos-list')) {
+                renderAlunosList();
+            } else if (e.target.closest('#card-novo-aluno')) {
+                navigateTo('cadastro-page');
+            } else if (e.target.closest('#card-boletim')) {
+                showMessageModal('Funcionalidade', 'Em desenvolvimento!'); 
+            } else if (e.target.closest('#card-download-boletim')) {
+                openDownloadSelectionModal();
+            } else if (e.target.closest('.nav-button')) {
+                const button = e.target.closest('.nav-button');
                 document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
-                
                 document.querySelectorAll('.dashboard-content').forEach(content => content.classList.add('hidden'));
                 document.getElementById(button.dataset.target).classList.remove('hidden');
-            });
-        });
-        
-        document.getElementById('card-alunos-list').addEventListener('click', renderAlunosList);
-        document.getElementById('card-novo-aluno').addEventListener('click', () => navigateTo('cadastro-page'));
-        document.getElementById('card-boletim').addEventListener('click', () => showMessageModal('Funcionalidade', 'Em desenvolvimento!')); // Placeholder
-        document.getElementById('card-download-boletim').addEventListener('click', openDownloadSelectionModal);
-
-        document.getElementById('cursos-list-container').addEventListener('click', (e) => {
-            const card = e.target.closest('[data-course-name]');
-            if (card) {
-                renderCourseYears(card.dataset.courseName);
             }
-        });
-        
-        document.getElementById('course-years-page').addEventListener('click', (e) => {
+
+            // Ações de Cursos e Disciplinas
+            const courseCard = e.target.closest('[data-course-name]');
+            if (e.target.closest('#cursos-list-container') && courseCard) {
+                renderCourseYears(courseCard.dataset.courseName);
+            }
+
             const courseYearCard = e.target.closest('[data-course][data-year]');
-            if (courseYearCard) {
+            if (e.target.closest('#course-years-page') && courseYearCard) {
                 renderYearSubjects(courseYearCard.dataset.course, courseYearCard.dataset.year);
             }
             const editCourseBtn = e.target.closest('.edit-course-btn');
-            if(editCourseBtn) {
+            if (editCourseBtn) {
                 openEditCourseModal(editCourseBtn.dataset.courseName);
             }
-        });
-        
-        document.getElementById('year-subjects-page').addEventListener('click', (e) => {
+
             const yearSubjectCard = e.target.closest('[data-course][data-year][data-subject]');
-            if (yearSubjectCard) {
+            if (e.target.closest('#year-subjects-page') && yearSubjectCard) {
                 renderSubjectStudents(yearSubjectCard.dataset.course, yearSubjectCard.dataset.year, yearSubjectCard.dataset.subject);
             }
-        });
-        
-        document.getElementById('subject-students-page').addEventListener('click', (e) => {
-            const addStudentBtn = e.target.closest('#add-student-to-subject-btn');
-            if (addStudentBtn) {
-                openAddStudentToSubjectModal(addStudentBtn.dataset.subjectKey);
-            }
-            const editGradesBtn = e.target.closest('.edit-grades-btn');
-            if (editGradesBtn) {
-                openEditGradesModal(editGradesBtn.dataset.alunoId, editGradesBtn.dataset.subjectKey);
-            }
-            const removeGradesBtn = e.target.closest('.remove-grades-btn');
-            if (removeGradesBtn) {
-                showConfirmationModal(
-                    'Confirmar Exclusão',
-                    'Tem certeza que deseja remover as notas deste aluno?',
-                    async () => {
-                        const { error } = await supabase.from('notas').delete().eq('aluno_id', removeGradesBtn.dataset.alunoId).eq('subject_key', removeGradesBtn.dataset.subjectKey);
-                        if (error) {
-                            console.error('Erro ao remover notas:', error);
-                            showMessageModal('Erro', 'Não foi possível remover as notas.');
-                        } else {
-                            const [courseName, year, subject] = removeGradesBtn.dataset.subjectKey.split('-');
-                            renderSubjectStudents(courseName, year, subject);
-                            showMessageModal('Sucesso', 'Notas removidas com sucesso!');
-                        }
-                    }
-                );
-            }
-        });
 
-        document.getElementById('alunos-list-page').addEventListener('click', (e) => {
+            // Ações de Alunos
             const studentCard = e.target.closest('[data-aluno-id]');
-            if(studentCard) {
+            if(e.target.closest('#alunos-list-page') && studentCard) {
                 renderStudentDetails(studentCard.dataset.alunoId);
             }
-        });
 
-        document.getElementById('student-details-page').addEventListener('click', (e) => {
+            // Ações na página de detalhes do aluno
             const editBtn = e.target.closest('#edit-student-btn');
-            if (editBtn) {
+            if (e.target.closest('#student-details-page') && editBtn) {
                 const aluno = window.alunos.find(a => a.id === editBtn.dataset.alunoId);
                 const container = document.getElementById('student-info-container');
                 container.innerHTML = renderStudentInfo(aluno, true);
@@ -1134,14 +1102,13 @@
                         renderStudentDetails(aluno.id);
                     }
                 };
-
                 document.getElementById('cancel-edit-btn').onclick = () => {
                     container.innerHTML = renderStudentInfo(aluno, false);
                 };
             }
 
             const removeBtn = e.target.closest('#remove-student-btn');
-            if (removeBtn) {
+            if (e.target.closest('#student-details-page') && removeBtn) {
                 showConfirmationModal('Confirmar Exclusão', 'Tem certeza que deseja remover este aluno? Esta ação é irreversível e removerá todas as notas associadas.', async () => {
                     const { error } = await supabase.from('alunos').delete().eq('id', removeBtn.dataset.alunoId);
                     if (error) {
@@ -1154,8 +1121,105 @@
                     }
                 });
             }
+
+            const downloadBtn = e.target.closest('#download-student-btn');
+            if (e.target.closest('#student-details-page') && downloadBtn) {
+                const aluno = window.alunos.find(a => a.id === downloadBtn.dataset.alunoId);
+                generateStudentPDF(aluno);
+            }
+            
+            // Ações de notas
+            const addStudentBtn = e.target.closest('#add-student-to-subject-btn');
+            if (e.target.closest('#subject-students-page') && addStudentBtn) {
+                openAddStudentToSubjectModal(addStudentBtn.dataset.subjectKey);
+            }
+            const editGradesBtn = e.target.closest('.edit-grades-btn');
+            if (e.target.closest('#subject-students-page') && editGradesBtn) {
+                openEditGradesModal(editGradesBtn.dataset.alunoId, editGradesBtn.dataset.subjectKey);
+            }
+            const removeGradesBtn = e.target.closest('.remove-grades-btn');
+            if (e.target.closest('#subject-students-page') && removeGradesBtn) {
+                showConfirmationModal(
+                    'Confirmar Exclusão',
+                    'Tem certeza que deseja remover as notas deste aluno?',
+                    async () => {
+                        const { error } = await supabase.from('notas').delete().eq('aluno_id', removeGradesBtn.dataset.alunoId).eq('subject_key', removeGradesBtn.dataset.subjectKey);
+                        if (error) {
+                            console.error('Erro ao remover notas:', error);
+                            showMessageModal('Erro', 'Não foi possível remover as notas.');
+                        } else {
+                            const [courseName, year, subject] = removeGradesBtn.dataset.subjectKey.split('-');
+                            renderSubjectStudents(courseName, year, subject);
+                            showMessageModal('Sucesso', 'Notas removidas com sucesso!');
+                        }
+                    }
+                );
+            }
+
+            // Lógica de edição de curso
+            const saveEditCourseBtn = e.target.closest('#save-edit-course');
+            if (saveEditCourseBtn) {
+                const courseName = document.getElementById('edit-course-name-input').value.trim();
+                if (!courseName) { showMessageModal('Erro', 'O nome do curso não pode ser vazio.'); return; }
+                const courseDescription = document.getElementById('edit-course-description-input').value.trim();
+                const anos = {};
+                document.querySelectorAll('.year-editor').forEach(yearEditor => {
+                    const yearName = yearEditor.querySelector('.year-name-input').value.trim();
+                    if (!yearName) return;
+                    const disciplines = {};
+                    yearEditor.querySelectorAll('.discipline-area-editor').forEach(areaEditor => {
+                        const areaName = areaEditor.querySelector('.discipline-area-name').value.trim();
+                        if (!areaName) return;
+                        const areaDisciplines = [];
+                        areaEditor.querySelectorAll('.discipline-inputs > div.flex').forEach(disciplineInput => {
+                            const nome = disciplineInput.querySelector('.discipline-name-input').value.trim();
+                            const cargaHoraria = parseInt(disciplineInput.querySelector('.discipline-hours-input').value) || 0;
+                            if (nome) areaDisciplines.push({ nome, cargaHoraria });
+                        });
+                        disciplines[areaName] = areaDisciplines;
+                    });
+                    anos[yearName] = { disciplinas: disciplines };
+                });
+                
+                window.cursosDisponiveis[courseName] = { description: courseDescription, anos: anos };
+                saveCoursesData();
+                const modal = document.getElementById('generic-modal');
+                const backdrop = document.getElementById('generic-modal-backdrop');
+                modal.classList.remove('active');
+                backdrop.classList.remove('active');
+                renderCursosDashboard();
+                showMessageModal('Sucesso', 'Curso atualizado com sucesso!');
+            }
+
+            const cancelEditCourseBtn = e.target.closest('#cancel-edit-course');
+            if (cancelEditCourseBtn) {
+                const modal = document.getElementById('generic-modal');
+                const backdrop = document.getElementById('generic-modal-backdrop');
+                modal.classList.remove('active');
+                backdrop.classList.remove('active');
+            }
+
+            const deleteCourseBtn = e.target.closest('#delete-course-btn');
+            if (deleteCourseBtn) {
+                const courseName = deleteCourseBtn.dataset.courseName;
+                showConfirmationModal(
+                    'Confirmar Exclusão',
+                    `Tem certeza que deseja excluir o curso "${courseName}"? Esta ação é irreversível.`,
+                    async () => {
+                        delete window.cursosDisponiveis[courseName];
+                        await saveCoursesData();
+                        renderCursosDashboard();
+                        const modal = document.getElementById('generic-modal');
+                        const backdrop = document.getElementById('generic-modal-backdrop');
+                        modal.classList.remove('active');
+                        backdrop.classList.remove('active');
+                        showMessageModal('Sucesso', 'Curso excluído com sucesso!');
+                    }
+                );
+            }
         });
 
+        // Adicionando um listener para o formulário de cadastro de aluno
         document.getElementById('cadastro-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const novoAluno = {
@@ -1188,76 +1252,6 @@
                 navigateTo('dashboard-page');
             }
         });
-        
-        async function openAddStudentToSubjectModal(subjectKey) {
-            const modal = document.getElementById('generic-modal');
-            const backdrop = document.getElementById('generic-modal-backdrop');
-            
-            const { data: notasData } = await supabase.from('notas').select('aluno_id').eq('subject_key', subjectKey);
-            const matriculadosIds = new Set(notasData.map(n => n.aluno_id));
-            
-            const studentListHtml = window.alunos.map(aluno => `
-                <li class="py-2 flex items-center justify-between">
-                    <span>${aluno.nome}</span>
-                    <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded" data-aluno-id="${aluno.id}" ${matriculadosIds.has(aluno.id) ? 'checked' : ''}>
-                </li>
-            `).join('');
-
-            modal.innerHTML = `
-                <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
-                    <h2 class="text-xl font-bold mb-4">Adicionar Aluno à Disciplina</h2>
-                    <ul class="max-h-80 overflow-y-auto divide-y divide-gray-200">
-                        ${studentListHtml || '<li class="text-center text-gray-500 py-4">Nenhum aluno para adicionar.</li>'}
-                    </ul>
-                    <div class="mt-6 flex justify-end gap-3">
-                        <button id="cancel-add-student" class="px-4 py-2 bg-gray-200 rounded-full">Cancelar</button>
-                        <button id="confirm-add-student" class="px-4 py-2 bg-blue-600 text-white rounded-full">Salvar</button>
-                    </div>
-                </div>
-            `;
-            modal.classList.add('active');
-            backdrop.classList.add('active');
-
-            document.getElementById('cancel-add-student').onclick = () => {
-                modal.classList.remove('active');
-                backdrop.classList.remove('active');
-            };
-
-            document.getElementById('confirm-add-student').onclick = async () => {
-                const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
-                const updates = [];
-                const deletions = [];
-                
-                checkboxes.forEach(cb => {
-                    if (cb.checked && !matriculadosIds.has(cb.dataset.alunoId)) {
-                        updates.push({
-                            aluno_id: cb.dataset.aluno_id,
-                            subject_key: subjectKey,
-                            notas: { atv1: 0, rec1: 0, atv2: 0, rec2: 0, final: 0, recFinal: 0 },
-                            media_final: 0
-                        });
-                    } else if (!cb.checked && matriculadosIds.has(cb.dataset.alunoId)) {
-                        deletions.push(cb.dataset.aluno_id);
-                    }
-                });
-                
-                showLoading('Atualizando...');
-                if (updates.length > 0) {
-                    await supabase.from('notas').insert(updates);
-                }
-                if (deletions.length > 0) {
-                    await supabase.from('notas').delete().eq('subject_key', subjectKey).in('aluno_id', deletions);
-                }
-                hideLoading();
-
-                modal.classList.remove('active');
-                backdrop.classList.remove('active');
-                
-                const [courseName, year, subject] = subjectKey.split('-');
-                renderSubjectStudents(courseName, year, subject);
-                showMessageModal('Sucesso', 'Lista de alunos atualizada!');
-            };
-        }
     </script>
 </body>
 </html>
