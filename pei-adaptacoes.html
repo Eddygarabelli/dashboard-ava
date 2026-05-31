@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PEI & Plano de Adaptações Pedagógicas Inclusivas</title>
+  <style>
+    :root {
+      --blue-dark: #1a3a6b;
+      --blue-mid: #2563b0;
+      --blue-light: #dbeafe;
+      --green: #22a64a;
+      --green-light: #d1fae5;
+      --orange: #f97316;
+      --orange-light: #ffedd5;
+      --yellow: #f59e0b;
+      --yellow-light: #fef9c3;
+      --purple: #7c3aed;
+      --purple-light: #ede9fe;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --teal: #0d9488;
+      --teal-light: #ccfbf1;
+      --pink: #db2777;
+      --pink-light: #fce7f3;
+      --gray-light: #f3f4f6;
+      --border: #d1d5db;
+      --text: #1f2937;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #e8eef7;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    /* ─── PRINT ─── */
+    @media print {
+      body { background: white; font-size: 11px; }
+      .no-print { display: none !important; }
+      .page { box-shadow: none; margin: 0; border-radius: 0; page-break-after: always; }
+      .page:last-child { page-break-after: avoid; }
+    }
+
+    /* ─── TOOLBAR ─── */
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--blue-dark);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .toolbar h1 { font-size: 14px; font-weight: 700; letter-spacing: .5px; }
+    .toolbar-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      padding: 6px 14px;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: opacity .2s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn-print { background: var(--orange); color: white; }
+    .btn-reset { background: #6b7280; color: white; }
+
+    /* ─── LAYOUT ─── */
+    .wrapper {
+      max-width: 900px;
+      margin: 24px auto;
+      padding: 0 12px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .page {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 18px rgba(0,0,0,.12);
+      overflow: hidden;
+    }
+
+    /* ─── PAGE HEADER ─── */
+    .page-header {
+      background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-mid) 100%);
+      padding: 18px 24px 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-header::after {
+      content: '';
+      position: absolute;
+      right: -30px; top: -30px;
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.08);
+    }
+    .header-icon { font-size: 38px; flex-shrink: 0; }
+    .header-text { flex: 1; }
+    .header-text .doc-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(255,255,255,.7);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .header-text h2 {
+      font-size: 18px;
+      font-weight: 800;
+      color: white;
+      line-height: 1.2;
+    }
+    .header-text h2 span { color: var(--yellow); }
+    .header-subtitle {
+      font-size: 11px;
+      color: rgba(255,255,255,.8);
+      margin-top: 3px;
+    }
+    .header-badge {
+      background: var(--yellow);
+      color: var(--blue-dark);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 10px;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.3;
+      max-width: 110px;
+      flex-shrink: 0;
+    }
+
+    /* ─── SECTION TITLE ─── */
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      padding: 8px 14px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+    }
+    .section-title.blue  { background: var(--blue-mid);   color: white; }
+    .section-title.green { background: var(--green);      color: white; }
+    .section-title.orange{ background: var(--orange);     color: white; }
+    .section-title.red   { background: var(--red);        color: white; }
+    .section-title.purple{ background: var(--purple);     color: white; }
+    .section-title.teal  { background: var(--teal);       color: white; }
+    .section-title.yellow{ background: var(--yellow);     color: var(--blue-dark); }
+    .section-title.dark  { background: var(--blue-dark);  color: white; }
+
+    /* ─── BODY PADDING ─── */
+    .page-body { padding: 20px 22px; }
+
+    /* ─── GRID FORMS ─── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px 16px;
+      margin-bottom: 14px;
+    }
+    .form-field { display: flex; flex-direction: column; gap: 3px; }
+    .form-field label { font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; }
+    .form-field input, .form-field textarea {
+      border: none;
+      border-bottom: 2px solid var(--border);
+      outline: none;
+      font-size: 13px;
+      color: var(--text);
+      padding: 3px 2px;
+      background: transparent;
+      transition: border-color .2s;
+      font-family: inherit;
+      width: 100%;
+    }
+    .form-field input:focus, .form-field textarea:focus { border-color: var(--blue-mid); }
+    .form-field textarea { resize: vertical; min-height: 48px; border: 2px solid var(--border); border-radius: 6px; padding: 6px; }
+
+    /* ─── TWO-COL ─── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+
+    /* ─── PROFILE CARD ─── */
+    .profile-card {
+      background: var(--gray-light);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .profile-card h4 {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--blue-dark);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+    /* ─── PARTICIPATION ─── */
+    .participation-card {
+      background: var(--yellow-light);
+      border: 2px solid var(--yellow);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .participation-card h4 {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--blue-dark);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .checkbox-group { display: flex; flex-direction: column; gap: 6px; }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .checkbox-item input[type=checkbox] {
+      width: 16px; height: 16px;
+      accent-color: var(--green);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* ─── MAIN TABLE (Learning Plan) ─── */
+    .plan-table { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-bottom: 14px; }
+    .plan-table th {
+      padding: 8px 6px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      border: 1px solid var(--border);
+      background: var(--blue-dark);
+      color: white;
+      vertical-align: middle;
+    }
+    .plan-table td {
+      padding: 8px 7px;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .plan-table tr:nth-child(even) td { background: #f9fafb; }
+    .plan-table td:first-child {
+      text-align: center;
+      font-weight: 700;
+      font-size: 11px;
+    }
+    .plan-table td.area-cell {
+      min-width: 90px;
+      padding: 8px;
+    }
+    .area-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 4px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.2;
+      text-align: center;
+    }
+    .area-badge .icon { font-size: 18px; }
+
+    .area-cognitivo   { background: var(--purple-light); color: var(--purple); }
+    .area-linguagem   { background: var(--blue-light);   color: var(--blue-mid); }
+    .area-social      { background: var(--green-light);  color: var(--green); }
+    .area-motora      { background: var(--orange-light); color: var(--orange); }
+    .area-autonomia   { background: var(--pink-light);   color: var(--pink); }
+    .area-tea         { background: #fef3c7;             color: #92400e; }
+    .area-tdah        { background: var(--blue-light);   color: var(--blue-mid); }
+    .area-dislexia    { background: var(--green-light);  color: var(--green); }
+    .area-deficiencia { background: var(--purple-light); color: var(--purple); }
+
+    .bullet-list { list-style: none; padding: 0; margin: 0; }
+    .bullet-list li { padding: 1px 0; font-size: 11px; color: #374151; }
+    .bullet-list li::before { content: '• '; color: var(--blue-mid); font-weight: bold; }
+
+    .prazo-badge {
+      display: inline-block;
+      background: var(--blue-light);
+      color: var(--blue-dark);
+      border-radius: 12px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .edit-cell {
+      background: #f0f9ff;
+      border-radius: 6px;
+      padding: 6px;
+      min-height: 60px;
+      outline: none;
+      font-size: 11px;
+      font-family: inherit;
+      color: var(--text);
+      width: 100%;
+      border: 1px dashed #93c5fd;
+      cursor: text;
+    }
+    .edit-cell:focus { border-color: var(--blue-mid); background: white; }
+
+    /* ─── ADAPTATIONS TABLE ─── */
+    .adapt-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 14px; }
+    .adapt-table th {
+      background: var(--blue-dark);
+      color: white;
+      padding: 8px 6px;
+      text-align: center;
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      border: 1px solid rgba(255,255,255,.2);
+      vertical-align: middle;
+    }
+    .adapt-table td {
+      padding: 8px 7px;
+      border: 1px solid var(--border);
+      vertical-align: top;
+      font-size: 11px;
+    }
+    .adapt-table tbody tr:nth-child(1) td:not(:first-child) { background: #fffbeb; }
+    .adapt-table tbody tr:nth-child(2) td:not(:first-child) { background: var(--blue-light); background: #eff6ff; }
+    .adapt-table tbody tr:nth-child(3) td:not(:first-child) { background: #f0fdf4; }
+    .adapt-table tbody tr:nth-child(4) td:not(:first-child) { background: #faf5ff; }
+
+    .resource-visual {
+      background: var(--orange-light);
+      border: 2px solid var(--orange);
+      border-radius: 8px;
+      padding: 6px;
+      text-align: center;
+      font-size: 20px;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ─── BARRIERS / POTENTIALS ─── */
+    .two-col-section { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .barrier-card {
+      background: var(--red-light);
+      border: 2px solid var(--red);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .potential-card {
+      background: var(--green-light);
+      border: 2px solid var(--green);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .barrier-card h4, .potential-card h4 {
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .barrier-card h4 { color: var(--red); }
+    .potential-card h4 { color: var(--green); }
+    .line-field {
+      border: none;
+      border-bottom: 1.5px solid var(--border);
+      width: 100%;
+      padding: 4px 2px;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--text);
+      background: transparent;
+      outline: none;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .line-field:focus { border-color: var(--blue-mid); }
+
+    /* ─── OBSERVATIONS ─── */
+    .obs-card {
+      background: var(--teal-light);
+      border: 2px solid var(--teal);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .obs-card h4 {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--teal);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ─── FOOTER SIGNATURES ─── */
+    .signatures {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 2px dashed var(--border);
+    }
+    .sig-field { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .sig-field input {
+      width: 100%;
+      border: none;
+      border-bottom: 2px solid var(--border);
+      font-size: 12px;
+      text-align: center;
+      font-family: inherit;
+      outline: none;
+      padding: 2px 4px;
+      background: transparent;
+    }
+    .sig-field input:focus { border-color: var(--blue-mid); }
+    .sig-field label { font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+
+    /* ─── FOOTER BANNER ─── */
+    .footer-banner {
+      background: linear-gradient(135deg, var(--blue-dark), var(--blue-mid));
+      color: white;
+      border-radius: 10px;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 12px;
+    }
+    .footer-banner .msg-left { font-weight: 700; font-size: 13px; }
+    .footer-banner .msg-left span { color: var(--yellow); }
+    .footer-banner .msg-right {
+      background: rgba(255,255,255,.15);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 11px;
+      font-style: italic;
+      max-width: 260px;
+      text-align: center;
+    }
+    .footer-banner .msg-right span { color: var(--yellow); font-weight: 700; font-style: normal; }
+
+    /* ─── CANVAS DECORATIONS ─── */
+    canvas.deco { display: block; width: 100%; height: 60px; }
+
+    /* ─── DIVIDER ─── */
+    .section-divider {
+      height: 4px;
+      background: linear-gradient(90deg, var(--blue-mid), var(--green), var(--orange), var(--yellow));
+      border-radius: 2px;
+      margin: 4px 0 16px;
+    }
+
+    /* ─── TABLE SCROLL on mobile ─── */
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 600px) {
+      .page-header { flex-wrap: wrap; gap: 10px; }
+      .header-badge { max-width: 100%; }
+      .two-col, .two-col-section, .three-col { grid-template-columns: 1fr; }
+      .plan-table th, .plan-table td,
+      .adapt-table th, .adapt-table td { font-size: 10px; padding: 5px 4px; }
+      .header-text h2 { font-size: 15px; }
+      .page-body { padding: 14px 12px; }
+      .toolbar h1 { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOOLBAR -->
+<div class="toolbar no-print">
+  <h1>📋 PEI + Plano de Adaptações Pedagógicas Inclusivas</h1>
+  <div class="toolbar-btns">
+    <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+    <button class="btn btn-reset" onclick="resetForm()">🔄 Limpar</button>
+  </div>
+</div>
+
+<div class="wrapper">
+
+  <!-- ════════════════════════════════════
+       PÁGINA 1 — PEI
+  ════════════════════════════════════ -->
+  <div class="page">
+
+    <!-- Canvas decoration header -->
+    <canvas class="deco" id="canvas-pei-header"></canvas>
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-icon">🧩</div>
+      <div class="header-text">
+        <div class="doc-label">Documento Pedagógico Inclusivo</div>
+        <h2>PEI – <span>Plano de Ensino Individualizado</span></h2>
+        <div class="header-subtitle">Educação Infantil &nbsp;|&nbsp; Planejamento Centrado no Estudante</div>
+      </div>
+      <div class="header-badge">CADA CRIANÇA<br>NO SEU TEMPO,<br>CADA CONQUISTA<br>TEM VALOR! 💛</div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- 1. Identificação -->
+      <div class="section-title blue">👤 1. Identificação do Estudante</div>
+      <div class="form-grid">
+        <div class="form-field" style="grid-column: span 2">
+          <label>Nome do(a) estudante</label>
+          <input type="text" placeholder="Nome completo" />
+        </div>
+        <div class="form-field">
+          <label>Data de nascimento</label>
+          <input type="date" />
+        </div>
+        <div class="form-field">
+          <label>Turma / Grupo</label>
+          <input type="text" placeholder="Ex: Maternal II - A" />
+        </div>
+        <div class="form-field" style="grid-column: span 2">
+          <label>Escola</label>
+          <input type="text" placeholder="Nome da escola" />
+        </div>
+        <div class="form-field">
+          <label>Professor(a) responsável</label>
+          <input type="text" placeholder="Nome do(a) professor(a)" />
+        </div>
+        <div class="form-field">
+          <label>Componente Curricular</label>
+          <input type="text" placeholder="Ex: Multidisciplinar" />
+        </div>
+        <div class="form-field">
+          <label>Período de vigência – Início</label>
+          <input type="date" />
+        </div>
+        <div class="form-field">
+          <label>Período de vigência – Fim</label>
+          <input type="date" />
+        </div>
+        <div class="form-field">
+          <label>Data de elaboração</label>
+          <input type="date" />
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- 2 & 3 -->
+      <div class="two-col" style="margin-bottom:14px">
+
+        <!-- 2. Perfil -->
+        <div class="profile-card">
+          <h4>📚 2. Perfil do Estudante</h4>
+          <div class="three-col">
+            <div class="form-field">
+              <label>❤️ Interesses</label>
+              <textarea placeholder="O que a criança gosta..."></textarea>
+            </div>
+            <div class="form-field">
+              <label>💡 Como aprende melhor</label>
+              <textarea placeholder="Estilo de aprendizagem..."></textarea>
+            </div>
+            <div class="form-field">
+              <label>🤝 Apoios que utiliza</label>
+              <textarea placeholder="Recursos, apoios..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Participação -->
+        <div class="participation-card">
+          <h4>⭐ 3. Participação e Envolvimento</h4>
+          <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox" /> Participa ativamente</label>
+            <label class="checkbox-item"><input type="checkbox" /> Participa com apoio</label>
+            <label class="checkbox-item"><input type="checkbox" /> Participa ocasionalmente</label>
+            <label class="checkbox-item"><input type="checkbox" /> Ainda não participa</label>
+          </div>
+          <div class="form-field" style="margin-top:10px">
+            <label>Observações</label>
+            <textarea placeholder="Observações sobre participação..."></textarea>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- 4. Plano de Ensino -->
+      <div class="section-title green">📗 4. Plano de Ensino e Aprendizagem</div>
+      <div class="table-scroll">
+        <table class="plan-table">
+          <thead>
+            <tr>
+              <th style="min-width:85px">Áreas / Aspectos</th>
+              <th style="min-width:130px">🎯 Objetivos</th>
+              <th style="min-width:130px">🔧 Estratégias</th>
+              <th style="min-width:110px">📦 Recursos</th>
+              <th style="min-width:80px">📅 Prazo</th>
+              <th style="min-width:130px">📋 Avaliação</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- COGNITIVO -->
+            <tr>
+              <td class="area-cell">
+                <div class="area-badge area-cognitivo">
+                  <span class="icon">🧠</span>COGNITIVO
+                </div>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Desenvolver atenção</li>
+                  <li>Resolver desafios</li>
+                  <li>Ampliar raciocínio lógico</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Jogos de encaixe</li>
+                  <li>Atividades de sequência</li>
+                  <li>Histórias e perguntas</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Blocos lógicos</li>
+                  <li>Livros ilustrados</li>
+                  <li>Cartões de imagens</li>
+                </ul>
+              </td>
+              <td><span class="prazo-badge">Curto prazo<br>(Até 3 meses)</span></td>
+              <td><div class="edit-cell" contenteditable="true" data-placeholder="Observação de registro, avanços e realização das atividades.">Observação de registro, avanços e realização das atividades.</div></td>
+            </tr>
+            <!-- LINGUAGEM -->
+            <tr>
+              <td class="area-cell">
+                <div class="area-badge area-linguagem">
+                  <span class="icon">💬</span>LINGUAGEM / COMUNICAÇÃO
+                </div>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Ampliar vocabulário</li>
+                  <li>Expressar ideias</li>
+                  <li>Ouvir e compreender</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Rodas de conversa</li>
+                  <li>Contação de histórias</li>
+                  <li>Música e rimas</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Livros e fantoches</li>
+                  <li>Imagens</li>
+                  <li>Músicas e vídeos</li>
+                </ul>
+              </td>
+              <td><span class="prazo-badge">Contínuo<br>(3 a 6 meses)</span></td>
+              <td><div class="edit-cell" contenteditable="true">Registros da comunicação verbal e não verbal e participação nas atividades.</div></td>
+            </tr>
+            <!-- INTERAÇÃO SOCIAL -->
+            <tr>
+              <td class="area-cell">
+                <div class="area-badge area-social">
+                  <span class="icon">🤝</span>INTERAÇÃO SOCIAL
+                </div>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Participar em grupo</li>
+                  <li>Respeitar turnos</li>
+                  <li>Cooperar com colegas</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Brincadeiras dirigidas</li>
+                  <li>Jogos cooperativos</li>
+                  <li>Projetos coletivos</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Brinquedos diversos</li>
+                  <li>Jogos de tabuleiro</li>
+                  <li>Materiais coletivos</li>
+                </ul>
+              </td>
+              <td><span class="prazo-badge">Contínuo<br>(3 a 6 meses)</span></td>
+              <td><div class="edit-cell" contenteditable="true">Observação da interação com colegas e adultos em diferentes contextos.</div></td>
+            </tr>
+            <!-- COORDENAÇÃO MOTORA -->
+            <tr>
+              <td class="area-cell">
+                <div class="area-badge area-motora">
+                  <span class="icon">✋</span>COORDENAÇÃO MOTORA
+                </div>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Desenvolver motricidade fina</li>
+                  <li>Coordenar movimentos</li>
+                  <li>Ampliar destreza</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Atividades de recorte e colagem</li>
+                  <li>Pintura e modelagem</li>
+                  <li>Circuitos motores</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Lápis, tesoura, cola</li>
+                  <li>Massinha, tintas</li>
+                  <li>Materiais variados</li>
+                </ul>
+              </td>
+              <td><span class="prazo-badge">Curto a médio<br>(3 a 6 meses)</span></td>
+              <td><div class="edit-cell" contenteditable="true">Registros do progresso na execução das tarefas motoras propostas.</div></td>
+            </tr>
+            <!-- AUTONOMIA -->
+            <tr>
+              <td class="area-cell">
+                <div class="area-badge area-autonomia">
+                  <span class="icon">🌟</span>AUTONOMIA
+                </div>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Realizar tarefas diárias</li>
+                  <li>Fazer escolhas</li>
+                  <li>Cuidar de si e do ambiente</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Rotinas visuais</li>
+                  <li>Atividades de vida prática</li>
+                  <li>Incentivo à independência</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Quadros de rotina</li>
+                  <li>Materiais de higiene</li>
+                  <li>Utensílios pessoais</li>
+                </ul>
+              </td>
+              <td><span class="prazo-badge">Contínuo<br>(6 a 12 meses)</span></td>
+              <td><div class="edit-cell" contenteditable="true">Observação da autonomia nas rotinas e da tomada de decisões.</div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- 5 & 6 Barriers / Potentials -->
+      <div class="two-col-section">
+        <div class="barrier-card">
+          <h4>⚠️ 5. Barreiras Observadas</h4>
+          <input class="line-field" type="text" placeholder="Barreira 1..." />
+          <input class="line-field" type="text" placeholder="Barreira 2..." />
+          <input class="line-field" type="text" placeholder="Barreira 3..." />
+        </div>
+        <div class="potential-card">
+          <h4>⭐ 6. Potencialidades</h4>
+          <input class="line-field" type="text" placeholder="Potencialidade 1..." />
+          <input class="line-field" type="text" placeholder="Potencialidade 2..." />
+          <input class="line-field" type="text" placeholder="Potencialidade 3..." />
+        </div>
+      </div>
+
+      <!-- Signatures -->
+      <div class="signatures">
+        <div class="sig-field">
+          <input type="text" placeholder="Nome completo" />
+          <label>Professor(a)</label>
+        </div>
+        <div class="sig-field">
+          <input type="text" placeholder="Nome completo" />
+          <label>Coordenação Pedagógica</label>
+        </div>
+        <div class="sig-field">
+          <input type="date" />
+          <label>Data</label>
+        </div>
+      </div>
+
+      <!-- Footer Banner -->
+      <div class="footer-banner" style="margin-top:16px">
+        <div class="msg-left">🤝 PLANEJÁR É INCLUIR.<br><span>INCLUIR É TRANSFORMAR VIDAS.</span></div>
+        <div class="msg-right">A inclusão acontece quando se ensina com <span>intencionalidade e amor!</span> 💛</div>
+      </div>
+
+    </div><!-- /page-body -->
+  </div><!-- /page 1 -->
+
+
+  <!-- ════════════════════════════════════
+       PÁGINA 2 — ADAPTAÇÕES PEDAGÓGICAS
+  ════════════════════════════════════ -->
+  <div class="page">
+
+    <canvas class="deco" id="canvas-adapt-header"></canvas>
+
+    <!-- Page Header -->
+    <div class="page-header" style="background: linear-gradient(135deg, #1a3a6b 0%, #0d9488 100%)">
+      <div class="header-icon">🎓</div>
+      <div class="header-text">
+        <div class="doc-label">Kit de PEIs e PDIs</div>
+        <h2>Plano de <span>Adaptações Pedagógicas</span> Inclusivas</h2>
+        <div class="header-subtitle">Estratégias e recursos para garantir participação, aprendizagem e autonomia de todos os alunos.</div>
+      </div>
+      <div class="header-badge" style="background: var(--green); color: white;">INCLUSÃO QUE PLANEJA,<br>ENSINO QUE TRANSFORMA! 🌟</div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- School Info -->
+      <div class="form-grid" style="margin-bottom:14px">
+        <div class="form-field" style="grid-column: span 2">
+          <label>Escola</label>
+          <input type="text" placeholder="Nome da escola" />
+        </div>
+        <div class="form-field" style="grid-column: span 2">
+          <label>Professor(a)</label>
+          <input type="text" placeholder="Nome do(a) professor(a)" />
+        </div>
+        <div class="form-field">
+          <label>Turma</label>
+          <input type="text" placeholder="Ex: 3º ano A" />
+        </div>
+        <div class="form-field">
+          <label>Componente Curricular</label>
+          <input type="text" placeholder="Ex: Língua Portuguesa" />
+        </div>
+        <div class="form-field">
+          <label>Data</label>
+          <input type="date" />
+        </div>
+        <div class="form-field" style="grid-column: span 2">
+          <label>Aluno(a)</label>
+          <input type="text" placeholder="Nome do(a) aluno(a)" />
+        </div>
+        <div class="form-field">
+          <label>Data de Nascimento</label>
+          <input type="date" />
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- Adaptations Table -->
+      <div class="section-title dark">♿ Plano de Adaptações por Necessidade</div>
+      <div class="table-scroll">
+        <table class="adapt-table">
+          <thead>
+            <tr>
+              <th style="min-width:90px">Necessidade<br>(Perfil)</th>
+              <th style="min-width:120px">🎯 Objetivo de Aprendizagem</th>
+              <th style="min-width:110px">⚠️ Barreira Identificada</th>
+              <th style="min-width:130px">🔧 Adaptação na Atividade</th>
+              <th style="min-width:80px">👁️ Recurso Visual</th>
+              <th style="min-width:120px">🤝 Mediação do Professor</th>
+              <th style="min-width:120px">📋 Avaliação Adaptada</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- TEA -->
+            <tr>
+              <td class="area-cell">
+                <div class="area-badge area-tea">
+                  <span class="icon">🧩</span>TEA<br><small style="font-weight:400;font-size:9px">(Transtorno do Espectro Autista)</small>
+                </div>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Participar de atividades com compreensão de rotinas e comunicação funcional.</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Dificuldade com mudanças de rotina e sobrecarga sensorial.</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Oferecer instruções passo a passo</li>
+                  <li>Rotina estruturada</li>
+                  <li>Atividades com previsibilidade</li>
+                </ul>
+              </td>
+              <td>
+                <div class="resource-visual">📅<br><small style="font-size:9px">Agenda visual com sequência de atividades</small></div>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Dar instruções claras e objetivas</li>
+                  <li>Antecipar mudanças</li>
+                  <li>Reforçar conquistas e interesses</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Avaliação com suporte visual</li>
+                  <li>Perguntas objetivas</li>
+                  <li>Respostas orais ou por imagem</li>
+                </ul>
+              </td>
+            </tr>
+            <!-- TDAH -->
+            <tr>
+              <td class="area-cell">
+                <div class="area-badge area-tdah">
+                  <span class="icon">⚡</span>TDAH<br><small style="font-weight:400;font-size:9px">(Transtorno do Déficit de Atenção com Hiperatividade)</small>
+                </div>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Manter atenção em atividades por períodos combinados.</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Dificuldade de concentração, impulsividade e dispersão.</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Dividir tarefas em etapas curtas</li>
+                  <li>Intervalos programados</li>
+                  <li>Metas visuais</li>
+                </ul>
+              </td>
+              <td>
+                <div class="resource-visual">⏱️<br><small style="font-size:9px">Timer visual e quadro de etapas</small></div>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Oferecer reforços positivos</li>
+                  <li>Lembrar combinados</li>
+                  <li>Usar linguagem curta e direta</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Avaliação em etapas</li>
+                  <li>Tempo flexível</li>
+                  <li>Aceitar respostas orais ou registros sucintos</li>
+                </ul>
+              </td>
+            </tr>
+            <!-- DISLEXIA -->
+            <tr>
+              <td class="area-cell">
+                <div class="area-badge area-dislexia">
+                  <span class="icon">📖</span>DISLEXIA<br><small style="font-weight:400;font-size:9px">(Dificuldade Específica de Aprendizagem)</small>
+                </div>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Ler e escrever palavras e frases com apoio de estratégias adequadas.</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Dificuldade na consciência fonológica e decodificação de palavras.</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Usar fontes ampliadas</li>
+                  <li>Texto com espaçamento</li>
+                  <li>Apoio multissensorial</li>
+                </ul>
+              </td>
+              <td>
+                <div class="resource-visual">Aa<br><small style="font-size:9px">Fonte ampliada e alto contraste</small></div>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Fazer leitura compartilhada</li>
+                  <li>Valorizar o conteúdo, não a grafia</li>
+                  <li>Usar exemplos visuais</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Avaliação com leitura mediada</li>
+                  <li>Aceitar respostas orais</li>
+                  <li>Foco na compreensão</li>
+                </ul>
+              </td>
+            </tr>
+            <!-- DEFICIÊNCIA INTELECTUAL -->
+            <tr>
+              <td class="area-cell">
+                <div class="area-badge area-deficiencia">
+                  <span class="icon">💜</span>DEFICIÊNCIA INTELECTUAL<br><small style="font-weight:400;font-size:9px"></small>
+                </div>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Desenvolver autonomia em atividades do dia a dia e conceitos básicos.</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Dificuldade de compreensão abstrata e generalização de conteúdos.</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Usar linguagem simples</li>
+                  <li>Atividades concretas e contextualizadas</li>
+                  <li>Repetição com variação</li>
+                </ul>
+              </td>
+              <td>
+                <div class="resource-visual">🍎🧊<br><small style="font-size:9px">Objetos reais e materiais concretos</small></div>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Modelar a atividade</li>
+                  <li>Dar tempo extra</li>
+                  <li>Reforçar pequenos avanços com encorajamento</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="bullet-list">
+                  <li>Avaliação contínua e prática</li>
+                  <li>Observação do progresso</li>
+                  <li>Uso de registros visuais</li>
+                </ul>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- Observações Gerais -->
+      <div class="obs-card">
+        <h4>📝 Observações Gerais</h4>
+        <textarea class="form-field" style="width:100%;border:2px solid var(--teal);border-radius:6px;padding:8px;font-family:inherit;font-size:12px;min-height:70px;resize:vertical;outline:none;background:white" placeholder="Registre aqui observações gerais sobre o aluno, contexto familiar, informações relevantes para o planejamento..."></textarea>
+      </div>
+
+      <!-- Signatures -->
+      <div class="signatures">
+        <div class="sig-field">
+          <input type="date" />
+          <label>Data</label>
+        </div>
+        <div class="sig-field">
+          <input type="text" placeholder="Assinatura" />
+          <label>Assinatura do(a) Professor(a)</label>
+        </div>
+      </div>
+
+      <!-- Footer Banner -->
+      <div class="footer-banner" style="margin-top:16px; background: linear-gradient(135deg, #1a3a6b, #0d9488)">
+        <div class="msg-left">💛 Cada aluno <span>aprender</span> de um jeito.<br>Nosso papel é criar <span>caminhos para todos!</span></div>
+        <div class="msg-right"><span>INCLUSÃO SE FAZ COM</span><br>PLANEJAMENTO, EMPATIA<br>E INTENÇÃO!</div>
+      </div>
+
+    </div><!-- /page-body -->
+  </div><!-- /page 2 -->
+
+</div><!-- /wrapper -->
+
+<script>
+  /* ─── CANVAS DECORATIONS ─── */
+  function drawPEIHeader(id) {
+    const c = document.getElementById(id);
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    c.width = c.offsetWidth * window.devicePixelRatio;
+    c.height = 60 * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    const W = c.offsetWidth, H = 60;
+
+    // Gradient background
+    const grd = ctx.createLinearGradient(0, 0, W, 0);
+    grd.addColorStop(0,   '#1a3a6b');
+    grd.addColorStop(.33, '#2563b0');
+    grd.addColorStop(.66, '#22a64a');
+    grd.addColorStop(1,   '#f97316');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H);
+
+    // Puzzle-piece circles
+    const colors = ['#facc15','#f97316','#22a64a','#3b82f6','#a855f7','#ec4899'];
+    for (let i = 0; i < 18; i++) {
+      ctx.beginPath();
+      ctx.arc(i * (W/17), H/2, 10 + Math.sin(i)*5, 0, Math.PI*2);
+      ctx.fillStyle = colors[i % colors.length] + '55';
+      ctx.fill();
+    }
+
+    // Wave
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    for (let x = 0; x <= W; x += 20) {
+      ctx.lineTo(x, H - 14 - Math.sin(x / 40) * 10);
+    }
+    ctx.lineTo(W, H); ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.fill();
+  }
+
+  function drawAdaptHeader(id) {
+    const c = document.getElementById(id);
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    c.width = c.offsetWidth * window.devicePixelRatio;
+    c.height = 60 * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    const W = c.offsetWidth, H = 60;
+
+    const grd = ctx.createLinearGradient(0, 0, W, 0);
+    grd.addColorStop(0,   '#1a3a6b');
+    grd.addColorStop(.5,  '#0d9488');
+    grd.addColorStop(1,   '#22a64a');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H);
+
+    // Dots grid
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    for (let x = 10; x < W; x += 24) {
+      for (let y = 8; y < H; y += 20) {
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Bottom wave
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    for (let x = 0; x <= W; x += 30) {
+      ctx.quadraticCurveTo(x + 15, H - 18, x + 30, H);
+    }
+    ctx.lineTo(W, H); ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.fill();
+  }
+
+  window.addEventListener('load', () => {
+    drawPEIHeader('canvas-pei-header');
+    drawAdaptHeader('canvas-adapt-header');
+  });
+  window.addEventListener('resize', () => {
+    drawPEIHeader('canvas-pei-header');
+    drawAdaptHeader('canvas-adapt-header');
+  });
+
+  /* ─── RESET ─── */
+  function resetForm() {
+    if (!confirm('Limpar todos os campos preenchidos?')) return;
+    document.querySelectorAll('input[type=text], input[type=date]').forEach(el => el.value = '');
+    document.querySelectorAll('textarea').forEach(el => el.value = '');
+    document.querySelectorAll('input[type=checkbox]').forEach(el => el.checked = false);
+    document.querySelectorAll('.edit-cell[contenteditable]').forEach(el => {
+      el.textContent = el.dataset.placeholder || '';
+    });
+  }
+
+  /* ─── PLACEHOLDER BEHAVIOR FOR edit-cell ─── */
+  document.querySelectorAll('.edit-cell[contenteditable]').forEach(el => {
+    el.addEventListener('focus', () => {
+      if (el.textContent === el.dataset.placeholder) el.textContent = '';
+    });
+    el.addEventListener('blur', () => {
+      if (!el.textContent.trim() && el.dataset.placeholder)
+        el.textContent = el.dataset.placeholder;
+    });
+  });
+</script>
+</body>
+</html>
