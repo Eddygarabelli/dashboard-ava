@@ -3,1168 +3,1298 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simulador de Anatomia e Química · Imunoterapia GLP-1</title>
-<link rel="icon" href="assets/logo.png">
+<title>Elementos Contra o Tumor</title>
 <style>
+/* =======================================================================
+   Identidade: console de bancada — campo escuro de microscópio,
+   rótulos em versalete, números em monoespaçada tabular.
+   Tema único, todas as cores explícitas.
+   ======================================================================= */
 :root{
-  --brand-blue:#1d1ed8;
-  --bg0:#070b18;
-  --bg1:#0d1327;
-  --panel:#111a30;
-  --panel2:#16203c;
-  --line:#233054;
-  --text:#e8eefc;
-  --muted:#8fa0c4;
-  --glp:#38bdf8;
-  --ops:#f59e0b;
-  --cd47:#a855f7;
-  --cancer:#ec4899;
-  --macro:#22d3ee;
-  --healthy:#4ade80;
-  --danger:#f43f5e;
+  --ground:#070B14;
+  --panel:#0D1422;
+  --panel2:#121C2E;
+  --sunken:#080E1A;
+  --line:#1F2B42;
+  --line-soft:#162033;
+  --ink:#E4EBF6;
+  --muted:#8496B4;
+  --dim:#5A6B8C;
+
+  --tumor:#E33C8B;
+  --immune:#5B8DEF;
+  --tissue:#41A24A;
+
+  --good:#41A24A;
+  --warn:#C98A12;
+  --crit:#E14B5A;
+
+  --mono:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,Ubuntu,'Helvetica Neue',Arial,sans-serif;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
-  margin:0; color:var(--text);
-  font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,sans-serif;
-  background:
-    radial-gradient(900px 600px at 10% -10%, rgba(56,189,248,.10), transparent 55%),
-    radial-gradient(900px 600px at 110% 0%, rgba(236,72,153,.10), transparent 55%),
-    linear-gradient(180deg,var(--bg0),var(--bg1));
-  min-height:100%;
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:14px;
+  line-height:1.5;
+  -webkit-text-size-adjust:100%;
 }
-a{color:#93c5fd}
+h1,h2,h3{margin:0;text-wrap:balance}
+a{color:#8FB4FF}
+button{font-family:inherit}
+
+.label{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 
 /* ---------- topo ---------- */
-.header{position:sticky;top:0;z-index:30;backdrop-filter:blur(8px);
-  background:rgba(7,11,24,.78);border-bottom:1px solid var(--line)}
-.header-row{max-width:1360px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.2px}
-.brand .dot{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;
-  background:linear-gradient(135deg,#22d3ee,#a855f7);color:#06101f;font-size:18px}
-.brand small{display:block;font-weight:500;color:var(--muted);font-size:11px}
-.spacer{flex:1}
-.btn{appearance:none;border:1px solid var(--line);background:var(--panel2);color:var(--text);
-  padding:8px 14px;border-radius:999px;font-weight:600;cursor:pointer;transition:.18s;font-size:13px}
-.btn:hover{transform:translateY(-1px);border-color:#3a4a7a}
-.btn.primary{background:linear-gradient(135deg,#2563eb,#7c3aed);border-color:transparent}
-.btn.warn{background:linear-gradient(135deg,#b45309,#ea580c);border-color:transparent}
-.btn.ghost{background:transparent}
-.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
-.btn.armed{background:linear-gradient(135deg,#e11d48,#f97316);border-color:transparent;
-  animation:pulse 1.1s ease-in-out infinite}
-@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(244,63,94,.12)}}
+.top{
+  position:sticky;top:0;z-index:40;
+  background:rgba(7,11,20,.94);
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(6px);
+}
+.top-in{max-width:1500px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.mark{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.mark strong{font-size:16px;letter-spacing:-.01em}
+.mark span{font-size:11px;color:var(--muted)}
+.clock{display:flex;align-items:baseline;gap:7px;padding:4px 12px;border:1px solid var(--line);
+  border-radius:8px;background:var(--sunken)}
+.clock b{font-family:var(--mono);font-size:19px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.clock i{font-style:normal;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.12em}
+.grow{flex:1 1 auto}
 
-/* ---------- layout ---------- */
-.wrap{max-width:1360px;margin:0 auto;padding:16px;display:grid;gap:16px;
-  grid-template-columns:330px minmax(0,1fr) 300px;align-items:start}
-@media (max-width:1180px){.wrap{grid-template-columns:1fr}}
-.card{background:linear-gradient(180deg,var(--panel),rgba(17,26,48,.65));
-  border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 12px 30px rgba(0,0,0,.28)}
-.card h2{margin:0 0 4px;font-size:13px;letter-spacing:.10em;text-transform:uppercase;color:#b9c8ea}
-.card .hint{margin:0 0 10px;font-size:11.5px;color:var(--muted);line-height:1.45}
-.stack{display:grid;gap:14px}
+.btn{
+  border:1px solid var(--line);background:var(--panel2);color:var(--ink);
+  padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;
+  transition:background .15s,border-color .15s;
+}
+.btn:hover{background:#182339;border-color:#2B3A57}
+.btn:focus-visible{outline:2px solid #5B8DEF;outline-offset:2px}
+.btn.go{background:#152F23;border-color:#2C5C40;color:#9FE3B4}
+.btn.go:hover{background:#1B3C2C}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--sunken)}
+.seg button{border:0;background:transparent;color:var(--muted);padding:7px 10px;
+  font-size:12px;font-weight:600;cursor:pointer;font-family:var(--mono)}
+.seg button+button{border-left:1px solid var(--line-soft)}
+.seg button[aria-pressed="true"]{background:#1B2942;color:#fff}
+.seg button:focus-visible{outline:2px solid #5B8DEF;outline-offset:-2px}
+
+/* ---------- grade ---------- */
+.wrap{
+  max-width:1500px;margin:0 auto;padding:18px;
+  display:grid;gap:18px;
+  grid-template-columns:minmax(0,330px) minmax(0,1fr) minmax(0,320px);
+  align-items:start;
+}
+@media (max-width:1240px){ .wrap{grid-template-columns:minmax(0,1fr)} }
+.col{display:grid;gap:18px;align-content:start;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;
+  display:grid;gap:10px;min-width:0}
+.card > *{min-width:0}
+.card p{margin:0;font-size:12.5px;color:var(--muted)}
 
 /* ---------- controles ---------- */
-.reagent{padding:9px 10px;border:1px solid var(--line);border-radius:12px;background:rgba(9,14,30,.55);margin-bottom:9px}
-.reagent .top{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600}
-.chip{width:10px;height:10px;border-radius:3px;flex:none}
-.reagent .val{margin-left:auto;font-variant-numeric:tabular-nums;color:#cfe0ff;font-weight:700}
-.reagent .sub{font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.35}
-input[type=range]{width:100%;margin:8px 0 0;accent-color:#38bdf8;height:18px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+select{
+  width:100%;background:var(--sunken);color:var(--ink);border:1px solid var(--line);
+  border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit;
+}
+select:focus-visible{outline:2px solid #5B8DEF;outline-offset:1px}
+input[type=range]{width:100%;accent-color:#5B8DEF;height:20px;margin:0}
+.row{display:flex;align-items:center;gap:10px}
+.row .num{margin-left:auto;font-size:13px;font-weight:700}
+
+.agent-head{display:flex;align-items:center;gap:11px}
+.tile{width:46px;height:46px;border-radius:10px;flex:none;display:grid;place-content:center;
+  line-height:1.05;text-align:center;border:1px solid var(--line);background:var(--sunken)}
+.tile b{font-size:17px;font-family:var(--mono);font-weight:700}
+.tile i{font-style:normal;font-size:9px;color:var(--dim);font-family:var(--mono)}
+.agent-head h3{font-size:14.5px}
+.agent-head p{font-size:11.5px}
+
+.chip{display:inline-flex;max-width:100%;align-items:center;gap:5px;padding:2.5px 8px;border-radius:999px;
+  font-size:10.5px;font-weight:700;border:1px solid var(--line);background:var(--sunken);color:var(--muted)}
+.chip.ok{color:#8FD8A0;border-color:#2C5C40;background:#122A1C}
+.chip.no{color:#F0A5AC;border-color:#5C2C33;background:#2A121A}
+.chip.warn{color:#E7C583;border-color:#5C4A1E;background:#2A2312}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+
+.mech{font-size:12.5px;color:var(--ink);opacity:.92}
+.evid{font-size:12px;color:var(--muted);border-left:2px solid var(--line);padding-left:10px}
+.evid b{color:var(--ink);font-weight:600}
+.evid a{display:inline-block;margin-top:3px;font-size:11px}
 
 /* ---------- métricas ---------- */
-.meter{margin-bottom:8px}
-.meter .lab{display:flex;font-size:11.5px;color:var(--muted);margin-bottom:4px}
-.meter .lab b{margin-left:auto;color:var(--text);font-variant-numeric:tabular-nums}
-.bar{height:7px;border-radius:999px;background:#0b1226;overflow:hidden;border:1px solid #1c2745}
-.bar i{display:block;height:100%;border-radius:999px;transition:width .3s ease}
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-.stat{background:rgba(9,14,30,.6);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
-.stat .n{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
-.stat .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+.hero{display:grid;gap:2px}
+.hero b{font-family:var(--mono);font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.hero span{font-size:11.5px;color:var(--muted)}
+.verdict{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border-radius:8px;
+  font-size:12px;font-weight:700;border:1px solid var(--line);background:var(--sunken)}
+.verdict i{width:8px;height:8px;border-radius:2px;display:block;flex:none}
+.meter{display:grid;gap:5px}
+.meter .top-row{display:flex;font-size:11.5px;color:var(--muted);gap:8px}
+.meter .top-row b{margin-left:auto;color:var(--ink);font-family:var(--mono);font-variant-numeric:tabular-nums}
+.track{height:6px;border-radius:3px;background:var(--sunken);border:1px solid var(--line-soft);overflow:hidden}
+.track i{display:block;height:100%;transition:width .25s linear}
+.kv{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:12.5px;margin:0}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;font-family:var(--mono);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 
 /* ---------- canvas ---------- */
-.stage{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#060a15}
-#sim{display:block;width:100%;height:min(62vh,620px);touch-action:none}
-.stage.armed{cursor:crosshair;box-shadow:inset 0 0 0 2px rgba(244,63,94,.55)}
-.overlay{position:absolute;left:12px;top:12px;display:flex;gap:6px;flex-wrap:wrap;pointer-events:none}
-.tag{background:rgba(6,10,21,.72);border:1px solid var(--line);border-radius:999px;
-  padding:4px 10px;font-size:11px;color:#cfe0ff;display:flex;align-items:center;gap:6px}
-.tag i{width:8px;height:8px;border-radius:99px;display:block}
-.banner{position:absolute;inset:auto 12px 12px;background:rgba(6,10,21,.85);border:1px solid var(--line);
-  border-radius:12px;padding:10px 12px;font-size:12.5px;display:none}
-.banner.show{display:block}
-.banner b{color:#7dd3fc}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
-canvas.mini{display:block;width:100%;border-radius:12px;background:#070c19;border:1px solid var(--line)}
-#body{height:210px;cursor:pointer}
-#lab{height:150px}
-#chart{height:110px}
+.stage{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#060A12}
+#field{display:block;width:100%;height:min(58vh,560px);touch-action:none}
+.stage-tags{position:absolute;left:12px;top:12px;display:flex;gap:6px;flex-wrap:wrap;pointer-events:none}
+.stag{display:flex;align-items:center;gap:6px;padding:3px 9px;border-radius:6px;
+  background:rgba(6,10,18,.82);border:1px solid var(--line);font-size:11px;color:var(--muted)}
+.stag i{width:8px;height:8px;border-radius:2px;display:block}
+.stag b{font-family:var(--mono);color:var(--ink);font-variant-numeric:tabular-nums}
+.beam{position:absolute;inset:auto 12px 12px;padding:9px 12px;border-radius:8px;
+  background:rgba(6,10,18,.92);border:1px solid var(--line);font-size:12.5px;display:none}
+.beam.on{display:block}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:9px;height:9px;border-radius:2px;display:block}
+canvas.plot{display:block;width:100%;background:var(--sunken);border:1px solid var(--line);border-radius:10px}
+#chart{height:170px}
+#pk{height:78px}
+#ptable{height:184px;cursor:pointer}
+#route{height:152px;cursor:pointer}
 
-/* ---------- log ---------- */
-#log{height:170px;overflow:auto;font-size:11.5px;line-height:1.55;
-  background:rgba(6,10,21,.6);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
-#log div{border-bottom:1px dashed #1b2544;padding:2px 0}
-#log div:last-child{border:0}
-#log .t{color:#5f719a;margin-right:6px;font-variant-numeric:tabular-nums}
-.note{font-size:11px;color:var(--muted);line-height:1.5;border-left:2px solid #3b4a78;padding-left:10px;margin-top:10px}
-.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:8px}
-.legend span{display:flex;align-items:center;gap:5px}
-.legend i{width:9px;height:9px;border-radius:99px;display:block}
-footer{max-width:1360px;margin:0 auto;padding:0 16px 28px;font-size:11.5px;color:var(--muted);line-height:1.6}
+#log{height:150px;overflow:auto;font-family:var(--mono);font-size:11.5px;line-height:1.65;
+  background:var(--sunken);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+#log div{display:flex;gap:9px;padding:1px 0;min-width:0}
+#log time{color:var(--dim);flex:none;font-variant-numeric:tabular-nums}
+#log em{font-style:normal;flex:none;font-weight:700;letter-spacing:.04em}
+#log p{margin:0;color:var(--muted);min-width:0;overflow-wrap:anywhere}
+#log b{color:var(--ink);font-weight:600}
+
+.refs{display:grid;gap:9px;font-size:11.5px}
+.refs a{display:block;color:#8FB4FF;text-decoration:none;overflow-wrap:anywhere}
+.refs a:hover{text-decoration:underline}
+.refs span{color:var(--dim)}
+.note{font-size:11.5px;color:var(--muted);border-left:2px solid #5C4A1E;padding-left:10px}
+footer{max-width:1500px;margin:0 auto;padding:6px 18px 34px;font-size:11.5px;color:var(--dim)}
+
+@media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
 </style>
 </head>
 <body>
 
-<header class="header">
-  <div class="header-row">
-    <div class="brand">
-      <span class="dot">⚗</span>
-      <span>Simulador de Anatomia &amp; Química
-        <small>Imunoterapia experimental · veículo GLP-1 + fagócitos</small>
-      </span>
+<header class="top">
+  <div class="top-in">
+    <div class="mark">
+      <strong>Elementos Contra o Tumor</strong>
+      <span>simulador de oncologia · escala celular e escala clínica</span>
     </div>
-    <div class="spacer"></div>
-    <button class="btn" id="btnPlay">⏸ Pausar</button>
-    <button class="btn ghost" id="btnSpeed">Velocidade 1×</button>
-    <button class="btn ghost" id="btnSeed">+ Tumor</button>
-    <button class="btn ghost" id="btnReset">↻ Reiniciar</button>
-    <a class="btn ghost" href="index.html" style="text-decoration:none">← AVA</a>
+    <div class="grow"></div>
+    <div class="clock"><b id="clockDay" class="num">0</b><i>dias</i></div>
+    <button class="btn" id="btnPlay" aria-pressed="true">Pausar</button>
+    <div class="seg" role="group" aria-label="Velocidade do tempo">
+      <button data-sp="0.5" aria-pressed="false">½ d/s</button>
+      <button data-sp="2" aria-pressed="true">2 d/s</button>
+      <button data-sp="7" aria-pressed="false">7 d/s</button>
+      <button data-sp="30" aria-pressed="false">30 d/s</button>
+    </div>
+    <button class="btn" id="btnReset">Reiniciar</button>
   </div>
 </header>
 
 <div class="wrap">
 
-  <!-- ============ COLUNA 1: QUÍMICA ============ -->
-  <div class="stack">
+  <!-- ================= COLUNA ESQUERDA ================= -->
+  <div class="col">
     <section class="card">
-      <h2>1 · Bancada de química</h2>
-      <p class="hint">Monte a composição do injetável. O veículo é um análogo de <b>GLP-1</b>;
-        os agentes ativos marcam a célula tumoral e liberam o freio dos <b>macrófagos</b> (as células que
-        fagocitam outras células).</p>
-
-      <div class="reagent">
-        <div class="top"><span class="chip" style="background:var(--glp)"></span>
-          Análogo de GLP-1 (veículo)<span class="val" id="vDose">1.0 mg</span></div>
-        <input type="range" id="rDose" min="0" max="24" value="10">
-        <div class="sub">Peptídeo transportador. Aumenta a difusão do composto no tecido e reduz a glicemia;
-          em excesso provoca efeitos adversos (náusea).</div>
-      </div>
-
-      <div class="reagent">
-        <div class="top"><span class="chip" style="background:var(--ops)"></span>
-          Opsonina (anticorpo marcador)<span class="val" id="vOps">60%</span></div>
-        <input type="range" id="rOps" min="0" max="100" value="60">
-        <div class="sub">Cobre o antígeno tumoral e sinaliza “coma-me” para o fagócito.</div>
-      </div>
-
-      <div class="reagent">
-        <div class="top"><span class="chip" style="background:var(--cd47)"></span>
-          Bloqueador de CD47<span class="val" id="vCd">55%</span></div>
-        <input type="range" id="rCd" min="0" max="100" value="55">
-        <div class="sub">Desliga o sinal “não me coma” do tumor e ativa os macrófagos.</div>
-      </div>
-
-      <div class="grid2">
-        <div class="reagent" style="margin:0">
-          <div class="top">pH<span class="val" id="vPh">7.4</span></div>
-          <input type="range" id="rPh" min="50" max="85" value="74">
-          <div class="sub">Ótimo: 7,4</div>
-        </div>
-        <div class="reagent" style="margin:0">
-          <div class="top">Temp.<span class="val" id="vTemp">25 °C</span></div>
-          <input type="range" id="rTemp" min="2" max="45" value="25">
-          <div class="sub">Ótimo: 4–25 °C</div>
-        </div>
-      </div>
-
-      <canvas id="lab" class="mini" style="margin-top:10px"></canvas>
-
-      <div class="toolbar">
-        <button class="btn primary" id="btnMix">⚗ Misturar composto</button>
-        <button class="btn" id="btnLoad" disabled>💉 Carregar seringa</button>
-      </div>
+      <h2 class="label">Caso clínico</h2>
+      <select id="selCaso" aria-label="Caso clínico"></select>
+      <p id="casoDesc"></p>
+      <dl class="kv">
+        <dt>Volume inicial</dt><dd id="kvV0">—</dd>
+        <dt>Tempo de duplicação</dt><dd id="kvTd">—</dd>
+      </dl>
     </section>
 
     <section class="card">
-      <h2>Ficha do composto</h2>
-      <div class="meter"><div class="lab">Estabilidade <b id="mStab">—</b></div>
-        <div class="bar"><i id="bStab" style="width:0;background:linear-gradient(90deg,#22d3ee,#38bdf8)"></i></div></div>
-      <div class="meter"><div class="lab">Potência fagocítica <b id="mPot">—</b></div>
-        <div class="bar"><i id="bPot" style="width:0;background:linear-gradient(90deg,#a855f7,#ec4899)"></i></div></div>
-      <div class="meter"><div class="lab">Seletividade <b id="mSel">—</b></div>
-        <div class="bar"><i id="bSel" style="width:0;background:linear-gradient(90deg,#4ade80,#22c55e)"></i></div></div>
-      <div class="meter"><div class="lab">Toxicidade <b id="mTox">—</b></div>
-        <div class="bar"><i id="bTox" style="width:0;background:linear-gradient(90deg,#f59e0b,#f43f5e)"></i></div></div>
-      <div class="hint" id="fFormula" style="margin:8px 0 0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:#7dd3fc">
-        aguardando mistura…</div>
+      <h2 class="label">Tabela periódica em oncologia</h2>
+      <p>Clique num elemento destacado. Contorno cheio = agente simulável;
+         contorno pontilhado = usado na clínica, fora deste modelo.</p>
+      <canvas id="ptable" aria-label="Tabela periódica com os elementos usados em oncologia"></canvas>
+    </section>
+
+    <section class="card">
+      <div class="agent-head">
+        <div class="tile" id="agTile"><b>—</b><i></i></div>
+        <div>
+          <h3 id="agName">—</h3>
+          <p id="agClass"></p>
+        </div>
+      </div>
+      <div class="chips" id="agChips"></div>
+      <p class="mech" id="agMech"></p>
+      <div class="evid" id="agEvid"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="label">Dose e via</h2>
+      <div class="row">
+        <span style="font-size:12.5px;color:var(--muted)">Dose</span>
+        <span class="num" id="doseVal">100%</span>
+      </div>
+      <input type="range" id="rDose" min="40" max="150" value="100" aria-label="Dose em porcentagem da dose padrão">
+      <canvas id="route" aria-label="Escolha da via de administração"></canvas>
+      <p id="routeInfo"></p>
+      <div class="row" style="gap:8px">
+        <button class="btn go" id="btnStart">Iniciar protocolo</button>
+        <button class="btn" id="btnCycle">Aplicar 1 ciclo</button>
+      </div>
     </section>
   </div>
 
-  <!-- ============ COLUNA 2: TECIDO ============ -->
-  <div class="stack">
+  <!-- ================= COLUNA CENTRAL ================= -->
+  <div class="col">
     <section class="card">
-      <h2>3 · Microambiente tumoral</h2>
-      <p class="hint" id="stageHint">Carregue a seringa e clique no tecido para aplicar a injeção.</p>
-      <div class="stage" id="stage">
-        <canvas id="sim"></canvas>
-        <div class="overlay">
-          <span class="tag"><i style="background:var(--cancer)"></i>Cancerígena <b id="tCancer">0</b></span>
-          <span class="tag"><i style="background:var(--macro)"></i>Macrófago <b id="tMacro">0</b></span>
-          <span class="tag"><i style="background:var(--healthy)"></i>Saudável <b id="tHealthy">0</b></span>
-          <span class="tag">⏱ <b id="tTime">0s</b></span>
+      <h2 class="label">Campo microscópico — o que acontece com as células</h2>
+      <div class="stage">
+        <canvas id="field"></canvas>
+        <div class="stage-tags">
+          <span class="stag"><i style="background:var(--tumor)"></i>tumorais <b id="tTumor">0</b></span>
+          <span class="stag"><i style="background:var(--immune)"></i>macrófagos <b id="tMac">0</b></span>
+          <span class="stag"><i style="background:var(--tissue)"></i>saudáveis <b id="tHealthy">0</b></span>
         </div>
-        <div class="banner" id="banner"></div>
+        <div class="beam" id="beam"></div>
       </div>
       <div class="legend">
-        <span><i style="background:var(--glp)"></i>GLP-1</span>
-        <span><i style="background:var(--ops)"></i>opsonina</span>
-        <span><i style="background:var(--cd47)"></i>anti-CD47</span>
-        <span>◌ anel tracejado = opsonizada</span>
-        <span>◍ halo violeta = CD47 bloqueado</span>
-        <span>▮ barra sobre o macrófago = ativação</span>
-      </div>
-      <div class="toolbar">
-        <span class="tag" style="pointer-events:auto">Seringa: <b id="tSyringe">vazia</b></span>
-        <button class="btn ghost" id="btnVessel">Injetar no vaso (IV)</button>
+        <span><i style="background:var(--tumor)"></i>tumoral — contorno irregular, núcleo grande</span>
+        <span><i style="background:var(--immune)"></i>macrófago — pseudópodes</span>
+        <span><i style="background:var(--tissue)"></i>saudável — contorno liso</span>
       </div>
     </section>
 
     <section class="card">
-      <h2>Registro do experimento</h2>
-      <div id="log"></div>
+      <h2 class="label">Volume do tumor ao longo do tratamento</h2>
+      <canvas id="chart" class="plot" aria-label="Volume do tumor em milímetros cúbicos por dia"></canvas>
+      <h2 class="label">Concentração do agente no organismo</h2>
+      <canvas id="pk" class="plot" aria-label="Concentração do agente ao longo do tempo"></canvas>
+    </section>
+
+    <section class="card">
+      <h2 class="label">Diário do tratamento</h2>
+      <div id="log" role="log" aria-live="polite"></div>
     </section>
   </div>
 
-  <!-- ============ COLUNA 3: ANATOMIA ============ -->
-  <div class="stack">
+  <!-- ================= COLUNA DIREITA ================= -->
+  <div class="col">
     <section class="card">
-      <h2>2 · Local da aplicação</h2>
-      <p class="hint">Clique no corpo para escolher a via subcutânea. O local muda a
-        velocidade de absorção e o tempo até o pico do composto.</p>
-      <canvas id="body" class="mini"></canvas>
-      <div class="hint" id="siteInfo" style="margin-top:8px"></div>
-    </section>
-
-    <section class="card">
-      <h2>Sinais vitais</h2>
-      <div class="stats">
-        <div class="stat"><div class="n" id="sGly">180</div><div class="k">glicemia mg/dL</div></div>
-        <div class="stat"><div class="n" id="sSat">10<span style="font-size:12px">%</span></div><div class="k">saciedade</div></div>
-        <div class="stat"><div class="n" id="sNau">0<span style="font-size:12px">%</span></div><div class="k">náusea</div></div>
-        <div class="stat"><div class="n" id="sEat">0</div><div class="k">fagocitoses</div></div>
+      <h2 class="label">Resposta</h2>
+      <div class="hero">
+        <b id="heroV" class="num">—</b>
+        <span>mm³ de tumor · maior diâmetro <span id="heroD" class="num">—</span> mm</span>
       </div>
-      <div class="meter"><div class="lab">Concentração plasmática <b id="mPlasma">0%</b></div>
-        <div class="bar"><i id="bPlasma" style="width:0;background:linear-gradient(90deg,#38bdf8,#818cf8)"></i></div></div>
-      <div class="meter"><div class="lab">Tecido saudável preservado <b id="mTissue">100%</b></div>
-        <div class="bar"><i id="bTissue" style="width:100%;background:linear-gradient(90deg,#4ade80,#22c55e)"></i></div></div>
-      <canvas id="chart" class="mini" style="margin-top:10px"></canvas>
-      <div class="legend"><span><i style="background:var(--cancer)"></i>células tumorais</span>
-        <span><i style="background:var(--glp)"></i>glicemia</span></div>
+      <div><span class="verdict" id="verdict"><i style="background:var(--muted)"></i>aguardando</span></div>
+      <dl class="kv">
+        <dt>Variação vs. início</dt><dd id="kvDelta">—</dd>
+        <dt>Menor volume atingido</dt><dd id="kvNadir">—</dd>
+        <dt>Ciclos aplicados</dt><dd id="kvCiclos">—</dd>
+        <dt>Células resistentes</dt><dd id="kvResist">—</dd>
+      </dl>
     </section>
 
     <section class="card">
-      <h2>Como vencer</h2>
-      <p class="hint" style="margin:0">Zere as células cancerígenas mantendo <b>≥ 70%</b> do tecido saudável
-        e a náusea abaixo de 60%. O tumor se divide sozinho: dose baixa demais não acompanha o crescimento,
-        dose alta demais destrói o tecido vizinho — essa é a <b>janela terapêutica</b>.</p>
-      <div class="note">Modelo didático e fictício. Análogos de GLP-1 são medicamentos para diabetes e obesidade,
-        <b>não</b> são tratamento contra o câncer. A fagocitose por macrófagos e o bloqueio de CD47
-        existem de fato em pesquisa, mas aqui aparecem de forma muito simplificada, apenas para ensino.</div>
+      <h2 class="label">Segurança</h2>
+      <div class="meter">
+        <div class="top-row"><span id="toxNome">Toxicidade</span><b id="toxVal">0%</b></div>
+        <div class="track"><i id="toxBar" style="width:0;background:var(--good)"></i></div>
+      </div>
+      <div class="meter">
+        <div class="top-row"><span>Tecido saudável preservado</span><b id="tecVal">100%</b></div>
+        <div class="track"><i id="tecBar" style="width:100%;background:var(--good)"></i></div>
+      </div>
+      <p id="segNota" style="font-size:11.5px"></p>
+    </section>
+
+    <section class="card">
+      <h2 class="label">De onde vêm os números</h2>
+      <div class="refs" id="refs"></div>
+      <p class="note">Modelo didático: crescimento de Gompertz e morte fracionada por ciclo, com valores
+        ajustados para reproduzir a ordem de grandeza dos ensaios citados. Desfechos reais dependem do
+        estadiamento, da biologia do tumor e do paciente. Nada aqui orienta tratamento.</p>
     </section>
   </div>
 </div>
 
-<footer>
-  AVA · Escola da Barra — simulador para aulas de Ciências/Biologia e Química.
-  Nenhum dado é enviado para servidores: tudo roda no navegador com HTML Canvas + JavaScript.
-</footer>
+<footer>AVA · Escola da Barra — HTML Canvas + JavaScript, sem bibliotecas externas.</footer>
 
 <script>
 "use strict";
 /* =========================================================================
-   Simulador de Anatomia e Química — HTML Canvas + JavaScript puro
+   DADOS
    ========================================================================= */
-
-/* ---------------- utilitários ---------------- */
-const $ = id => document.getElementById(id);
-const clamp = (v,a,b) => v<a?a:(v>b?b:v);
-const lerp  = (a,b,t) => a+(b-a)*t;
-const rnd   = (a,b) => a+Math.random()*(b-a);
-const dist2 = (a,b) => {const dx=a.x-b.x, dy=a.y-b.y; return dx*dx+dy*dy;};
-
-/* ---------------- estado global ---------------- */
-const S = {
-  running:true, speed:1, t:0,
-  cells:[], particles:[], depots:[], pops:[],
-  compound:null, syringe:0, armed:false,
-  glycemia:180, satiety:10, nausea:0, eaten:0,
-  plasma:0, plasmaC:null,
-  healthyStart:0, tissue:1, history:[], over:null,
-  nextId:1
+const CASOS = {
+  prostata:{nome:'Próstata metastático (mCRPC, PSMA+)', v0:1400, td:70,
+    desc:'Câncer de próstata resistente à castração, com metástases ósseas e PSMA na membrana das células.'},
+  glioma:{nome:'Glioma de alto grau recorrente', v0:900, td:35,
+    desc:'Tumor cerebral infiltrativo que volta a crescer após cirurgia e radioterapia. A barreira hematoencefálica barra muitos fármacos.'},
+  sarcoma:{nome:'Sarcoma de partes moles localmente avançado', v0:6000, td:60,
+    desc:'Massa volumosa em membro ou tronco, tratada antes da cirurgia para permitir ressecção completa (R0).'},
+  apl:{nome:'Leucemia promielocítica aguda (PML-RARA)', v0:1200, td:14,
+    desc:'Leucemia com a translocação t(15;17). A proteína PML-RARA trava a maturação dos promielócitos.'},
+  testiculo:{nome:'Tumor germinativo de testículo metastático', v0:2200, td:30,
+    desc:'Tumor de células germinativas com reparo de DNA deficiente — extremamente sensível a lesões no DNA.'},
+  tireoide:{nome:'Carcinoma diferenciado de tireoide (pós-cirurgia)', v0:300, td:120,
+    desc:'Resíduo tireoidiano e possíveis focos metastáticos que mantêm ativo o transportador de iodo (NIS).'}
 };
 
-const SITES = [
-  {key:'abdomen', nome:'Abdômen', bx:  0, by:104, lab:'cima',   abs:1.00, lat:1.2, txt:'absorção rápida e mais previsível'},
-  {key:'braco',   nome:'Braço',   bx:-42, by: 92, lab:'esquerda',abs:0.85, lat:2.2, txt:'absorção intermediária'},
-  {key:'coxa',    nome:'Coxa',    bx: 14, by:158, lab:'direita', abs:0.70, lat:3.4, txt:'absorção lenta, efeito prolongado'}
-];
-let site = SITES[0];
-/* converte as coordenadas do desenho do corpo para pixels do canvas */
-function sitePos(st){
-  const w=bodyC.clientWidth, h=bodyC.clientHeight, s=h/230;
-  return {x: w/2 + st.bx*s, y: 10 + st.by*s};
-}
+const VIAS = {
+  iv:{nome:'Intravenosa', desc:'entra direto na circulação, distribuição rápida por todo o corpo'},
+  sc:{nome:'Subcutânea', desc:'depósito no tecido gorduroso, absorção lenta e prolongada'},
+  it:{nome:'Intratumoral', desc:'injeção dentro da lesão, concentra a dose e poupa o resto do corpo'},
+  vo:{nome:'Oral', desc:'absorção no intestino e passagem pelo fígado antes de circular'}
+};
 
-/* ---------------- canvas ---------------- */
-const sim=$('sim'), sctx=sim.getContext('2d');
-const bodyC=$('body'), bctx=bodyC.getContext('2d');
-const labC=$('lab'), lctx=labC.getContext('2d');
-const chartC=$('chart'), cctx=chartC.getContext('2d');
-const W = () => sim.clientWidth, H = () => sim.clientHeight;
+/* Cada agente traz mecanismo, evidência publicada e parâmetros do modelo.
+   'efic' = fração do tumor eliminada por aplicação, na dose padrão, sem resistência. */
+const AGENTES = [
+{
+  sym:'Pt', z:78, el:'Platina', nome:'Cisplatina', cor:'#9FA8B4',
+  classe:'Quimioterapia · aprovada desde 1978',
+  mec:'Perde os cloretos dentro da célula, liga-se ao N7 da guanina e forma ligações cruzadas no DNA. A dupla-hélice entorta, a replicação trava e a célula entra em apoptose.',
+  evid:'Tumores germinativos de testículo reparam mal essas ligações cruzadas e expressam pouco ERCC1-XPF — por isso mais de 80–90% dos casos metastáticos são curados.',
+  fonte:{t:'Usanova et al., Molecular Cancer 2010', url:'https://link.springer.com/article/10.1186/1476-4598-9-248'},
+  vias:['iv'], intervalo:21, ciclos:4, dur:1,
+  tox:'rins, audição e nervos periféricos', toxTaxa:0.13, resistTaxa:0.10,
+  logs:{testiculo:2.2, sarcoma:0.50, glioma:0.20, prostata:0.15, tireoide:0.10, apl:0.15},
+  visual:'crosslink'
+},
+{
+  sym:'B', z:5, el:'Boro', nome:'BNCT — captura de nêutrons pelo boro-10', cor:'#C98A12',
+  classe:'Radioterapia binária · aprovada no Japão, em ensaios no resto do mundo',
+  mec:'Um aminoácido carregado com boro-10 se acumula na célula tumoral. Sob um feixe de nêutrons lentos, o ¹⁰B captura um nêutron e se parte em uma partícula alfa e um núcleo de lítio, que percorrem só 4–10 µm — menos que o diâmetro de uma célula. Quem não captou boro fica intacto.',
+  evid:'Em meningioma recorrente refratário, ensaio randomizado com acelerador mostrou sobrevida livre de progressão mediana de 14,7 meses no braço BNCT.',
+  fonte:{t:'BNCT randomizado, J Clin Oncol 2025 (resumo 2083)', url:'https://ascopubs.org/doi/10.1200/JCO.2025.43.16_suppl.2083'},
+  vias:['iv'], intervalo:1, ciclos:1, dur:0.3, requer:'neutrons',
+  tox:'pele e mucosa no campo irradiado', toxTaxa:0.22, resistTaxa:0.04,
+  logs:{glioma:1.40, sarcoma:0.45, tireoide:0.15, prostata:0.10, testiculo:0.20, apl:0.02},
+  visual:'neutron'
+},
+{
+  sym:'Lu', z:71, el:'Lutécio', nome:'¹⁷⁷Lu-PSMA-617', cor:'#7A6BF0',
+  classe:'Radioligante · aprovado pela FDA em 2022',
+  mec:'Uma molécula que se encaixa no PSMA da membrana leva o lutécio-177 até a célula. O ¹⁷⁷Lu emite partículas beta com alcance de 1–2 mm: matam a célula-alvo e as vizinhas (fogo cruzado) — útil em tumores heterogêneos, e parte da explicação da toxicidade.',
+  evid:'No ensaio VISION (831 pacientes), somar ¹⁷⁷Lu-PSMA-617 ao tratamento padrão elevou a sobrevida global de 11,3 para 15,3 meses (HR 0,62).',
+  fonte:{t:'Sartor et al., N Engl J Med 2021 (VISION)', url:'https://www.nejm.org/doi/full/10.1056/NEJMoa2107322'},
+  vias:['iv'], intervalo:42, ciclos:6, dur:2,
+  tox:'medula óssea e glândulas salivares', toxTaxa:0.09, resistTaxa:0.12,
+  logs:{prostata:0.40, tireoide:0.10, glioma:0.05, sarcoma:0.06, testiculo:0.06, apl:0.03},
+  visual:'beta'
+},
+{
+  sym:'Ac', z:89, el:'Actínio', nome:'²²⁵Ac-PSMA', cor:'#E0563C',
+  classe:'Terapia alfa dirigida · em ensaios clínicos',
+  mec:'Mesmo endereço do PSMA, mas com emissor alfa. O ²²⁵Ac gera quatro partículas alfa de 5,8–8,4 MeV com alcance de até ~85 µm: quebras duplas no DNA, difíceis de reparar, num raio de poucas células.',
+  evid:'Meta-análise de 18 estudos (1.155 pacientes): queda de PSA maior que 50% em 65% dos casos — 82% entre os que ainda não haviam recebido outras linhas.',
+  fonte:{t:'Meta-análise de ²²⁵Ac-PSMA, Theranostics 2025', url:'https://www.thno.org/v15p3386.htm'},
+  vias:['iv'], intervalo:56, ciclos:4, dur:2,
+  tox:'boca seca intensa e medula óssea', toxTaxa:0.16, resistTaxa:0.09,
+  logs:{prostata:0.62, tireoide:0.10, glioma:0.07, sarcoma:0.08, testiculo:0.08, apl:0.03},
+  visual:'alfa'
+},
+{
+  sym:'Ra', z:88, el:'Rádio', nome:'²²³Ra-dicloreto', cor:'#2AA3D6',
+  classe:'Radiofármaco ósseo · aprovado pela FDA em 2013',
+  mec:'O rádio é quimicamente parecido com o cálcio: vai sozinho para as áreas de remodelação óssea, onde ficam as metástases, e ali emite partículas alfa de alcance curtíssimo, poupando a medula ao redor.',
+  evid:'No ensaio ALSYMPCA (921 pacientes), a sobrevida global mediana foi de 14,9 meses contra 11,3 do placebo (HR 0,70).',
+  fonte:{t:'Parker et al., N Engl J Med 2013 (ALSYMPCA)', url:'https://www.nejm.org/doi/full/10.1056/NEJMoa1213755'},
+  vias:['iv'], intervalo:28, ciclos:6, dur:1,
+  tox:'medula óssea', toxTaxa:0.07, resistTaxa:0.10,
+  logs:{prostata:0.22, tireoide:0.05, glioma:0.02, sarcoma:0.04, testiculo:0.04, apl:0.02},
+  visual:'alfa'
+},
+{
+  sym:'As', z:33, el:'Arsênio', nome:'Trióxido de arsênio + ATRA', cor:'#41A24A',
+  classe:'Terapia dirigida · aprovada, esquema sem quimioterapia',
+  mec:'O arsênio liga-se à porção PML da proteína de fusão PML-RARA e provoca sua degradação. A célula leucêmica não é só morta: ela volta a amadurecer e vira um granulócito normal (diferenciação).',
+  evid:'Em risco baixo/intermediário, ATRA + arsênio alcançou sobrevida livre de eventos de 96% e sobrevida global de 99% em 50 meses, contra 81% e 88% da quimioterapia.',
+  fonte:{t:'Lo-Coco et al., N Engl J Med 2013', url:'https://www.nejm.org/doi/full/10.1056/NEJMoa1300874'},
+  vias:['iv'], intervalo:7, ciclos:8, dur:3,
+  tox:'intervalo QT e síndrome de diferenciação', toxTaxa:0.06, resistTaxa:0.03,
+  logs:{apl:1.30, testiculo:0.08, prostata:0.05, glioma:0.04, sarcoma:0.05, tireoide:0.05},
+  visual:'diferenciacao'
+},
+{
+  sym:'Hf', z:72, el:'Háfnio', nome:'NBTXR3 — nanopartícula de óxido de háfnio', cor:'#C0C6CE',
+  classe:'Radiossensibilizador · marcação CE, injetado dentro do tumor',
+  mec:'O háfnio tem número atômico alto e absorve muito mais raios X que os tecidos moles. Injetadas na lesão, as nanopartículas multiplicam a dose depositada dentro da célula tumoral sem aumentar a dose na pele e nos órgãos vizinhos.',
+  evid:'No ensaio Act.In.Sarc (fase 2–3), a ressecção completa R0 foi de 77% com NBTXR3 + radioterapia contra 64% com radioterapia isolada.',
+  fonte:{t:'Bonvalot et al., Lancet Oncology 2019', url:'https://www.thelancet.com/journals/lanonc/article/PIIS1470-2045(19)30326-2/abstract'},
+  vias:['it'], intervalo:2, ciclos:25, dur:0.4, requer:'radioterapia',
+  tox:'complicação de ferida operatória', toxTaxa:0.022, resistTaxa:0.02, cirurgia:true,
+  logs:{sarcoma:0.16, glioma:0.06, prostata:0.04, testiculo:0.05, tireoide:0.04, apl:0.01},
+  visual:'radiossens'
+},
+{
+  sym:'I', z:53, el:'Iodo', nome:'¹³¹I — iodo radioativo', cor:'#8B5BD6',
+  classe:'Radiofármaco · padrão desde os anos 1940',
+  mec:'A célula folicular da tireoide capta iodo pelo transportador NIS para fabricar hormônio. Basta oferecer iodo-131: ele entra pelo mesmo caminho e irradia a célula por dentro. É a terapia dirigida mais antiga da medicina.',
+  evid:'Na ablação do resíduo tireoidiano após a cirurgia, o sucesso na primeira aplicação gira em torno de 65%, e cai com tumor volumoso, tireoglobulina alta ou metástases.',
+  fonte:{t:'Eficácia da ablação com ¹³¹I, PMC 2018', url:'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6306449/'},
+  vias:['vo'], intervalo:180, ciclos:1, dur:5,
+  tox:'glândulas salivares e boca seca', toxTaxa:0.08, resistTaxa:0.08,
+  logs:{tireoide:2.60, prostata:0.04, glioma:0.03, sarcoma:0.03, testiculo:0.04, apl:0.02},
+  visual:'beta'
+},
+{
+  sym:'Fe', z:26, el:'Ferro', nome:'Indução de ferroptose', cor:'#C4573A',
+  classe:'Pré-clínico · ainda sem aprovação',
+  mec:'Bloqueando a enzima GPX4 ou o antiporte de cistina, o ferro livre catalisa a peroxidação dos lipídios da membrana. A célula não morre por apoptose: a membrana oxida e se rompe.',
+  evid:'Revisões recentes descrevem forte efeito antitumoral em modelos e potencial contra resistência, mas a tradução clínica ainda esbarra em farmacologia, heterogeneidade e falta de biomarcadores.',
+  fonte:{t:'Translating ferroptosis into oncology, Nature Rev Clin Oncol', url:'https://www.nature.com/articles/s41571-026-01128-z'},
+  vias:['iv','it'], intervalo:14, ciclos:6, dur:1.5,
+  tox:'não estabelecida em humanos', toxTaxa:0.05, resistTaxa:0.06,
+  logs:{prostata:0.12, glioma:0.12, sarcoma:0.12, testiculo:0.12, tireoide:0.10, apl:0.10},
+  visual:'ferroptose'
+},
+{
+  sym:'✱', z:0, el:'Ficção', nome:'GLP-1 + opsonina + anti-CD47', cor:'#5B8DEF',
+  classe:'Módulo didático — combinação fictícia',
+  mec:'O veículo é um análogo de GLP-1 (que na vida real trata diabetes e obesidade, não câncer). Ele carrega dois agentes reais: uma opsonina, que cobre a célula tumoral com o sinal “coma-me”, e um bloqueador de CD47, que desliga o sinal “não me coma”. Os macrófagos do tecido então fagocitam a célula marcada.',
+  evid:'Opsonização e bloqueio de CD47 são linhas reais de pesquisa em imuno-oncologia. O transporte por GLP-1 é invenção desta simulação, criada para mostrar a fagocitose em sala de aula.',
+  fonte:{t:'Ficção didática — não procure ensaio clínico para esta combinação', url:''},
+  vias:['sc','it','iv'], intervalo:7, ciclos:8, dur:2,
+  tox:'náusea e efeitos do veículo', toxTaxa:0.05, resistTaxa:0.07,
+  logs:{prostata:0.45, glioma:0.42, sarcoma:0.45, testiculo:0.45, tireoide:0.40, apl:0.40},
+  visual:'fagocitose', ficcao:true
+}
+];
+
+/* elementos com uso real que não viraram módulo simulável */
+const USOS = {
+  'Y':'Ítrio-90: microesferas para radioembolização de tumores no fígado.',
+  'Sm':'Samário-153: alívio de dor em metástases ósseas.',
+  'Sr':'Estrôncio-89: mesma função, imitando o cálcio no osso.',
+  'Bi':'Bismuto-213: emissor alfa em ensaios de terapia dirigida.',
+  'Tc':'Tecnécio-99m: o radiotraçador de diagnóstico mais usado do mundo.',
+  'Gd':'Gadolínio: contraste de ressonância e, em ensaios, nanopartículas radiossensibilizadoras.',
+  'Au':'Ouro: nanopartículas em pesquisa como radiossensibilizador e transportador.',
+  'Cu':'Cobre-64/67: par teranóstico — mesma molécula para imagem e para terapia.',
+  'Se':'Selênio: testado em prevenção; o grande ensaio SELECT não mostrou benefício.',
+  'Zn':'Zinco: cofator de enzimas de reparo do DNA, alvo de estudo.',
+  'Mo':'Molibdênio-99: gerador que produz o tecnécio-99m dos serviços de medicina nuclear.',
+  'Re':'Rênio-188: radiofármaco terapêutico de uso regional.',
+  'C':'Carbono-11 no PET; íons de carbono na hadronterapia.',
+  'F':'Flúor-18: base do FDG, o traçador do PET de rotina.',
+  'N':'Nitrogênio: esqueleto das mostardas nitrogenadas, a primeira quimioterapia da história.',
+  'O':'Oxigênio: sua presença dentro do tumor decide o quanto a radioterapia funciona.',
+  'H':'Hidrogênio: o sinal que a ressonância magnética enxerga.',
+  'Ga':'Gálio-68: marca PSMA e somatostatina nos exames de PET.',
+  'Th':'Tório-227: emissor alfa em conjugados experimentais.',
+  'Ho':'Hólmio-166: microesferas para radioembolização hepática.'
+};
+
+const PT_ROWS = [
+ ['H','','','','','','','','','','','','','','','','','He'],
+ ['Li','Be','','','','','','','','','','','B','C','N','O','F','Ne'],
+ ['Na','Mg','','','','','','','','','','','Al','Si','P','S','Cl','Ar'],
+ ['K','Ca','Sc','Ti','V','Cr','Mn','Fe','Co','Ni','Cu','Zn','Ga','Ge','As','Se','Br','Kr'],
+ ['Rb','Sr','Y','Zr','Nb','Mo','Tc','Ru','Rh','Pd','Ag','Cd','In','Sn','Sb','Te','I','Xe'],
+ ['Cs','Ba','La','Hf','Ta','W','Re','Os','Ir','Pt','Au','Hg','Tl','Pb','Bi','Po','At','Rn'],
+ ['Fr','Ra','Ac','Rf','Db','Sg','Bh','Hs','Mt','Ds','Rg','Cn','Nh','Fl','Mc','Lv','Ts','Og'],
+ [],
+ ['','','','Ce','Pr','Nd','Pm','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb','Lu',''],
+ ['','','','Th','Pa','U','Np','Pu','Am','Cm','Bk','Cf','Es','Fm','Md','No','Lr','']
+];
+
+/* =========================================================================
+   ESTADO
+   ========================================================================= */
+const S = {
+  rodando:true, diasPorSeg:2, dia:0,
+  caso:'prostata', agente:AGENTES[2], via:'iv', dose:1,
+  V:0, V0:0, nadir:0, resist:0, tox:0, tecido:1,
+  ciclos:0, protocolo:false, proximoCiclo:0, fimProtocolo:null,
+  conc:0, hist:[], histPK:[], marcas:[],
+  cells:[], efeitos:[], feixe:0, desfecho:null,
+  nextId:1, hover:null
+};
+
+/* =========================================================================
+   UTILIDADES
+   ========================================================================= */
+const $ = id => document.getElementById(id);
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+const lerp=(a,b,t)=>a+(b-a)*t;
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const dist2=(a,b)=>{const dx=a.x-b.x,dy=a.y-b.y;return dx*dx+dy*dy;};
+const fmt=n=> n>=1000 ? Math.round(n).toLocaleString('pt-BR') : (n>=10?String(Math.round(n)):n.toFixed(1));
+const diam=V=>2*Math.cbrt(3*Math.max(V,0)/(4*Math.PI));
+
+const field=$('field'), fx=field.getContext('2d');
+const chart=$('chart'), cx=chart.getContext('2d');
+const pk=$('pk'), px=pk.getContext('2d');
+const ptab=$('ptable'), tx=ptab.getContext('2d');
+const route=$('route'), rx=route.getContext('2d');
+const W=()=>field.clientWidth, H=()=>field.clientHeight;
+const MONO="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace";
 
 function fit(cv,ctx){
-  const r = Math.min(window.devicePixelRatio||1, 2);
-  const w = cv.clientWidth, h = cv.clientHeight;
+  const r=Math.min(window.devicePixelRatio||1,2);
+  const w=cv.clientWidth, h=cv.clientHeight;
   if(!w||!h) return;
-  cv.width = Math.round(w*r); cv.height = Math.round(h*r);
+  cv.width=Math.round(w*r); cv.height=Math.round(h*r);
   ctx.setTransform(r,0,0,r,0,0);
 }
-function fitAll(){ [[sim,sctx],[bodyC,bctx],[labC,lctx],[chartC,cctx]].forEach(([c,x])=>fit(c,x)); drawBody(); }
+function fitAll(){ [[field,fx],[chart,cx],[pk,px],[ptab,tx],[route,rx]].forEach(([c,g])=>fit(c,g)); }
 window.addEventListener('resize', fitAll);
 
-/* ---------------- log ---------------- */
-function log(msg){
-  const el=document.createElement('div');
-  el.innerHTML = '<span class="t">'+S.t.toFixed(1)+'s</span>'+msg;
-  const box=$('log'); box.appendChild(el);
-  while(box.children.length>60) box.removeChild(box.firstChild);
-  box.scrollTop = box.scrollHeight;
+function log(tag,cor,html){
+  const d=document.createElement('div');
+  d.innerHTML=`<time>d${Math.round(S.dia)}</time><em style="color:${cor}">${tag}</em><p>${html}</p>`;
+  const box=$('log'); box.appendChild(d);
+  while(box.children.length>80) box.removeChild(box.firstChild);
+  box.scrollTop=box.scrollHeight;
 }
-function banner(html){ const b=$('banner'); b.innerHTML=html; b.classList.add('show'); }
-function hideBanner(){ $('banner').classList.remove('show'); }
+function beam(html){ const b=$('beam'); b.innerHTML=html; b.classList.add('on'); }
+function beamOff(){ $('beam').classList.remove('on'); }
 
 /* =========================================================================
    CÉLULAS
    ========================================================================= */
-function makeCell(type,x,y){
-  const base = type==='cancer'?17 : type==='macro'?19 : 14;
-  return {
-    id:S.nextId++, type, x, y,
-    r: base*rnd(.85,1.15), r0: base,
-    vx:rnd(-8,8), vy:rnd(-8,8),
-    hp:1, mark:0, block:0, act: type==='macro'?0.08:0, growth:rnd(0,.6),
-    seed:rnd(0,Math.PI*2), wob:rnd(.6,1.4),
-    eating:null, cooldown:0, dead:false, born:S.t
-  };
+function novaCelula(tipo,x,y){
+  const base = tipo==='tumor'?17 : tipo==='mac'?19 : 13.5;
+  return {id:S.nextId++, tipo, x, y, r:base*rnd(.85,1.12), r0:base,
+    vx:rnd(-7,7), vy:rnd(-7,7), hp:1, ativ:tipo==='mac'?0.06:0,
+    semente:rnd(0,Math.PI*2), wob:rnd(.6,1.3), morte:null, comendo:null, cooldown:0};
 }
-function populate(){
+function povoar(){
   S.cells.length=0;
   const w=W(), h=H();
-  for(let i=0;i<26;i++) S.cells.push(makeCell('healthy', rnd(40,w-40), rnd(40,h-40)));
-  for(let i=0;i<5;i++)  S.cells.push(makeCell('macro',   rnd(40,w-40), rnd(40,h-40)));
-  seedTumor(true);
-  S.healthyStart = S.cells.filter(c=>c.type==='healthy').length;
-}
-function seedTumor(initial){
-  const cx = initial ? W()*0.62 : rnd(W()*0.2, W()*0.8);
-  const cy = initial ? H()*0.52 : rnd(H()*0.2, H()*0.8);
-  const n = initial ? 6 : 4;
-  for(let i=0;i<n;i++){
-    const a=rnd(0,Math.PI*2), d=rnd(0,46);
-    S.cells.push(makeCell('cancer', clamp(cx+Math.cos(a)*d,30,W()-30), clamp(cy+Math.sin(a)*d,30,H()-30)));
-  }
-  if(!initial) log('⚠ Novo foco tumoral surgiu no tecido.');
-}
-
-/* =========================================================================
-   QUÍMICA — mistura do composto
-   ========================================================================= */
-function readMix(){
-  return {
-    dose: +$('rDose').value/10,        // mg
-    ops:  +$('rOps').value/100,
-    cd47: +$('rCd').value/100,
-    ph:   +$('rPh').value/10,
-    temp: +$('rTemp').value
-  };
-}
-function evaluate(m){
-  // estabilidade cai ao se afastar do pH 7,4 e ao aquecer acima de 25 °C
-  const phPen   = clamp(Math.abs(m.ph-7.4)/1.6, 0, 1);
-  const tempPen = clamp((m.temp-25)/20, 0, 1);
-  const stab    = clamp(1 - phPen*0.75 - tempPen*0.55, 0.05, 1);
-
-  // potência: precisa dos dois braços (marcar + liberar o freio) e de um veículo
-  const ativos  = Math.sqrt(clamp(m.ops,.001,1) * clamp(m.cd47,.001,1));
-  const veiculo = clamp(m.dose/1.2, 0, 1.25);
-  const pot     = clamp(ativos * stab * (0.35+0.65*Math.min(veiculo,1)), 0, 1);
-
-  // seletividade: composto instável ou superdosado ataca também o tecido saudável
-  const sel = clamp(0.96*stab - Math.max(0, m.dose-1.6)*0.22 - Math.max(0, m.cd47-0.85)*0.5, 0.05, 1);
-
-  // toxicidade
-  const tox = clamp((1-stab)*0.6 + Math.max(0, m.dose-1.4)*0.30 + Math.max(0, m.cd47-0.8)*0.35, 0, 1);
-
-  return {...m, stab, pot, sel, tox,
-    formula:`GLP1(${m.dose.toFixed(1)}mg) · IgG-ops(${(m.ops*100)|0}%) · αCD47(${(m.cd47*100)|0}%) @ pH ${m.ph.toFixed(1)} / ${m.temp}°C`};
-}
-function pct(v){ return Math.round(v*100)+'%'; }
-function paintSheet(c){
-  const set=(t,b,v,txt)=>{ $(t).textContent = txt||pct(v); $(b).style.width = (v*100)+'%'; };
-  set('mStab','bStab',c.stab); set('mPot','bPot',c.pot);
-  set('mSel','bSel',c.sel);    set('mTox','bTox',c.tox);
-  $('fFormula').textContent = c.formula;
-}
-function mix(){
-  const c = evaluate(readMix());
-  S.compound = c; paintSheet(c);
-  $('btnLoad').disabled = false;
-  let veredito;
-  if(c.pot<0.25) veredito='composto fraco — os macrófagos não vão reconhecer o alvo';
-  else if(c.tox>0.55) veredito='composto agressivo — risco alto para o tecido saudável';
-  else if(c.sel>0.7 && c.pot>0.5) veredito='boa janela terapêutica';
-  else veredito='composto aceitável, dá para melhorar';
-  log(`⚗ Composto preparado — potência ${pct(c.pot)}, seletividade ${pct(c.sel)}, toxicidade ${pct(c.tox)}. <b>${veredito}</b>.`);
-}
-function loadSyringe(){
-  if(!S.compound) return;
-  S.syringe = 4;                        // 4 aplicações por carga
-  S.armed = true;
-  $('stage').classList.add('armed');
-  $('btnLoad').classList.add('armed');
-  updateSyringe();
-  log(`💉 Seringa carregada. Clique no tecido para aplicar (via ${site.nome.toLowerCase()}).`);
-}
-function updateSyringe(){
-  $('tSyringe').textContent = S.syringe>0 ? S.syringe+' dose(s)' : 'vazia';
-  if(S.syringe<=0){
-    S.armed=false;
-    $('stage').classList.remove('armed');
-    $('btnLoad').classList.remove('armed');
+  for(let i=0;i<24;i++) S.cells.push(novaCelula('saud', rnd(30,w-30), rnd(30,h-30)));
+  for(let i=0;i<4;i++)  S.cells.push(novaCelula('mac',  rnd(30,w-30), rnd(30,h-30)));
+  const alvo=alvoTumor(), cx0=w*0.58, cy0=h*0.5;
+  for(let i=0;i<alvo;i++){
+    const a=rnd(0,Math.PI*2), d=rnd(0,70);
+    S.cells.push(novaCelula('tumor', clamp(cx0+Math.cos(a)*d,25,w-25), clamp(cy0+Math.sin(a)*d,25,h-25)));
   }
 }
-
-/* =========================================================================
-   INJEÇÃO — cria um depósito que libera partículas ao longo do tempo
-   ========================================================================= */
-function inject(x,y,via){
-  if(!S.armed || S.syringe<=0 || !S.compound) return;
-  const c=S.compound;
-  const iv = via==='iv';
-  S.depots.push({
-    x, y, t:0,
-    delay: iv ? 0.3 : site.lat,                 // latência de absorção
-    dur:   iv ? 3.5 : 9/site.abs,               // tempo de liberação
-    rate:  (iv?10:22) * (0.5+c.dose),           // bolus local (partículas por segundo)
-    abs:   iv ? 1.25 : site.abs,
-    c, spread: iv? 1.8 : 1.0
-  });
-  S.syringe--; updateSyringe();
-  if(S.plasma>0.85) log('⚠ Concentração plasmática ainda alta — doses empilhadas aumentam náusea e dano ao tecido.');
-  log(iv ? '💉 Aplicação <b>intravenosa</b>: início rápido, duração curta.'
-         : `💉 Aplicação subcutânea no <b>${site.nome.toLowerCase()}</b> — pico em ~${site.lat.toFixed(1)}s.`);
-  hideBanner();
+const contaTumor=()=>S.cells.reduce((n,c)=>n+(c.tipo==='tumor'&&!c.morte?1:0),0);
+function alvoTumor(){
+  if(S.V<=0) return 0;
+  if(S.V<S.V0*0.004) return 1;
+  return clamp(Math.round(16*(S.V/S.V0)), 1, 64);
 }
-function spawnParticle(x,y,c,sp,ang){
-  const kinds = [['glp',0.30],['ops',0.36*c.ops],['cd47',0.36*c.cd47]];
-  const total = kinds.reduce((s,k)=>s+k[1],0);
-  if(total<=0) return;
-  let r=Math.random()*total, kind='glp';
-  for(const k of kinds){ r-=k[1]; if(r<=0){ kind=k[0]; break; } }
-  S.particles.push({
-    x, y, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp,
-    kind, life:rnd(5,10)*(0.5+c.stab), c
-  });
-}
-function emit(d,dt){
-  d.t += dt;
-  if(d.t < d.delay) return;
-  if(d.t > d.delay + d.dur) return;
-  const c=d.c;
-  // absorção: parte da dose entra na circulação e será distribuída pelo vaso
-  S.plasma = clamp(S.plasma + dt*(c.dose/1.2)*(1/d.dur)*(d.abs||1)*1.15, 0, 2);
-  S.plasmaC = c;
-  d.acc = (d.acc||0) + d.rate*dt;
-  while(d.acc >= 1){
-    d.acc--;
-    spawnParticle(d.x+rnd(-6,6), d.y+rnd(-6,6), c,
-                  rnd(18,70)*d.spread*(0.6+c.dose*0.4), rnd(0,Math.PI*2));
+function sincronizaTumor(){
+  const alvo=alvoTumor(), n=contaTumor(), w=W(), h=H();
+  if(n<alvo){
+    const mae=S.cells.find(c=>c.tipo==='tumor'&&!c.morte);
+    const a=rnd(0,Math.PI*2);
+    const x=mae?clamp(mae.x+Math.cos(a)*30,25,w-25):rnd(40,w-40);
+    const y=mae?clamp(mae.y+Math.sin(a)*30,25,h-25):rnd(40,h-40);
+    const f=novaCelula('tumor',x,y); f.r=6; S.cells.push(f);
+  } else if(n>alvo){
+    const vivos=S.cells.filter(c=>c.tipo==='tumor'&&!c.morte);
+    if(vivos.length) matar(vivos[(Math.random()*vivos.length)|0], S.agente.visual);
   }
 }
-
-/* =========================================================================
-   FÍSICA / BIOLOGIA
-   ========================================================================= */
-function step(dt){
-  S.t += dt;
-  const w=W(), h=H();
-
-  /* --- depósitos --- */
-  for(const d of S.depots) emit(d,dt);
-  S.depots = S.depots.filter(d => d.t < d.delay + d.dur + 0.5);
-
-  /* --- farmacocinética simplificada: nível plasmático do GLP-1 --- */
-  S.plasma *= Math.exp(-dt*0.045);               // eliminação (meia-vida)
-  if(S.plasma<0.005) S.plasma=0;
-  perfuse(dt);                                   // distribuição pelo vaso para o tecido
-  const carga = clamp(S.plasma, 0, 1.6);
-  S.glycemia += (lerp(180, 88, clamp(carga,0,1)) - S.glycemia) * clamp(dt*0.5,0,1);
-  S.satiety  += (clamp(10+carga*85,0,100) - S.satiety) * clamp(dt*0.5,0,1);
-  const tox = S.plasmaC ? S.plasmaC.tox : 0;
-  const alvoNausea = clamp((carga-0.55)*130 + (carga>0.05 ? tox*35 : 0), 0, 100);
-  S.nausea += (alvoNausea - S.nausea) * clamp(dt*0.3,0,1);
-
-  /* --- partículas --- */
-  for(const p of S.particles){
-    p.life -= dt;
-    p.vx *= (1-clamp(dt*1.5,0,1)); p.vy *= (1-clamp(dt*1.5,0,1));
-    p.vx += rnd(-45,45)*dt; p.vy += rnd(-45,45)*dt;
-    p.x += p.vx*dt; p.y += p.vy*dt;
-    if(p.x<4||p.x>w-4) p.vx*=-1;
-    if(p.y<4||p.y>h-4) p.vy*=-1;
-    p.x=clamp(p.x,4,w-4); p.y=clamp(p.y,4,h-4);
-
-    for(const c of S.cells){
-      if(c.dead) continue;
-      if(dist2(p,c) > (c.r+3)*(c.r+3)) continue;
-      const cp=p.c;
-      if(c.type==='cancer'){
-        // parte do composto atravessa a célula e segue difundindo pelo tecido
-        if(Math.random() > 0.55) continue;
-        if(p.kind==='ops'){  c.mark  = clamp(c.mark  + 0.16*cp.stab*(0.3+0.7*cp.ops), 0, 1); }
-        if(p.kind==='cd47'){ c.block = clamp(c.block + 0.14*cp.stab*(0.3+0.7*cp.cd47), 0, 1);
-                             c.mark  = clamp(c.mark  + 0.02*cp.stab, 0, 1); }
-        if(p.kind==='glp')  c.growth -= 0.05;         // veículo apenas atrapalha um pouco
-        p.life=0; break;
-      }
-      if(c.type==='macro'){
-        if(p.kind==='cd47') c.act = clamp(c.act + 0.06*cp.stab*(0.3+0.7*cp.cd47), 0, 1);
-        if(p.kind==='ops')  c.act = clamp(c.act + 0.03*cp.stab, 0, 1);
-        p.life=0; break;
-      }
-      if(c.type==='healthy'){
-        // dano fora do alvo: só compostos pouco seletivos agridem o tecido vizinho
-        const risco = clamp((0.85-cp.sel)/0.85,0,1)*(p.kind==='glp'?0.25:1);
-        if(Math.random() < risco*0.30){
-          c.hp -= 0.22;
-          if(c.hp<=0){ kill(c,'tox'); }
-          p.life=0; break;
-        }
+function matar(c,tipo){
+  if(c.morte) return;
+  c.morte={tipo, t:0};
+  if(tipo==='beta'){                       // fogo cruzado atinge as vizinhas
+    for(const o of S.cells){
+      if(o===c||o.morte) continue;
+      if(dist2(c,o)<95*95 && Math.random()<0.3){
+        if(o.tipo==='tumor') o.morte={tipo:'beta',t:0};
+        else o.hp=Math.max(0,o.hp-0.35);
       }
     }
   }
-  S.particles = S.particles.filter(p=>p.life>0);
+  S.efeitos.push({tipo, x:c.x, y:c.y, t:0, r:c.r, ang:rnd(0,Math.PI*2)});
+}
 
-  /* --- células --- */
+/* =========================================================================
+   MODELO CLÍNICO
+   ========================================================================= */
+const caso=()=>CASOS[S.caso];
+/* quimioterapia e radiofármacos matam uma FRAÇÃO das células por aplicação:
+   o efeito se mede em logs de redução (log-kill), não em milímetros. */
+const V_EXTINCAO = 0.05;      // ~5x10^4 células: o que sobra disso é limpo pelo organismo
+function logKill(){
+  const a=S.agente;
+  let L=(a.logs[S.caso]||0.05)*S.dose*(1-S.resist);
+  if(!a.vias.includes(S.via)) L*=0.45;
+  return Math.max(L,0);
+}
+function crescer(dd){
+  if(dd<=0||S.V<=0) return;
+  const c=caso(), Vinf=c.v0*40;
+  const k=Math.LN2/(c.td*Math.log(Vinf/c.v0));
+  // Gompertz: tumor pequeno cresce mais rápido — com teto de 3x a velocidade inicial
+  const g=Math.min(k*Math.log(Vinf/Math.max(S.V,1e-9)), Math.LN2/(c.td/3));
+  S.V=clamp(S.V*Math.exp(g*dd), 0, Vinf);
+}
+function aplicarCiclo(manual){
+  const a=S.agente;
+  if(S.desfecho) return;
+  if(!manual && S.ciclos>=a.ciclos) return;
+  const L=logKill();
+  const antes=S.V;
+  S.V=Math.max(0, S.V*Math.pow(10,-L));
+  const e=antes>0 ? 1-S.V/antes : 0;
+  if(S.V>0 && S.V<V_EXTINCAO){
+    S.V=0;
+    log('ERRADICAÇÃO','#41A24A','A massa caiu abaixo do limite detectável e as últimas células foram eliminadas.');
+  }
+  S.ciclos++;
+  S.conc=clamp(S.conc+0.85*S.dose, 0, 1.6);
+  S.resist=clamp(S.resist + a.resistTaxa*S.dose*(1-S.resist), 0, 0.92);
+  S.tox=clamp(S.tox + a.toxTaxa*Math.pow(S.dose,1.5), 0, 1.4);
+  S.marcas.push(S.dia);
+  S.proximoCiclo=S.dia+Math.max(a.intervalo,0.5);
+
+  const nome = a.requer==='neutrons' ? 'sessão de BNCT'
+             : a.requer==='radioterapia' ? `sessão ${S.ciclos} de radioterapia`
+             : `ciclo ${S.ciclos}`;
+  log('DOSE', a.cor, `${nome} — ${a.nome} a ${Math.round(S.dose*100)}% da dose. Redução de <b>${L.toFixed(2)} log</b> (${(e*100).toFixed(1)}% da massa).`);
+  if(a.requer==='neutrons'){ S.feixe=1.8; beam('<b>Feixe de nêutrons ligado.</b> Só as células que acumularam boro-10 sofrem a reação de captura — o alcance da partícula alfa é menor que uma célula.'); }
+  if(a.requer==='radioterapia' && S.ciclos%5===1){ S.feixe=1.4; beam('<b>Radioterapia em curso.</b> As nanopartículas de háfnio concentram a dose dentro da célula tumoral.'); }
+  if(!a.vias.includes(S.via)) log('AVISO','#C98A12',`Via <b>${VIAS[S.via].nome.toLowerCase()}</b> não é a usada com este agente — parte da dose se perde.`);
+  if(S.tox>=1) encerrar('toxicidade');
+}
+function protocoloTick(){
+  if(!S.protocolo||S.desfecho) return;
+  if(S.ciclos<S.agente.ciclos && S.dia>=S.proximoCiclo) aplicarCiclo(false);
+  else if(S.ciclos>=S.agente.ciclos && S.fimProtocolo===null){
+    S.fimProtocolo=S.dia;
+    log('FIM','#8496B4',`Protocolo completo: ${S.ciclos} aplicação(ões). Começa o seguimento de 180 dias.`);
+    if(S.agente.cirurgia)
+      log('NOTA','#8496B4','Na vida real este é um tratamento pré-operatório: aqui entraria a <b>cirurgia</b>, e a resposta seria medida na peça retirada (ressecção R0). Como a simulação segue sem operar, o tumor volta a crescer.');
+  }
+  if(S.fimProtocolo!==null && S.dia>S.fimProtocolo+180) encerrar('seguimento');
+}
+function resposta(){
+  const d=diam(S.V), d0=diam(S.V0), dn=diam(S.nadir);
+  if(S.V<=0) return {sigla:'RC', nome:'Resposta completa', cor:'#41A24A'};
+  if(d>=dn*1.2 && d>dn+5)  return {sigla:'PD', nome:'Progressão', cor:'#E14B5A'};
+  if(d<=d0*0.7)            return {sigla:'RP', nome:'Resposta parcial', cor:'#5B8DEF'};
+  return {sigla:'DE', nome:'Doença estável', cor:'#C98A12'};
+}
+function encerrar(motivo){
+  if(S.desfecho) return;
+  const r=resposta();
+  S.desfecho={motivo,r}; S.protocolo=false;
+  const a=S.agente;
+  if(motivo==='toxicidade'){
+    log('PARADA','#E14B5A',`Toxicidade limitante em ${a.tox}. O protocolo foi interrompido — é assim que se define a dose máxima tolerada.`);
+    beam('<b>Toxicidade limitante.</b> Reduza a dose ou troque de agente: a janela terapêutica foi ultrapassada.');
+    return;
+  }
+  const txt={RC:'nenhuma doença mensurável no fim do seguimento.',
+             RP:'o tumor encolheu mais de 30% no diâmetro.',
+             DE:'nem encolheu nem cresceu o bastante para mudar de categoria.',
+             PD:'o tumor voltou a crescer mais de 20% acima do menor volume.'}[r.sigla];
+  log('DESFECHO', r.cor, `<b>${r.sigla} — ${r.nome}</b>: ${txt}`);
+  beam(`<b>${r.nome}.</b> ${txt} ${a.ficcao?'Lembre-se: este agente é ficção didática.':''}`);
+}
+
+/* =========================================================================
+   PASSO
+   ========================================================================= */
+let ultimo=performance.now(), accHist=0, accSinc=0;
+function passo(dt){
+  const dd = (S.rodando && !S.desfecho) ? dt*S.diasPorSeg : 0;
+  S.dia += dd;
+  crescer(dd);
+  protocoloTick();
+
+  // integral exata da concentração no passo, para o resultado não mudar com a velocidade
+  let expo=0;
+  if(dd>0 && S.conc>0){
+    const lam=Math.LN2/Math.max(S.agente.dur,0.2);
+    const dec=Math.exp(-lam*dd);
+    expo=S.conc*(1-dec)/lam;          // área sob a curva (concentração × dias)
+    S.conc*=dec;
+    if(S.conc<0.004) S.conc=0;
+  }
+  S.nadir=Math.min(S.nadir||S.V, S.V);
+
+  if(expo>0){
+    // alcance longo (beta) e citotóxicos sistêmicos atingem mais o tecido vizinho;
+    // alfa e captura de nêutrons ficam contidos na própria célula
+    const seletivo={neutron:0.15, alfa:0.45, radiossens:0.3, diferenciacao:0.25,
+                    fagocitose:0.4, ferroptose:0.7, crosslink:1, beta:1.1}[S.agente.visual]||1;
+    S.tecido=clamp(S.tecido - S.agente.toxTaxa*S.dose*seletivo*expo*0.5, 0.15, 1);
+  } else if(dd>0){
+    S.tecido=clamp(S.tecido + dd*0.0012, 0, 1);
+  }
+
+  accSinc+=dt;
+  if(accSinc>0.25){ accSinc=0; sincronizaTumor(); }
+
+  animaCelulas(dt);
+  S.feixe=Math.max(0,S.feixe-dt);
+  if(S.feixe<=0 && !S.desfecho) beamOff();
+
+  for(const e of S.efeitos) e.t+=dt;
+  S.efeitos=S.efeitos.filter(e=>e.t<1.1);
+
+  accHist+=dt;
+  if(accHist>0.12){
+    accHist=0;
+    S.hist.push({d:S.dia,v:S.V});
+    S.histPK.push({d:S.dia,c:S.conc});
+    if(S.hist.length>900){ S.hist.shift(); S.histPK.shift(); }
+  }
+}
+function animaCelulas(dt){
+  const w=W(), h=H();
   for(const c of S.cells){
-    if(c.dead) continue;
-
-    if(c.type==='macro'){
-      c.cooldown = Math.max(0, c.cooldown-dt);
-      c.act = Math.max(0, c.act - dt*0.03);          // ativação decai
-
-      // quimiossensor: percebe células tumorais opsonizadas e sem o freio de CD47
-      let sinal=0;
-      for(const o of S.cells){
-        if(o.dead||o.type!=='cancer') continue;
-        const d2=dist2(c,o);
-        if(d2 > 250*250) continue;
-        sinal = Math.max(sinal, edible(o) * (1 - Math.sqrt(d2)/250));
+    if(c.morte){
+      c.morte.t+=dt;
+      if(c.morte.tipo==='diferenciacao' && c.morte.t>0.9){
+        c.tipo='saud'; c.r0=13.5; c.r=13.5; c.morte=null; c.hp=1; continue;
       }
-      if(sinal>0.12) c.act = clamp(c.act + dt*sinal*0.85, 0, 1);
-
-      if(c.eating){
-        const alvo=c.eating.cell;
-        c.eating.t += dt;
-        if(alvo.dead){ c.eating=null; }
+      if(c.morte.t>1.1) c.remover=true;
+      continue;
+    }
+    if(c.tipo==='mac'){
+      c.cooldown=Math.max(0,c.cooldown-dt);
+      const imuno = S.agente.visual==='fagocitose' && S.conc>0.05;
+      c.ativ=clamp(c.ativ + (imuno?dt*0.5:-dt*0.12), 0.04, 1);
+      if(c.comendo){
+        const a=c.comendo.cell;
+        c.comendo.t+=dt;
+        if(!a||a.remover) c.comendo=null;
         else{
-          alvo.x = lerp(alvo.x, c.x, clamp(dt*4,0,1));
-          alvo.y = lerp(alvo.y, c.y, clamp(dt*4,0,1));
-          alvo.r = Math.max(1, alvo.r - dt*7);
-          if(c.eating.t > 1.6 || alvo.r<=3){
-            kill(alvo,'fagocitose'); c.eating=null; c.cooldown=1.4;
-            c.r = Math.min(c.r0*1.35, c.r+1.6);
-            S.eaten++;
-          }
+          a.x=lerp(a.x,c.x,clamp(dt*4,0,1)); a.y=lerp(a.y,c.y,clamp(dt*4,0,1));
+          a.r=Math.max(1.5,a.r-dt*8);
+          if(c.comendo.t>1.3){ a.remover=true; c.comendo=null; c.cooldown=1.2; }
         }
-      } else if(c.act>0.22 && !c.cooldown){
-        // quimiotaxia: procura a célula marcada mais próxima
+      } else if(imuno && c.ativ>0.3 && !c.cooldown){
         let alvo=null, melhor=1e12;
         for(const o of S.cells){
-          if(o.dead||o.type!=='cancer'||o.beingEaten) continue;
-          const need = 0.62 - c.act*0.30;            // macrófago muito ativo aceita sinal mais fraco
-          if(edible(o) < need) continue;
-          const d=dist2(c,o); if(d<melhor){melhor=d; alvo=o;}
+          if(o.tipo!=='tumor'||o.remover||o.sendoComida||o.morte) continue;
+          const d=dist2(c,o); if(d<melhor){melhor=d;alvo=o;}
         }
         if(alvo){
-          const d=Math.sqrt(melhor)||1;
-          const sp = 22+70*c.act;
-          c.vx = lerp(c.vx, (alvo.x-c.x)/d*sp, clamp(dt*3,0,1));
-          c.vy = lerp(c.vy, (alvo.y-c.y)/d*sp, clamp(dt*3,0,1));
-          if(d < c.r+alvo.r+6){          // encostou: começa a englobar
-            c.eating={cell:alvo,t:0}; alvo.beingEaten=true;
-            log(`🦠 Macrófago #${c.id} iniciou a fagocitose da célula tumoral #${alvo.id}.`);
+          const d=Math.sqrt(melhor)||1, sp=25+70*c.ativ;
+          c.vx=lerp(c.vx,(alvo.x-c.x)/d*sp,clamp(dt*3,0,1));
+          c.vy=lerp(c.vy,(alvo.y-c.y)/d*sp,clamp(dt*3,0,1));
+          if(d<c.r+alvo.r+6){
+            c.comendo={cell:alvo,t:0}; alvo.sendoComida=true;
+            S.efeitos.push({tipo:'fagocitose',x:alvo.x,y:alvo.y,t:0,r:alvo.r,ang:0});
           }
-        } else { wander(c,dt,14); }
-      } else { wander(c,dt,9); }
+        } else vagar(c,dt,12);
+      } else vagar(c,dt,8);
     }
+    else if(c.tipo==='tumor'){ vagar(c,dt,6); if(c.r<c.r0) c.r=Math.min(c.r0,c.r+dt*6); }
+    else { vagar(c,dt,4.5); c.hp=Math.min(1,c.hp+dt*0.04); }
 
-    else if(c.type==='cancer'){
-      wander(c,dt,7);
-      c.mark  = Math.max(0, c.mark  - dt*0.020);     // anticorpo é reciclado devagar
-      c.block = Math.max(0, c.block - dt*0.016);     // CD47 volta a ser expresso
-      if(!c.beingEaten){
-        const lotacao = S.cells.filter(o=>!o.dead&&o.type==='cancer').length;
-        // crescimento logístico: o tumor satura quando o espaço/nutrientes acabam
-        c.growth += dt*Math.max(0, 0.030*(1 - lotacao/30));
-        if(c.growth>1 && lotacao<70){
-          c.growth=0;
-          const a=rnd(0,Math.PI*2);
-          const f=makeCell('cancer', clamp(c.x+Math.cos(a)*c.r*1.8,20,w-20), clamp(c.y+Math.sin(a)*c.r*1.8,20,h-20));
-          f.mark=c.mark*0.4; S.cells.push(f);
-        }
-      }
-    }
-
-    else { // healthy
-      wander(c,dt,5);
-      c.hp = Math.min(1, c.hp + dt*0.05);
-    }
-
-    // integração + paredes
-    c.x += c.vx*dt; c.y += c.vy*dt;
+    c.x+=c.vx*dt; c.y+=c.vy*dt;
     if(c.x<c.r){c.x=c.r;c.vx=Math.abs(c.vx);} if(c.x>w-c.r){c.x=w-c.r;c.vx=-Math.abs(c.vx);}
     if(c.y<c.r){c.y=c.r;c.vy=Math.abs(c.vy);} if(c.y>h-c.r){c.y=h-c.r;c.vy=-Math.abs(c.vy);}
   }
-
-  recruit(dt);
-  separate();
-  S.cells = S.cells.filter(c=>!c.dead || (S.t-c.deadAt)<0.9);
-
-  /* --- pops (efeitos visuais) --- */
-  for(const p of S.pops){ p.t+=dt; }
-  S.pops = S.pops.filter(p=>p.t<0.7);
-
-  /* --- métricas --- */
-  const vivos = S.cells.filter(c=>!c.dead);
-  const saud = vivos.filter(c=>c.type==='healthy').length;
-  S.tissue = S.healthyStart ? clamp(saud/S.healthyStart,0,1) : 1;
-  if(S.t - (S.lastHist||0) > 0.4){
-    S.lastHist=S.t;
-    S.history.push({c:vivos.filter(v=>v.type==='cancer').length, g:S.glycemia});
-    if(S.history.length>160) S.history.shift();
-  }
-  checkEnd(vivos);
+  separar();
+  S.cells=S.cells.filter(c=>!c.remover);
 }
-
-/* ponto sobre o vaso sanguíneo desenhado no topo do tecido */
-function vesselPoint(t){
-  const w=W(), h=H();
-  const P=[{x:0,y:h*0.12},{x:w*0.3,y:h*0.02},{x:w*0.7,y:h*0.22},{x:w,y:h*0.10}];
-  const u=1-t, a=u*u*u, b=3*u*u*t, c=3*u*t*t, d=t*t*t;
-  return {x:a*P[0].x+b*P[1].x+c*P[2].x+d*P[3].x, y:a*P[0].y+b*P[1].y+c*P[2].y+d*P[3].y};
-}
-
-/* extravasamento: o composto que está no sangue sai pelo leito capilar,
-   que irriga todo o tecido — por isso as partículas aparecem em qualquer ponto */
-function perfuse(dt){
-  if(S.plasma<=0.01 || !S.plasmaC) return;
-  const c=S.plasmaC, w=W(), h=H();
-  S.perfAcc = (S.perfAcc||0) + dt*58*clamp(S.plasma,0,1.3);
-  while(S.perfAcc>=1){
-    S.perfAcc--;
-    // 25% saem do vaso principal (visível), o resto do leito capilar difuso
-    if(Math.random()<0.25){
-      const pt=vesselPoint(Math.random());
-      spawnParticle(pt.x, pt.y+rnd(-4,10), c, rnd(25,70), Math.PI*rnd(0.05,0.95));
-    } else {
-      spawnParticle(rnd(6,w-6), rnd(h*0.16,h-6), c, rnd(10,40), rnd(0,Math.PI*2));
-    }
-  }
-}
-
-/* recrutamento: macrófagos ativados liberam citocinas e chamam monócitos
-   que saem do vaso sanguíneo e viram novos macrófagos no tecido */
-function recruit(dt){
-  const macs = S.cells.filter(c=>!c.dead&&c.type==='macro');
-  if(!macs.length) return;
-  const media = macs.reduce((s,m)=>s+m.act,0)/macs.length;
-  S.recruitAcc = (S.recruitAcc||0) + dt*media*0.55;
-  if(S.recruitAcc>=1 && macs.length<14){
-    S.recruitAcc = 0;
-    const m = makeCell('macro', rnd(W()*0.15, W()*0.85), H()*0.12);
-    m.act = clamp(media*0.8, 0, 1);
-    S.cells.push(m);
-    log('🩸 Monócito recrutado pelo vaso sanguíneo → novo macrófago no tecido.');
-  }
-}
-
-/* “comestibilidade”: o fagócito precisa do sinal coma-me (opsonina)
-   E da ausência do sinal não-me-coma (CD47 bloqueado) */
-function edible(c){ return c.mark * (0.25 + 0.75*c.block); }
-
-function wander(c,dt,f){
-  c.vx += rnd(-1,1)*f*dt*10; c.vy += rnd(-1,1)*f*dt*10;
+function vagar(c,dt,f){
+  c.vx+=rnd(-1,1)*f*dt*10; c.vy+=rnd(-1,1)*f*dt*10;
   const s=Math.hypot(c.vx,c.vy), max=f*2.2;
   if(s>max){ c.vx=c.vx/s*max; c.vy=c.vy/s*max; }
 }
-function separate(){
+function separar(){
   const n=S.cells.length;
   for(let i=0;i<n;i++){
-    const a=S.cells[i]; if(a.dead||a.beingEaten) continue;
+    const a=S.cells[i]; if(a.sendoComida) continue;
     for(let j=i+1;j<n;j++){
-      const b=S.cells[j]; if(b.dead||b.beingEaten) continue;
-      const dx=b.x-a.x, dy=b.y-a.y, min=a.r+b.r;
-      const d2=dx*dx+dy*dy;
-      if(d2>min*min || d2===0) continue;
-      const d=Math.sqrt(d2), push=(min-d)/2/d;
-      a.x-=dx*push; a.y-=dy*push; b.x+=dx*push; b.y+=dy*push;
+      const b=S.cells[j]; if(b.sendoComida) continue;
+      const dx=b.x-a.x, dy=b.y-a.y, min=a.r+b.r, d2=dx*dx+dy*dy;
+      if(d2>min*min||d2===0) continue;
+      const d=Math.sqrt(d2), p=(min-d)/2/d;
+      a.x-=dx*p; a.y-=dy*p; b.x+=dx*p; b.y+=dy*p;
     }
-  }
-}
-function kill(c,motivo){
-  if(c.dead) return;
-  c.dead=true; c.deadAt=S.t; c.motivo=motivo;
-  S.pops.push({x:c.x,y:c.y,t:0,type:c.type,motivo});
-  if(motivo==='tox') log('🩸 Uma célula <b>saudável</b> foi destruída pelo composto (baixa seletividade).');
-}
-
-function checkEnd(vivos){
-  if(S.over) return;
-  const cancer = vivos.filter(v=>v.type==='cancer').length;
-  if(cancer===0 && S.t>3){
-    const ok = S.tissue>=0.7 && S.nausea<60;
-    S.over = ok?'win':'pyrrhic';
-    banner(ok
-      ? '✅ <b>Remissão completa.</b> Tecido preservado em '+pct(S.tissue)+' e náusea em '+Math.round(S.nausea)+'%. Janela terapêutica bem escolhida.'
-      : '⚠ <b>Tumor eliminado, mas com custo alto.</b> Tecido saudável em '+pct(S.tissue)+' e náusea em '+Math.round(S.nausea)+'%. Reduza a dose ou corrija o pH e a temperatura.');
-    log(ok ? '🏆 Objetivo alcançado com segurança.' : '🏁 Tumor eliminado, porém fora da janela terapêutica.');
-  } else if(S.tissue<0.35){
-    S.over='fail';
-    banner('❌ <b>Tecido comprometido.</b> Mais de 65% das células saudáveis foram perdidas — o composto está tóxico demais.');
-    log('❌ Experimento encerrado: dano excessivo ao tecido saudável.');
-  } else if(cancer>=60){
-    S.over='fail';
-    banner('❌ <b>Progressão tumoral.</b> O tumor cresceu mais rápido do que a resposta imune. Aumente a potência do composto.');
-    log('❌ Experimento encerrado: progressão do tumor.');
   }
 }
 
 /* =========================================================================
-   DESENHO — tecido
+   DESENHO — campo microscópico
    ========================================================================= */
-function blob(ctx,c,rugosidade,pontos){
-  ctx.beginPath();
-  for(let i=0;i<=pontos;i++){
-    const a=i/pontos*Math.PI*2;
-    const n=Math.sin(a*3+c.seed+S.t*c.wob)*rugosidade + Math.sin(a*5-c.seed*2+S.t*0.7)*rugosidade*0.5;
+function blob(g,c,rug,pts){
+  g.beginPath();
+  for(let i=0;i<=pts;i++){
+    const a=i/pts*Math.PI*2;
+    const n=Math.sin(a*3+c.semente+S.dia*0.4*c.wob)*rug + Math.sin(a*5-c.semente*2)*rug*0.5;
     const r=c.r*(1+n);
     const x=c.x+Math.cos(a)*r, y=c.y+Math.sin(a)*r;
-    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+    i?g.lineTo(x,y):g.moveTo(x,y);
   }
-  ctx.closePath();
+  g.closePath();
 }
-function drawSim(){
-  const w=W(), h=H(); const g=sctx;
+function desenhaCampo(){
+  const g=fx, w=W(), h=H();
   g.clearRect(0,0,w,h);
+  g.fillStyle='#060A12'; g.fillRect(0,0,w,h);
 
-  // fundo do tecido
-  const bg=g.createLinearGradient(0,0,0,h);
-  bg.addColorStop(0,'#0a1122'); bg.addColorStop(1,'#0a0f1e');
-  g.fillStyle=bg; g.fillRect(0,0,w,h);
+  g.strokeStyle='rgba(91,141,239,.07)'; g.lineWidth=1;
+  for(let i=0;i<14;i++){
+    const y=(i/14)*h;
+    g.beginPath(); g.moveTo(0,y);
+    g.bezierCurveTo(w*0.33,y+18,w*0.66,y-18,w,y); g.stroke();
+  }
+  g.beginPath();
+  g.moveTo(0,h*0.13); g.bezierCurveTo(w*0.3,h*0.04,w*0.7,h*0.22,w,h*0.11);
+  g.lineWidth=22; g.strokeStyle='rgba(227,60,139,.07)'; g.stroke();
+  g.lineWidth=1.5; g.strokeStyle='rgba(227,60,139,.22)'; g.stroke();
 
-  // matriz extracelular (fibras)
-  g.strokeStyle='rgba(70,95,160,.10)'; g.lineWidth=1;
-  for(let i=0;i<16;i++){
+  if(S.feixe>0){
+    const a=clamp(S.feixe,0,1)*0.22;
+    const gr=g.createLinearGradient(0,0,0,h);
+    gr.addColorStop(0,`rgba(201,138,18,${a})`); gr.addColorStop(1,'rgba(201,138,18,0)');
+    g.fillStyle=gr; g.fillRect(0,0,w,h);
+    g.strokeStyle=`rgba(201,138,18,${a*1.5})`; g.lineWidth=1;
+    for(let i=0;i<18;i++){
+      const x=(i/18)*w+((S.dia*40)%40);
+      g.beginPath(); g.moveTo(x,0); g.lineTo(x-30,h); g.stroke();
+    }
+  }
+
+  if(S.conc>0.02){
+    const n=Math.min(90,Math.round(S.conc*70));
+    g.fillStyle=S.agente.cor;
+    for(let i=0;i<n;i++){
+      const t=(S.dia*0.7+i*0.618)%1;
+      const x=((Math.sin(i*12.9898)*0.5+0.5)*w+t*40)%w;
+      const y=((Math.cos(i*78.233)*0.5+0.5)*h+Math.sin(t*6.28+i)*12+h)%h;
+      g.globalAlpha=0.25+0.35*Math.abs(Math.sin(t*6.28));
+      g.beginPath(); g.arc(x,y,1.8,0,Math.PI*2); g.fill();
+    }
+    g.globalAlpha=1;
+  }
+
+  for(const c of S.cells){
+    if(c.tipo==='saud') celSaudavel(g,c);
+    else if(c.tipo==='tumor') celTumor(g,c);
+    else celMacrofago(g,c);
+  }
+  for(const e of S.efeitos) efeito(g,e);
+}
+function celSaudavel(g,c){
+  const m=c.morte?1-c.morte.t/1.1:1;
+  g.save(); g.globalAlpha=clamp(m,0,1);
+  blob(g,c,0.04,24);
+  g.fillStyle='rgba(65,162,74,.20)'; g.fill();
+  g.strokeStyle=`rgba(65,162,74,${0.35+0.5*c.hp})`; g.lineWidth=1.5; g.stroke();
+  g.fillStyle='rgba(20,74,32,.85)';
+  g.beginPath(); g.arc(c.x,c.y,c.r*0.32,0,Math.PI*2); g.fill();
+  if(c.hp<0.9){
+    g.strokeStyle=`rgba(225,75,90,${1-c.hp})`; g.setLineDash([2,3]); g.lineWidth=1.3;
+    g.beginPath(); g.arc(c.x,c.y,c.r+3,0,Math.PI*2); g.stroke(); g.setLineDash([]);
+  }
+  g.restore();
+}
+function celTumor(g,c){
+  const morrendo=!!c.morte, k=morrendo?c.morte.t/1.1:0;
+  g.save();
+  if(morrendo&&c.morte.tipo==='crosslink'){
+    g.translate(c.x,c.y); g.scale(1-k*0.45,1-k*0.45); g.translate(-c.x,-c.y);
+  }
+  g.globalAlpha=morrendo?clamp(1-k*0.85,0,1):1;
+  blob(g,c,0.15+(morrendo?k*0.12:0),28);
+  g.fillStyle='rgba(227,60,139,.24)'; g.fill();
+  g.strokeStyle='rgba(227,60,139,.95)'; g.lineWidth=1.7; g.stroke();
+  g.fillStyle='rgba(120,20,70,.9)';
+  g.beginPath(); g.ellipse(c.x+1,c.y-1,c.r*0.45,c.r*0.37,c.semente,0,Math.PI*2); g.fill();
+  if(morrendo&&c.morte.tipo==='crosslink'){
+    g.strokeStyle='rgba(255,255,255,.8)'; g.lineWidth=1.4;
     g.beginPath();
-    const y=(i/16)*h;
-    g.moveTo(0,y+Math.sin(S.t*0.2+i)*6);
-    g.bezierCurveTo(w*0.33,y+22,w*0.66,y-22,w,y+Math.cos(S.t*0.2+i)*6);
+    g.moveTo(c.x-c.r*0.4,c.y-c.r*0.3); g.lineTo(c.x+c.r*0.4,c.y+c.r*0.3);
+    g.moveTo(c.x-c.r*0.4,c.y+c.r*0.3); g.lineTo(c.x+c.r*0.4,c.y-c.r*0.3);
     g.stroke();
   }
-  drawVessel(g,w,h);
-
-  // partículas
-  for(const p of S.particles){
-    const col = p.kind==='glp'?'#38bdf8' : p.kind==='ops'?'#f59e0b' : '#a855f7';
-    g.globalAlpha = clamp(p.life/2,0,1)*0.9;
-    g.fillStyle=col;
-    g.beginPath(); g.arc(p.x,p.y,p.kind==='glp'?2.1:2.6,0,Math.PI*2); g.fill();
-    g.globalAlpha = clamp(p.life/2,0,1)*0.22;
-    g.beginPath(); g.arc(p.x,p.y,6,0,Math.PI*2); g.fill();
+  if(morrendo&&c.morte.tipo==='ferroptose'){
+    g.strokeStyle=`rgba(196,87,58,${1-k})`; g.lineWidth=3+k*3;
+    g.beginPath(); g.arc(c.x,c.y,c.r+2,0,Math.PI*2); g.stroke();
   }
-  g.globalAlpha=1;
-
-  // depósitos subcutâneos
-  for(const d of S.depots){
-    if(d.t>d.delay+d.dur) continue;
-    const a = d.t<d.delay ? d.t/d.delay*0.35 : 0.35;
-    g.strokeStyle='rgba(56,189,248,'+a+')'; g.lineWidth=2;
-    g.setLineDash([4,5]);
-    g.beginPath(); g.arc(d.x,d.y,14+Math.sin(S.t*4)*3,0,Math.PI*2); g.stroke();
-    g.setLineDash([]);
-  }
-
-  // células
-  for(const c of S.cells){
-    if(c.dead) continue;
-    if(c.type==='healthy')      drawHealthy(g,c);
-    else if(c.type==='cancer')  drawCancer(g,c);
-    else                        drawMacro(g,c);
-  }
-
-  // explosões / fagocitose concluída
-  for(const p of S.pops){
-    const k=p.t/0.7;
-    g.globalAlpha=1-k;
-    g.strokeStyle = p.motivo==='tox' ? '#f43f5e' : '#22d3ee';
-    g.lineWidth=2;
-    g.beginPath(); g.arc(p.x,p.y,8+k*26,0,Math.PI*2); g.stroke();
-    g.globalAlpha=1;
-  }
-}
-function drawVessel(g,w,h){
-  g.save();
-  g.beginPath();
-  g.moveTo(0,h*0.12); g.bezierCurveTo(w*0.3,h*0.02,w*0.7,h*0.22,w,h*0.10);
-  g.lineWidth=26; g.strokeStyle='rgba(225,29,72,.10)'; g.stroke();
-  g.lineWidth=22; g.strokeStyle='rgba(225,29,72,.16)'; g.stroke();
-  // hemácias correndo
-  for(let i=0;i<14;i++){
-    const t=((S.t*0.06)+i/14)%1;
-    const pt=vesselPoint(t);
-    g.fillStyle='rgba(244,63,94,.5)';
-    g.beginPath(); g.ellipse(pt.x,pt.y,5,3.4,Math.sin(t*7),0,Math.PI*2); g.fill();
+  if(morrendo&&c.morte.tipo==='diferenciacao'){
+    g.globalAlpha=k*0.9; g.fillStyle='rgba(65,162,74,.5)';
+    g.beginPath(); g.arc(c.x,c.y,c.r*(0.4+k*0.6),0,Math.PI*2); g.fill();
   }
   g.restore();
 }
-function drawHealthy(g,c){
+function celMacrofago(g,c){
   g.save();
-  blob(g,c,0.05,26);
-  const grd=g.createRadialGradient(c.x-c.r*0.3,c.y-c.r*0.3,2,c.x,c.y,c.r*1.2);
-  grd.addColorStop(0,'rgba(134,239,172,'+(0.35*c.hp+0.15)+')');
-  grd.addColorStop(1,'rgba(34,197,94,'+(0.10*c.hp)+')');
-  g.fillStyle=grd; g.fill();
-  g.strokeStyle='rgba(74,222,128,'+(0.35+0.45*c.hp)+')'; g.lineWidth=1.6; g.stroke();
-  g.fillStyle='rgba(22,101,52,.75)';
-  g.beginPath(); g.arc(c.x,c.y,c.r*0.32,0,Math.PI*2); g.fill();
-  if(c.hp<0.95){ // sinal de sofrimento celular
-    g.strokeStyle='rgba(244,63,94,'+(1-c.hp)+')'; g.lineWidth=1.4;
-    g.setLineDash([2,3]); g.beginPath(); g.arc(c.x,c.y,c.r+3,0,Math.PI*2); g.stroke(); g.setLineDash([]);
-  }
-  g.restore();
-}
-function drawCancer(g,c){
-  g.save();
-  blob(g,c,0.16,30);
-  const grd=g.createRadialGradient(c.x-c.r*0.25,c.y-c.r*0.25,2,c.x,c.y,c.r*1.25);
-  grd.addColorStop(0,'rgba(244,114,182,.55)');
-  grd.addColorStop(1,'rgba(190,24,93,.28)');
-  g.fillStyle=grd; g.fill();
-  g.strokeStyle='rgba(236,72,153,.9)'; g.lineWidth=1.8; g.stroke();
-  // núcleo grande e irregular (característica de célula neoplásica)
-  g.fillStyle='rgba(112,26,117,.9)';
-  g.beginPath(); g.ellipse(c.x+1,c.y-1,c.r*0.46,c.r*0.38,c.seed,0,Math.PI*2); g.fill();
-  g.fillStyle='rgba(250,232,255,.5)';
-  g.beginPath(); g.arc(c.x+2,c.y-2,c.r*0.13,0,Math.PI*2); g.fill();
-  // halo violeta: CD47 bloqueado (freio da fagocitose desligado)
-  if(c.block>0.05){
-    g.globalAlpha=0.10+0.40*c.block;
-    g.fillStyle='#a855f7';
-    g.beginPath(); g.arc(c.x,c.y,c.r+9,0,Math.PI*2); g.fill();
-    g.globalAlpha=1;
-  }
-  // anel de marcação (opsonina)
-  if(c.mark>0.05){
-    g.strokeStyle='rgba(245,158,11,'+(0.25+0.75*c.mark)+')'; g.lineWidth=2;
-    g.setLineDash([4,4]); g.lineDashOffset=-S.t*14;
-    g.beginPath(); g.arc(c.x,c.y,c.r+5,0,Math.PI*2); g.stroke();
-    g.setLineDash([]); g.lineDashOffset=0;
-  }
-  if(c.growth>0.85){ // prestes a se dividir
-    g.strokeStyle='rgba(255,255,255,.35)'; g.lineWidth=1;
-    g.beginPath(); g.moveTo(c.x,c.y-c.r*0.7); g.lineTo(c.x,c.y+c.r*0.7); g.stroke();
-  }
-  g.restore();
-}
-function drawMacro(g,c){
-  g.save();
-  // pseudópodes: rugosidade aumenta com a ativação
-  blob(g,c,0.10+0.14*c.act,34);
-  const grd=g.createRadialGradient(c.x-c.r*0.3,c.y-c.r*0.3,2,c.x,c.y,c.r*1.3);
-  grd.addColorStop(0,'rgba(103,232,249,'+(0.30+0.25*c.act)+')');
-  grd.addColorStop(1,'rgba(8,145,178,.20)');
-  g.fillStyle=grd; g.fill();
-  g.strokeStyle='rgba(34,211,238,'+(0.55+0.45*c.act)+')'; g.lineWidth=2; g.stroke();
-  // núcleo em rim
-  g.fillStyle='rgba(8,51,68,.85)';
-  g.beginPath(); g.ellipse(c.x-c.r*0.15,c.y,c.r*0.40,c.r*0.28,0.6,0,Math.PI*2); g.fill();
-  // alvo dentro do vacúolo
-  if(c.eating && !c.eating.cell.dead){
-    const a=c.eating.cell;
-    g.globalAlpha=.85;
-    g.fillStyle='rgba(236,72,153,.55)';
+  blob(g,c,0.09+0.13*c.ativ,32);
+  g.fillStyle='rgba(91,141,239,.20)'; g.fill();
+  g.strokeStyle=`rgba(91,141,239,${0.5+0.5*c.ativ})`; g.lineWidth=1.9; g.stroke();
+  g.fillStyle='rgba(16,40,86,.9)';
+  g.beginPath(); g.ellipse(c.x-c.r*0.14,c.y,c.r*0.38,c.r*0.26,0.6,0,Math.PI*2); g.fill();
+  if(c.comendo&&c.comendo.cell&&!c.comendo.cell.remover){
+    const a=c.comendo.cell;
+    g.fillStyle='rgba(227,60,139,.55)';
     g.beginPath(); g.arc(a.x,a.y,Math.max(2,a.r),0,Math.PI*2); g.fill();
-    g.globalAlpha=1;
-    g.strokeStyle='rgba(255,255,255,.35)'; g.lineWidth=1;
-    g.beginPath(); g.arc(a.x,a.y,Math.max(3,a.r+3),0,Math.PI*2); g.stroke();
   }
-  // barra de ativação (aparece quando o macrófago começa a responder)
-  if(c.act>0.04){
-    const bw=c.r*1.6;
-    g.fillStyle='rgba(2,8,20,.55)'; g.fillRect(c.x-bw/2,c.y-c.r-9,bw,4);
-    g.fillStyle= c.act>0.22 ? '#22d3ee' : '#7c8db3';
-    g.fillRect(c.x-bw/2,c.y-c.r-9,bw*c.act,4);
+  if(c.ativ>0.08){
+    const bw=c.r*1.5;
+    g.fillStyle='rgba(6,10,18,.6)'; g.fillRect(c.x-bw/2,c.y-c.r-8,bw,3);
+    g.fillStyle='#5B8DEF'; g.fillRect(c.x-bw/2,c.y-c.r-8,bw*c.ativ,3);
   }
   g.restore();
 }
-
-/* =========================================================================
-   DESENHO — corpo (anatomia) / vial (química) / gráfico
-   ========================================================================= */
-function drawBody(){
-  const g=bctx, w=bodyC.clientWidth, h=bodyC.clientHeight;
-  if(!w||!h) return;
-  g.clearRect(0,0,w,h);
-  const cx=w/2, s=h/230;
-
-  g.save();
-  g.translate(cx,10);
-  g.scale(s,s);
-  g.beginPath();
-  // cabeça
-  g.arc(0,20,17,0,Math.PI*2);
-  g.moveTo(-6,36); g.lineTo(6,36);
-  // tronco
-  g.moveTo(-30,44);
-  g.bezierCurveTo(-34,70,-30,105,-24,128);
-  g.lineTo(24,128);
-  g.bezierCurveTo(30,105,34,70,30,44);
-  g.closePath();
-  g.fillStyle='rgba(56,189,248,.10)'; g.fill();
-  g.strokeStyle='rgba(125,211,252,.55)'; g.lineWidth=1.6; g.stroke();
-  // braços
-  g.beginPath();
-  g.moveTo(-30,48); g.lineTo(-48,110); g.lineTo(-38,112); g.lineTo(-22,58);
-  g.moveTo(30,48); g.lineTo(48,110); g.lineTo(38,112); g.lineTo(22,58);
-  g.fillStyle='rgba(56,189,248,.10)'; g.fill();
-  g.strokeStyle='rgba(125,211,252,.45)'; g.stroke();
-  // pernas
-  g.beginPath();
-  g.moveTo(-24,128); g.lineTo(-22,205); g.lineTo(-8,205); g.lineTo(-3,130);
-  g.moveTo(24,128);  g.lineTo(22,205);  g.lineTo(8,205);  g.lineTo(3,130);
-  g.fillStyle='rgba(56,189,248,.10)'; g.fill();
-  g.strokeStyle='rgba(125,211,252,.45)'; g.stroke();
-  g.restore();
-
-  // marcadores dos locais de aplicação
-  for(const st of SITES){
-    const pos=sitePos(st), x=pos.x, y=pos.y, on = st===site;
-    g.beginPath(); g.arc(x,y,on?9:6,0,Math.PI*2);
-    g.fillStyle= on ? 'rgba(244,63,94,.85)' : 'rgba(148,163,184,.5)'; g.fill();
-    if(on){
-      g.strokeStyle='rgba(244,63,94,.5)'; g.lineWidth=2;
-      g.beginPath(); g.arc(x,y,9+((S.t*22)%18),0,Math.PI*2);
-      g.globalAlpha=clamp(1-((S.t*22)%18)/18,0,1); g.stroke(); g.globalAlpha=1;
-    }
-    g.fillStyle= on?'#fecdd3':'#94a3b8'; g.font='600 10px system-ui';
-    if(st.lab==='esquerda'){ g.textAlign='right';  g.fillText(st.nome, x-11, y+3); }
-    else if(st.lab==='direita'){ g.textAlign='left'; g.fillText(st.nome, x+11, y+3); }
-    else { g.textAlign='center'; g.fillText(st.nome, x, y-13); }
-  }
-}
-function drawLab(){
-  const g=lctx, w=labC.clientWidth, h=labC.clientHeight;
-  if(!w||!h) return;
-  g.clearRect(0,0,w,h);
-  const m=readMix();
-  // frasco
-  const fx=14, fy=12, fw=w-28, fh=h-24;
-  g.strokeStyle='rgba(148,163,184,.45)'; g.lineWidth=2;
-  g.beginPath(); g.roundRect(fx,fy,fw,fh,10); g.stroke();
-  // líquido — cor depende do pH
-  const acid = clamp((m.ph-5)/3.5,0,1);
-  const lev  = clamp(0.25+m.dose/2.4*0.6,0.2,0.92);
-  const ly   = fy+fh*(1-lev);
-  const grd=g.createLinearGradient(0,ly,0,fy+fh);
-  grd.addColorStop(0,`rgba(${Math.round(lerp(244,56,acid))},${Math.round(lerp(114,189,acid))},${Math.round(lerp(182,248,acid))},.35)`);
-  grd.addColorStop(1,`rgba(${Math.round(lerp(190,14,acid))},${Math.round(lerp(24,116,acid))},${Math.round(lerp(93,144,acid))},.55)`);
-  g.fillStyle=grd;
-  g.beginPath(); g.roundRect(fx+2,ly,fw-4,fy+fh-ly-2,[0,0,8,8]); g.fill();
-  // moléculas em agitação browniana (mais quente = mais rápido)
-  const speed = 0.4+m.temp/25;
-  const draw = (n,col,off,rr)=>{
-    g.fillStyle=col;
+function efeito(g,e){
+  const k=e.t/1.1;
+  g.save(); g.globalAlpha=1-k;
+  if(e.tipo==='alfa'||e.tipo==='neutron'){
+    g.strokeStyle=e.tipo==='neutron'?'#C98A12':'#E0563C'; g.lineWidth=2;
+    const n=e.tipo==='neutron'?2:4;
     for(let i=0;i<n;i++){
-      const px = fx+8+((Math.sin(i*12.9898+off+S.t*speed*0.5)*0.5+0.5)*(fw-16));
-      const py = ly+6+((Math.cos(i*78.233+off+S.t*speed*0.7)*0.5+0.5)*(fy+fh-ly-14));
-      g.beginPath(); g.arc(px,py,rr,0,Math.PI*2); g.fill();
+      const ang=e.ang+i*(Math.PI*2/n), L=e.r*(0.8+k*0.8);
+      g.beginPath(); g.moveTo(e.x,e.y); g.lineTo(e.x+Math.cos(ang)*L,e.y+Math.sin(ang)*L); g.stroke();
     }
-  };
-  draw(Math.round(m.dose*7)+2, 'rgba(56,189,248,.9)', 0, 2.2);
-  draw(Math.round(m.ops*14),   'rgba(245,158,11,.9)', 3.1, 2.8);
-  draw(Math.round(m.cd47*14),  'rgba(168,85,247,.9)', 6.4, 2.8);
-  // rótulos
-  g.fillStyle='rgba(148,163,184,.85)'; g.font='600 10px system-ui'; g.textAlign='left';
-  g.fillText(`pH ${m.ph.toFixed(1)} · ${m.temp}°C`, fx+6, fy+13);
-  g.textAlign='right';
-  g.fillText(S.compound?'pronto para uso':'não misturado', fx+fw-6, fy+13);
-}
-function drawChart(){
-  const g=cctx, w=chartC.clientWidth, h=chartC.clientHeight;
-  if(!w||!h) return;
-  g.clearRect(0,0,w,h);
-  g.strokeStyle='rgba(148,163,184,.14)'; g.lineWidth=1;
-  for(let i=1;i<4;i++){ g.beginPath(); g.moveTo(0,h*i/4); g.lineTo(w,h*i/4); g.stroke(); }
-  if(S.history.length<2) return;
-  const n=S.history.length;
-  const maxC=Math.max(10,...S.history.map(p=>p.c));
-  const line=(get,col,max,min)=>{
-    g.beginPath();
-    S.history.forEach((p,i)=>{
-      const x=i/(n-1)*w, y=h-clamp((get(p)-min)/(max-min),0,1)*(h-6)-3;
-      i?g.lineTo(x,y):g.moveTo(x,y);
-    });
-    g.strokeStyle=col; g.lineWidth=2; g.stroke();
-  };
-  line(p=>p.g,'rgba(56,189,248,.75)',220,60);
-  line(p=>p.c,'rgba(236,72,153,.95)',maxC,0);
+    g.lineWidth=1;
+    g.strokeStyle=e.tipo==='neutron'?'rgba(201,138,18,.6)':'rgba(224,86,60,.6)';
+    g.beginPath(); g.arc(e.x,e.y,e.r*(1+k*0.7),0,Math.PI*2); g.stroke();
+  } else if(e.tipo==='beta'){
+    g.strokeStyle='#7A6BF0'; g.lineWidth=1.4;
+    for(let i=0;i<5;i++){
+      const ang=e.ang+i*1.257, L=40+k*70;
+      g.beginPath(); g.moveTo(e.x,e.y);
+      g.quadraticCurveTo(e.x+Math.cos(ang)*L*0.6+8, e.y+Math.sin(ang)*L*0.6,
+                         e.x+Math.cos(ang)*L, e.y+Math.sin(ang)*L);
+      g.stroke();
+    }
+  } else if(e.tipo==='radiossens'){
+    g.fillStyle='#C0C6CE';
+    for(let i=0;i<9;i++){
+      const ang=e.ang+i*0.7, d=e.r*rnd(0.2,0.9);
+      g.beginPath(); g.arc(e.x+Math.cos(ang)*d,e.y+Math.sin(ang)*d,1.6,0,Math.PI*2); g.fill();
+    }
+  } else if(e.tipo==='fagocitose'){
+    g.strokeStyle='#5B8DEF'; g.lineWidth=2;
+    g.beginPath(); g.arc(e.x,e.y,e.r+6+k*14,0,Math.PI*2); g.stroke();
+  } else {
+    g.strokeStyle='#E33C8B'; g.lineWidth=1.6;
+    g.beginPath(); g.arc(e.x,e.y,e.r*(1+k*1.4),0,Math.PI*2); g.stroke();
+  }
+  g.restore();
 }
 
 /* =========================================================================
-   HUD
+   DESENHO — gráficos
    ========================================================================= */
+function desenhaChart(){
+  const g=cx, w=chart.clientWidth, h=chart.clientHeight, pad=10;
+  if(!w||!h) return;
+  g.clearRect(0,0,w,h);
+  g.strokeStyle='rgba(132,150,180,.13)'; g.lineWidth=1;
+  for(let i=0;i<=3;i++){
+    const y=pad+(h-pad*2)*i/3;
+    g.beginPath(); g.moveTo(pad,y); g.lineTo(w-pad,y); g.stroke();
+  }
+  if(S.hist.length<2) return;
+  const dMax=Math.max(30,S.hist[S.hist.length-1].d);
+  const vMax=Math.max(S.V0*1.15,...S.hist.map(p=>p.v));
+  const X=d=>pad+(d/dMax)*(w-pad*2);
+  const Y=v=>h-pad-(v/vMax)*(h-pad*2);
+
+  g.strokeStyle='rgba(132,150,180,.4)'; g.setLineDash([2,3]);
+  for(const m of S.marcas){ const x=X(m); g.beginPath(); g.moveTo(x,h-pad); g.lineTo(x,h-pad-9); g.stroke(); }
+  g.setLineDash([]);
+
+  const first=S.hist[0], last=S.hist[S.hist.length-1];
+  g.beginPath(); g.moveTo(X(first.d),Y(first.v));
+  for(const p of S.hist) g.lineTo(X(p.d),Y(p.v));
+  g.lineTo(X(last.d),h-pad); g.lineTo(X(first.d),h-pad); g.closePath();
+  const gr=g.createLinearGradient(0,pad,0,h-pad);
+  gr.addColorStop(0,'rgba(227,60,139,.22)'); gr.addColorStop(1,'rgba(227,60,139,0)');
+  g.fillStyle=gr; g.fill();
+
+  g.beginPath();
+  S.hist.forEach((p,i)=> i?g.lineTo(X(p.d),Y(p.v)):g.moveTo(X(p.d),Y(p.v)));
+  g.strokeStyle='#E33C8B'; g.lineWidth=2; g.lineJoin='round'; g.stroke();
+
+  g.fillStyle='#E33C8B';
+  g.beginPath(); g.arc(X(last.d),Y(last.v),4,0,Math.PI*2); g.fill();
+  g.strokeStyle='#080E1A'; g.lineWidth=2; g.stroke();
+
+  g.fillStyle='#5A6B8C'; g.font='500 10px '+MONO; g.textBaseline='alphabetic';
+  g.textAlign='left'; g.fillText(fmt(vMax)+' mm³', pad+2, pad+9);
+  g.textAlign='right'; g.fillText('dia '+Math.round(dMax), w-pad-2, h-pad-3);
+
+  if(S.hover!==null){
+    const alvo=S.hist.reduce((a,b)=>Math.abs(X(b.d)-S.hover)<Math.abs(X(a.d)-S.hover)?b:a);
+    const x=X(alvo.d), y=Y(alvo.v);
+    g.strokeStyle='rgba(228,235,246,.35)'; g.lineWidth=1;
+    g.beginPath(); g.moveTo(x,pad); g.lineTo(x,h-pad); g.stroke();
+    g.fillStyle='#E4EBF6'; g.beginPath(); g.arc(x,y,3.5,0,Math.PI*2); g.fill();
+    const txt=`dia ${Math.round(alvo.d)} · ${fmt(alvo.v)} mm³`;
+    g.font='600 11px '+MONO;
+    const tw=g.measureText(txt).width+12;
+    const bx=clamp(x-tw/2,pad,w-pad-tw);
+    g.fillStyle='rgba(8,14,26,.95)'; g.strokeStyle='#1F2B42'; g.lineWidth=1;
+    g.beginPath(); g.roundRect(bx,pad+2,tw,19,5); g.fill(); g.stroke();
+    g.fillStyle='#E4EBF6'; g.textAlign='left'; g.fillText(txt,bx+6,pad+16);
+  }
+}
+function desenhaPK(){
+  const g=px, w=pk.clientWidth, h=pk.clientHeight, pad=8;
+  if(!w||!h) return;
+  g.clearRect(0,0,w,h);
+  g.strokeStyle='rgba(132,150,180,.12)'; g.lineWidth=1;
+  g.beginPath(); g.moveTo(pad,h-pad); g.lineTo(w-pad,h-pad); g.stroke();
+  if(S.histPK.length<2) return;
+  const dMax=Math.max(30,S.histPK[S.histPK.length-1].d);
+  const cMax=Math.max(0.6,...S.histPK.map(p=>p.c));
+  const X=d=>pad+(d/dMax)*(w-pad*2), Y=c=>h-pad-(c/cMax)*(h-pad*2);
+  g.beginPath();
+  S.histPK.forEach((p,i)=> i?g.lineTo(X(p.d),Y(p.c)):g.moveTo(X(p.d),Y(p.c)));
+  g.strokeStyle=S.agente.cor; g.lineWidth=2; g.stroke();
+  const l=S.histPK[S.histPK.length-1];
+  g.fillStyle=S.agente.cor; g.beginPath(); g.arc(X(l.d),Y(l.c),3.5,0,Math.PI*2); g.fill();
+  g.fillStyle='#5A6B8C'; g.font='500 10px '+MONO; g.textAlign='left';
+  g.fillText('meia-vida do modelo: '+S.agente.dur+' d', pad+2, pad+8);
+}
+
+/* =========================================================================
+   DESENHO — tabela periódica e vias
+   ========================================================================= */
+let ptCells=[];
+function desenhaTabela(){
+  const g=tx, w=ptab.clientWidth, h=ptab.clientHeight;
+  if(!w||!h) return;
+  g.clearRect(0,0,w,h);
+  const cw=w/18, ch=Math.min(cw,h/10);
+  ptCells=[];
+  const agMap={}; AGENTES.forEach(a=>{ if(a.sym!=='✱') agMap[a.sym]=a; });
+  g.textAlign='center'; g.textBaseline='middle';
+  for(let r=0;r<PT_ROWS.length;r++){
+    for(let c=0;c<18;c++){
+      const sym=(PT_ROWS[r]||[])[c]; if(!sym) continue;
+      const x=c*cw+1, y=r*ch+1, sw=cw-2, sh=ch-2;
+      const ag=agMap[sym], uso=USOS[sym];
+      ptCells.push({sym,x,y,w:sw,h:sh,ag,uso});
+      if(ag){
+        g.fillStyle=ag.cor+'2E'; g.strokeStyle=ag.cor;
+        g.lineWidth=(S.agente.sym===sym)?2:1.2;
+      } else if(uso){
+        g.fillStyle='rgba(132,150,180,.07)'; g.strokeStyle='rgba(132,150,180,.5)';
+        g.lineWidth=1; g.setLineDash([2,2]);
+      } else {
+        g.fillStyle='rgba(132,150,180,.04)'; g.strokeStyle='rgba(31,43,66,.9)'; g.lineWidth=1;
+      }
+      g.beginPath(); g.roundRect(x,y,sw,sh,2); g.fill(); g.stroke(); g.setLineDash([]);
+      g.fillStyle = ag?'#E4EBF6' : uso?'#B7C4DA' : '#3D4B67';
+      g.font=`${ag?700:500} ${Math.min(9.5,sh*0.55)}px ${MONO}`;
+      g.fillText(sym, x+sw/2, y+sh/2+0.5);
+    }
+  }
+}
+const ROTAS=[
+  {k:'iv', nome:'Intravenosa', bx:24,  by:66},
+  {k:'sc', nome:'Subcutânea',  bx:0,   by:112, abaixo:true},
+  {k:'it', nome:'Intratumoral',bx:-26, by:92},
+  {k:'vo', nome:'Oral',        bx:0,   by:20}
+];
+function rotaPos(r){
+  const w=route.clientWidth, h=route.clientHeight, s=h/215;
+  return {x:w/2+r.bx*s, y:6+r.by*s};
+}
+function desenhaRota(){
+  const g=rx, w=route.clientWidth, h=route.clientHeight;
+  if(!w||!h) return;
+  g.clearRect(0,0,w,h);
+  const s=h/215;
+  g.save(); g.translate(w/2,6); g.scale(s,s);
+  g.beginPath();
+  g.arc(0,18,15,0,Math.PI*2);
+  g.moveTo(-27,40); g.bezierCurveTo(-31,66,-27,100,-21,120);
+  g.lineTo(21,120); g.bezierCurveTo(27,100,31,66,27,40); g.closePath();
+  g.moveTo(-27,44); g.lineTo(-44,104); g.lineTo(-35,106); g.lineTo(-20,54);
+  g.moveTo(27,44);  g.lineTo(44,104);  g.lineTo(35,106);  g.lineTo(20,54);
+  g.moveTo(-21,120); g.lineTo(-19,196); g.lineTo(-6,196); g.lineTo(-2,122);
+  g.moveTo(21,120);  g.lineTo(19,196);  g.lineTo(6,196);  g.lineTo(2,122);
+  g.fillStyle='rgba(91,141,239,.08)'; g.fill();
+  g.strokeStyle='rgba(91,141,239,.45)'; g.lineWidth=1.4; g.stroke();
+  g.restore();
+
+  g.textBaseline='middle';
+  for(const r of ROTAS){
+    const p=rotaPos(r), on=S.via===r.k, ok=S.agente.vias.includes(r.k);
+    g.beginPath(); g.arc(p.x,p.y,on?7:5,0,Math.PI*2);
+    g.fillStyle = on ? (ok?'#5B8DEF':'#C98A12') : (ok?'rgba(91,141,239,.55)':'rgba(132,150,180,.32)');
+    g.fill();
+    g.font='600 10px system-ui,sans-serif';
+    g.fillStyle = on?'#E4EBF6':'#8496B4';
+    if(r.bx<0){ g.textAlign='right'; g.fillText(r.nome,p.x-10,p.y); }
+    else if(r.bx>0){ g.textAlign='left'; g.fillText(r.nome,p.x+10,p.y); }
+    else { g.textAlign='center'; g.fillText(r.nome, p.x, p.y + (r.abaixo?14:-13)); }
+  }
+}
+
+/* =========================================================================
+   PAINÉIS
+   ========================================================================= */
+function pintaAgente(){
+  const a=S.agente;
+  const tile=$('agTile');
+  tile.innerHTML=`<b style="color:${a.cor}">${a.sym}</b><i>${a.z||''}</i>`;
+  tile.style.borderColor=a.cor;
+  $('agName').textContent=a.nome;
+  $('agClass').textContent=a.classe;
+  $('agMech').textContent=a.mec;
+  $('agEvid').innerHTML = a.fonte.url
+    ? `<b>Evidência.</b> ${a.evid}<a href="${a.fonte.url}" target="_blank" rel="noopener">${a.fonte.t} ↗</a>`
+    : `<b>Aviso.</b> ${a.evid}<br><span style="color:#C98A12">${a.fonte.t}</span>`;
+
+  const indicado=(a.logs[S.caso]||0)>=0.4;
+  const chips=[`<span class="chip ${indicado?'ok':'no'}">${indicado?'ativo neste caso':'pouco ativo neste caso'}</span>`,
+               `<span class="chip">${a.ciclos} aplicação(ões) · a cada ${a.intervalo} d</span>`];
+  if(a.requer) chips.push(`<span class="chip warn">exige ${a.requer==='neutrons'?'feixe de nêutrons':'radioterapia'}</span>`);
+  if(a.ficcao) chips.push('<span class="chip warn">ficção didática</span>');
+  $('agChips').innerHTML=chips.join('');
+  $('toxNome').textContent='Toxicidade — '+a.tox;
+  desenhaTabela(); desenhaRota();
+}
+function pintaCaso(){
+  const c=caso();
+  $('casoDesc').textContent=c.desc;
+  $('kvV0').textContent=fmt(c.v0)+' mm³';
+  $('kvTd').textContent=c.td+' dias';
+}
 function hud(){
-  const vivos=S.cells.filter(c=>!c.dead);
-  $('tCancer').textContent = vivos.filter(c=>c.type==='cancer').length;
-  $('tMacro').textContent  = vivos.filter(c=>c.type==='macro').length;
-  $('tHealthy').textContent= vivos.filter(c=>c.type==='healthy').length;
-  $('tTime').textContent   = S.t.toFixed(0)+'s';
-  $('sGly').textContent    = Math.round(S.glycemia);
-  $('sSat').innerHTML      = Math.round(S.satiety)+'<span style="font-size:12px">%</span>';
-  $('sNau').innerHTML      = Math.round(S.nausea)+'<span style="font-size:12px">%</span>';
-  $('sEat').textContent    = S.eaten;
-  $('sNau').style.color    = S.nausea>60?'#f43f5e':S.nausea>35?'#f59e0b':'';
-  $('sGly').style.color    = S.glycemia<75?'#f43f5e':S.glycemia<140?'#4ade80':'';
-  const pl=clamp(S.plasma,0,1.4);
-  $('mPlasma').textContent = Math.round(pl*100)+'%';
-  $('bPlasma').style.width = Math.min(100,pl/1.4*100)+'%';
-  $('bPlasma').style.background = pl>0.9 ? 'linear-gradient(90deg,#f59e0b,#f43f5e)'
-                                         : 'linear-gradient(90deg,#38bdf8,#818cf8)';
-  $('mTissue').textContent = pct(S.tissue);
-  $('bTissue').style.width = (S.tissue*100)+'%';
-  $('bTissue').style.background = S.tissue>0.7 ? 'linear-gradient(90deg,#4ade80,#22c55e)'
-                                : S.tissue>0.45? 'linear-gradient(90deg,#f59e0b,#fb923c)'
-                                :                'linear-gradient(90deg,#f43f5e,#e11d48)';
+  $('clockDay').textContent=Math.round(S.dia);
+  $('tTumor').textContent=S.cells.filter(c=>c.tipo==='tumor'&&!c.morte).length;
+  $('tMac').textContent=S.cells.filter(c=>c.tipo==='mac').length;
+  $('tHealthy').textContent=S.cells.filter(c=>c.tipo==='saud'&&!c.morte).length;
+
+  $('heroV').textContent=fmt(S.V);
+  $('heroD').textContent=diam(S.V).toFixed(1);
+  const r=resposta();
+  $('verdict').innerHTML=`<i style="background:${r.cor}"></i>${r.nome}`;
+  const delta=(S.V/S.V0-1)*100;
+  $('kvDelta').textContent=(delta>0?'+':'')+delta.toFixed(1)+'%';
+  $('kvNadir').textContent=fmt(S.nadir)+' mm³';
+  $('kvCiclos').textContent=S.ciclos+' / '+S.agente.ciclos;
+  $('kvResist').textContent=Math.round(S.resist*100)+'%';
+
+  const tox=clamp(S.tox,0,1);
+  $('toxVal').textContent=Math.round(tox*100)+'%';
+  $('toxBar').style.width=(tox*100)+'%';
+  $('toxBar').style.background = tox>0.75?'#E14B5A':tox>0.45?'#C98A12':'#41A24A';
+  $('tecVal').textContent=Math.round(S.tecido*100)+'%';
+  $('tecBar').style.width=(S.tecido*100)+'%';
+  $('tecBar').style.background = S.tecido<0.6?'#E14B5A':S.tecido<0.8?'#C98A12':'#41A24A';
+  $('segNota').textContent = tox>0.75
+    ? 'Perto do limite: na prática o oncologista reduziria a dose ou adiaria o ciclo.'
+    : 'A toxicidade sobe a cada aplicação e não some — é ela que limita quantos ciclos cabem no tratamento.';
+}
+function montaRefs(){
+  const vistos=new Set(), out=[];
+  for(const a of AGENTES){
+    if(!a.fonte.url||vistos.has(a.fonte.url)) continue;
+    vistos.add(a.fonte.url);
+    out.push(`<div><a href="${a.fonte.url}" target="_blank" rel="noopener">${a.fonte.t} ↗</a><span>${a.el} · ${a.nome}</span></div>`);
+  }
+  $('refs').innerHTML=out.join('');
 }
 
 /* =========================================================================
    LOOP
    ========================================================================= */
-let last=performance.now();
 function frame(now){
-  let dt=(now-last)/1000; last=now;
+  let dt=(now-ultimo)/1000; ultimo=now;
   dt=Math.min(dt,0.05);
-  if(S.running && !S.over){
-    const sub = S.speed>2?3:S.speed>1?2:1;
-    for(let i=0;i<sub;i++) step(dt*S.speed/sub);
-  }
-  drawSim(); drawBody(); drawLab(); drawChart(); hud();
+  passo(dt);
+  desenhaCampo(); desenhaChart(); desenhaPK(); desenhaTabela(); desenhaRota(); hud();
   requestAnimationFrame(frame);
 }
 
 /* =========================================================================
    EVENTOS
    ========================================================================= */
-['rDose','rOps','rCd','rPh','rTemp'].forEach(id=>{
-  $(id).addEventListener('input', ()=>{
-    const m=readMix();
-    $('vDose').textContent = m.dose.toFixed(1)+' mg';
-    $('vOps').textContent  = Math.round(m.ops*100)+'%';
-    $('vCd').textContent   = Math.round(m.cd47*100)+'%';
-    $('vPh').textContent   = m.ph.toFixed(1);
-    $('vTemp').textContent = m.temp+' °C';
-    // pré-visualização (não substitui a mistura carregada)
-    paintSheet(evaluate(m));
+function infoRota(){
+  const v=VIAS[S.via], ok=S.agente.vias.includes(S.via);
+  $('routeInfo').innerHTML=`<b style="color:${ok?'#E4EBF6':'#C98A12'}">${v.nome}</b> — ${v.desc}.`+
+    (ok?'':' <span style="color:#C98A12">Não é a via usada com este agente.</span>');
+}
+function reiniciar(mantemAgente){
+  const c=caso();
+  S.dia=0; S.V=c.v0; S.V0=c.v0; S.nadir=c.v0; S.resist=0; S.tox=0; S.tecido=1;
+  S.ciclos=0; S.protocolo=false; S.proximoCiclo=0; S.fimProtocolo=null;
+  S.conc=0; S.hist.length=0; S.histPK.length=0; S.marcas.length=0;
+  S.efeitos.length=0; S.desfecho=null; S.feixe=0; S.nextId=1;
+  if(!mantemAgente) S.agente=AGENTES[2];
+  if(!S.agente.vias.includes(S.via)) S.via=S.agente.vias[0];
+  beamOff(); $('log').innerHTML='';
+  povoar(); pintaCaso(); pintaAgente(); infoRota();
+  log('CASO','#8496B4',`${c.nome}. Volume inicial <b>${fmt(c.v0)} mm³</b>, tempo de duplicação ${c.td} dias.`);
+  log('COMO USAR','#5B8DEF','Escolha um elemento na tabela, ajuste a dose e clique em <b>Iniciar protocolo</b>. Depois acelere para 7 ou 30 dias por segundo e acompanhe a curva.');
+}
+
+$('selCaso').innerHTML=Object.entries(CASOS).map(([k,c])=>`<option value="${k}">${c.nome}</option>`).join('');
+$('selCaso').value=S.caso;
+$('selCaso').addEventListener('change', e=>{ S.caso=e.target.value; reiniciar(true); });
+$('rDose').addEventListener('input', e=>{
+  S.dose=+e.target.value/100;
+  $('doseVal').textContent=e.target.value+'%';
+});
+$('btnPlay').addEventListener('click', e=>{
+  S.rodando=!S.rodando;
+  e.currentTarget.textContent=S.rodando?'Pausar':'Continuar';
+  e.currentTarget.setAttribute('aria-pressed',String(S.rodando));
+});
+document.querySelectorAll('.seg button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    S.diasPorSeg=+b.dataset.sp;
+    document.querySelectorAll('.seg button').forEach(o=>o.setAttribute('aria-pressed',String(o===b)));
   });
 });
-$('btnMix').addEventListener('click', mix);
-$('btnLoad').addEventListener('click', loadSyringe);
-
-$('btnVessel').addEventListener('click', ()=>{
-  if(!S.armed||S.syringe<=0){ log('⚠ Carregue a seringa antes de injetar.'); return; }
-  inject(W()*0.5, H()*0.12, 'iv');
+$('btnReset').addEventListener('click', ()=>reiniciar(true));
+$('btnStart').addEventListener('click', ()=>{
+  if(S.desfecho) reiniciar(true);
+  S.protocolo=true; S.proximoCiclo=S.dia; S.fimProtocolo=null;
+  const a=S.agente;
+  log('PROTOCOLO',a.cor,`${a.nome} — ${a.ciclos} aplicação(ões) a cada ${a.intervalo} dias, via ${VIAS[S.via].nome.toLowerCase()}, a ${Math.round(S.dose*100)}% da dose.`);
 });
+$('btnCycle').addEventListener('click', ()=>aplicarCiclo(true));
 
-sim.addEventListener('pointerdown', e=>{
-  const r=sim.getBoundingClientRect();
+ptab.addEventListener('click', e=>{
+  const r=ptab.getBoundingClientRect();
   const x=e.clientX-r.left, y=e.clientY-r.top;
-  if(S.armed && S.syringe>0){ inject(x,y,'sc'); }
-  else{
-    // inspeção: clique sobre uma célula mostra seus dados
-    const alvo = S.cells.find(c=>!c.dead && dist2({x,y},c)<c.r*c.r);
-    if(alvo){
-      const nome = alvo.type==='cancer'?'Célula cancerígena':alvo.type==='macro'?'Macrófago':'Célula saudável';
-      const extra = alvo.type==='cancer' ? ` · marcação ${pct(alvo.mark)} · CD47 bloqueado ${pct(alvo.block)} · alvo para fagocitose ${pct(edible(alvo))}`
-                  : alvo.type==='macro'  ? ` · ativação ${pct(alvo.act)}${alvo.eating?' · fagocitando':''}`
-                  : ` · integridade ${pct(alvo.hp)}`;
-      log(`🔎 <b>${nome} #${alvo.id}</b>${extra}`);
-    } else if(!S.compound){ log('ℹ Misture o composto na bancada antes de aplicar.'); }
-    else { log('ℹ Clique em “Carregar seringa” para poder injetar.'); }
+  const cel=ptCells.find(c=>x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h);
+  if(!cel) return;
+  if(cel.ag){
+    S.agente=cel.ag;
+    if(!S.agente.vias.includes(S.via)) S.via=S.agente.vias[0];
+    S.ciclos=0; S.protocolo=false; S.fimProtocolo=null; S.resist=0;
+    pintaAgente(); infoRota();
+    log('AGENTE',cel.ag.cor,`<b>${cel.ag.el} (${cel.ag.sym})</b> — ${cel.ag.nome}.`);
+  } else if(cel.uso){
+    log('ELEMENTO','#8496B4',`<b>${cel.sym}</b> — ${cel.uso}`);
   }
 });
-
-bodyC.addEventListener('click', e=>{
-  const r=bodyC.getBoundingClientRect();
+route.addEventListener('click', e=>{
+  const r=route.getBoundingClientRect();
   const x=e.clientX-r.left, y=e.clientY-r.top;
-  let melhor=site, d=1e9;
-  for(const st of SITES){
-    const pos=sitePos(st);
-    const dd=(pos.x-x)**2+(pos.y-y)**2;
-    if(dd<d){ d=dd; melhor=st; }
-  }
-  if(d<40*40 && melhor!==site){
-    site=melhor; showSite();
-    log(`📍 Local da aplicação: <b>${site.nome}</b> — ${site.txt}.`);
-  }
+  let melhor=null, d=1e9;
+  for(const rt of ROTAS){ const p=rotaPos(rt); const dd=(p.x-x)**2+(p.y-y)**2; if(dd<d){d=dd;melhor=rt;} }
+  if(melhor&&d<40*40){ S.via=melhor.k; infoRota(); desenhaRota(); }
 });
-function showSite(){
-  $('siteInfo').innerHTML =
-    `<b>${site.nome}</b> — ${site.txt}.<br>Absorção ${Math.round(site.abs*100)}% · latência ${site.lat.toFixed(1)} s`;
-}
-
-$('btnPlay').addEventListener('click', ()=>{
-  S.running=!S.running;
-  $('btnPlay').textContent = S.running?'⏸ Pausar':'▶ Continuar';
+chart.addEventListener('mousemove', e=>{ S.hover=e.clientX-chart.getBoundingClientRect().left; });
+chart.addEventListener('mouseleave', ()=>{ S.hover=null; });
+field.addEventListener('click', e=>{
+  const r=field.getBoundingClientRect();
+  const p={x:e.clientX-r.left, y:e.clientY-r.top};
+  const alvo=S.cells.find(c=>!c.morte&&dist2(p,c)<c.r*c.r);
+  if(!alvo) return;
+  const nome={tumor:'Célula tumoral',mac:'Macrófago',saud:'Célula saudável'}[alvo.tipo];
+  const extra = alvo.tipo==='mac' ? ` · ativação ${Math.round(alvo.ativ*100)}%`
+              : alvo.tipo==='saud' ? ` · integridade ${Math.round(alvo.hp*100)}%` : '';
+  log('CÉLULA','#8496B4',`<b>${nome} #${alvo.id}</b>${extra}`);
 });
-$('btnSpeed').addEventListener('click', ()=>{
-  S.speed = S.speed===1?2:S.speed===2?4:1;
-  $('btnSpeed').textContent = 'Velocidade '+S.speed+'×';
-});
-$('btnSeed').addEventListener('click', ()=>{ seedTumor(false); S.over=null; hideBanner(); });
-$('btnReset').addEventListener('click', reset);
 
-function reset(){
-  S.t=0; S.particles.length=0; S.depots.length=0; S.pops.length=0;
-  S.glycemia=180; S.satiety=10; S.nausea=0; S.eaten=0; S.plasma=0; S.plasmaC=null;
-  S.history.length=0; S.over=null; S.syringe=0; S.armed=false; S.nextId=1; S.recruitAcc=0;
-  $('stage').classList.remove('armed'); $('btnLoad').classList.remove('armed');
-  updateSyringe(); hideBanner();
-  $('log').innerHTML='';
-  populate();
-  log('🧪 Experimento reiniciado. Monte o composto na bancada de química.');
-}
-
-/* ---------------- inicialização ---------------- */
 window.addEventListener('load', ()=>{
-  fitAll(); showSite(); populate();
-  paintSheet(evaluate(readMix()));
-  log('🧪 Bem-vindo. Passo 1: ajuste os reagentes e clique em <b>Misturar composto</b>.');
-  log('💡 Dica: sem opsonina o macrófago não reconhece o alvo; sem anti-CD47 ele não ataca.');
+  fitAll(); montaRefs(); reiniciar(false);
   requestAnimationFrame(frame);
 });
 fitAll();
