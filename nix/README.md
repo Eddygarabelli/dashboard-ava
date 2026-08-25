@@ -11,6 +11,12 @@ Publica junto com o AVA no Vercel/GitHub Pages.
 > Em desenvolvimento local, abra por um servidor estático
 > (`python3 -m http.server`), porque módulos ES não carregam via `file://`.
 
+**Versão em arquivo único:** `nix/nix-arquivo-unico.html` reúne HTML, CSS e todo
+o código num só arquivo. Serve para levar em pendrive e abrir com dois cliques
+no computador da escola, sem servidor e sem internet. Para regerá-lo depois de
+mexer no código: `node nix/build-arquivo-unico.mjs`. (Essa versão não inclui o
+painel do professor.)
+
 ## O que está implementado (escopo do MVP)
 
 | Item do documento | Onde está |

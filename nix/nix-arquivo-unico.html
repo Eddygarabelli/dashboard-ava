@@ -1,0 +1,3208 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nix: O Código das Palavras</title>
+<meta name="description" content="Jogo educacional de alfabetização com acessibilidade — MVP em arquivo único.">
+<style>
+/* Nix: O Código das Palavras — estilos do MVP.
+   Os ajustes de acessibilidade chegam como data-* no <html>:
+   data-contraste, data-movimento, data-texto, data-legenda, data-libras. */
+
+:root{
+  --azul:#1d1ed8;
+  --azul-escuro:#141a8f;
+  --verde:#16a34a;
+  --amarelo:#ffd60a;
+  --rosa:#e05c8a;
+  --texto:#0f172a;
+  --texto-suave:#475569;
+  --fundo:#eef3fb;
+  --cartao:#ffffff;
+  --borda:#d7e0ef;
+  --sombra:0 10px 30px rgba(15,23,42,.10);
+  --raio:18px;
+  --base:17px;
+}
+
+html[data-texto="grande"]{ --base:21px; }
+
+html[data-contraste="alto"]{
+  --azul:#0000cc; --azul-escuro:#000080; --verde:#006400; --rosa:#a3004c;
+  --texto:#000000; --texto-suave:#111111; --fundo:#ffffff; --cartao:#ffffff;
+  --borda:#000000; --sombra:none;
+}
+
+*{ box-sizing:border-box; }
+/* display:grid nas camadas sobrepõe o padrão de [hidden] — reforçamos aqui */
+[hidden]{ display:none !important; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,'Segoe UI',Roboto,Ubuntu,'Helvetica Neue',Arial,sans-serif;
+  font-size:var(--base);
+  color:var(--texto);
+  background:var(--fundo);
+}
+html[data-contraste="alto"] body{ background:#fff; }
+
+html[data-movimento="reduzido"] *{
+  animation-duration:.001ms !important;
+  animation-iteration-count:1 !important;
+  transition-duration:.001ms !important;
+}
+
+.sr{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+
+/* ---------- topo ---------- */
+.topo{
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  padding:10px 16px; background:var(--cartao);
+  border-bottom:2px solid var(--borda);
+}
+.marca{ display:flex; align-items:baseline; gap:8px; margin-right:auto; }
+.marca h1{ font-size:1.05rem; margin:0; color:var(--azul-escuro); }
+.marca small{ color:var(--texto-suave); font-size:.75rem; }
+
+.botao{
+  font:inherit; font-weight:700; cursor:pointer;
+  border:2px solid transparent; border-radius:999px;
+  padding:.6em 1.2em; min-height:44px;
+  transition:transform .15s, box-shadow .15s, background .15s;
+}
+.botao:focus-visible{ outline:4px solid var(--amarelo); outline-offset:3px; }
+.botao:hover{ transform:translateY(-1px); }
+.botao.principal{ background:var(--azul); color:#fff; box-shadow:0 6px 14px rgba(29,30,216,.28); }
+.botao.principal:hover{ background:var(--azul-escuro); }
+.botao.secundario{ background:#e6ecf8; color:var(--azul-escuro); border-color:var(--borda); }
+.botao.pequeno{ padding:.35em .9em; min-height:36px; font-size:.85em; }
+html[data-contraste="alto"] .botao{ border-color:#000; box-shadow:none; }
+
+/* ---------- palco ---------- */
+.palco{
+  position:relative; max-width:1000px; margin:14px auto; padding:0 12px;
+}
+.tela-caixa{ position:relative; }
+#tela{
+  width:100%; height:auto; display:block;
+  border-radius:var(--raio); border:3px solid var(--borda);
+  background:#7fb069; box-shadow:var(--sombra);
+  touch-action:none;
+}
+
+.alvo-proximo{
+  margin:8px 0 0; padding:8px 14px; border-radius:12px;
+  background:var(--cartao); border:2px solid var(--borda);
+  color:var(--texto-suave); font-size:.9em;
+}
+.alvo-proximo strong{ color:var(--azul-escuro); }
+kbd{
+  font:inherit; font-size:.85em; background:#e6ecf8; border:1px solid var(--borda);
+  border-bottom-width:3px; border-radius:6px; padding:1px 7px;
+}
+
+/* Legenda logo abaixo do jardim: fica sempre legível e nunca cobre o
+   personagem nem os objetos — occlusão é problema de acessibilidade. */
+.legenda{
+  display:block; margin:10px auto 0; max-width:min(100%,860px);
+  background:rgba(15,23,42,.92); color:#fff;
+  padding:.55em 1em; border-radius:12px; font-size:1.05em; text-align:center;
+  line-height:1.35; pointer-events:none;
+}
+html[data-contraste="alto"] .legenda{ background:#000; border:3px solid #fff; }
+html[data-legenda="nao"] .legenda{ display:none; }
+
+/* Janela de Libras: fica acima de tudo, inclusive do painel de tarefas —
+   para quem depende dela, ela nunca pode ficar escondida. */
+.libras{
+  position:fixed; right:18px; top:84px; width:190px;
+  background:var(--cartao); border:3px solid var(--azul);
+  border-radius:14px; padding:8px; box-shadow:var(--sombra); z-index:25;
+}
+.libras video{ width:100%; border-radius:8px; display:block; }
+.libras-titulo{ margin:0 0 6px; font-size:.75em; font-weight:700; color:var(--azul-escuro);
+  text-transform:uppercase; letter-spacing:.06em; }
+.reservado{
+  display:grid; place-items:center; gap:6px; padding:14px 8px;
+  background:#f1f5fb; border:2px dashed var(--azul); border-radius:8px;
+  text-align:center; color:var(--texto-suave);
+}
+.reservado span{ font-size:1.8rem; }
+.reservado small{ font-size:.7rem; line-height:1.25; }
+
+/* ---------- controles ---------- */
+.controles{
+  display:flex; align-items:center; justify-content:center; gap:22px;
+  flex-wrap:wrap; margin:14px auto; max-width:1000px; padding:0 12px;
+}
+.dpad{ display:grid; grid-template-columns:repeat(3,56px); grid-template-rows:repeat(3,56px); gap:6px; }
+.dpad button{
+  font-size:1.4rem; border-radius:14px; border:2px solid var(--borda);
+  background:var(--cartao); cursor:pointer; touch-action:none;
+}
+.dpad button:active{ background:var(--amarelo); }
+.dpad button:focus-visible{ outline:4px solid var(--amarelo); outline-offset:2px; }
+#dpad-cima{ grid-area:1/2; } #dpad-esquerda{ grid-area:2/1; }
+#dpad-direita{ grid-area:2/3; } #dpad-baixo{ grid-area:3/2; }
+.dpad .miolo{ grid-area:2/2; display:grid; place-items:center; color:var(--texto-suave); font-size:.7rem; }
+.acoes-jogo{ display:flex; flex-direction:column; gap:10px; }
+
+/* ---------- HUD ---------- */
+.hud{
+  max-width:1000px; margin:0 auto 24px; padding:0 12px;
+  display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+}
+.bloco{
+  background:var(--cartao); border:2px solid var(--borda);
+  border-radius:var(--raio); padding:12px 14px;
+}
+.bloco h2{ margin:0 0 8px; font-size:.85rem; text-transform:uppercase;
+  letter-spacing:.06em; color:var(--texto-suave); }
+.mochila-itens{ list-style:none; margin:0; padding:0; display:flex; gap:12px; flex-wrap:wrap; }
+.mochila-item{ display:grid; justify-items:center; gap:2px; font-size:.8rem; font-weight:700; }
+.mochila-item canvas{ background:#f6f8fd; border-radius:10px; border:2px solid var(--borda); }
+.mochila-vazia{ color:var(--texto-suave); font-style:italic; }
+
+.progresso{ height:16px; background:#e6ecf8; border-radius:999px; overflow:hidden; border:2px solid var(--borda); }
+.progresso i{ display:block; height:100%; background:linear-gradient(90deg,var(--azul),var(--verde)); }
+html[data-contraste="alto"] .progresso i{ background:#000; }
+.progresso-texto{ font-size:.85rem; color:var(--texto-suave); margin:6px 0 0; }
+
+.palavras-hud{ list-style:none; margin:0; padding:0; display:flex; gap:10px; flex-wrap:wrap; }
+.palavra-hud{ font-weight:700; padding:.3em .8em; border-radius:999px; border:2px solid var(--borda); }
+.palavra-hud.feita{ background:#dcfce7; border-color:var(--verde); color:#14532d; }
+.palavra-hud.aberta{ background:#fff7cc; border-color:#eab308; }
+.palavra-hud.bloqueada{ background:#f1f5f9; color:var(--texto-suave); }
+
+/* ---------- diálogo ----------
+   Fica abaixo do palco, em fluxo normal: assim a fala do Nix nunca cobre
+   o personagem nem os objetos do jardim. */
+.dialogo{
+  margin:10px auto 0; width:min(100%,860px); background:var(--cartao);
+  border:3px solid var(--azul); border-radius:var(--raio);
+  padding:16px 18px; box-shadow:var(--sombra); z-index:8;
+}
+.dialogo p{ margin:0 0 12px; font-size:1.1em; line-height:1.45; }
+.dialogo-botoes{ display:flex; gap:10px; flex-wrap:wrap; }
+
+/* ---------- painel de tarefa ---------- */
+.painel{
+  position:fixed; inset:0; z-index:20;
+  background:rgba(15,23,42,.55);
+  display:grid; place-items:center; padding:16px;
+}
+html[data-contraste="alto"] .painel{ background:rgba(0,0,0,.8); }
+.painel-caixa{
+  background:var(--cartao); border-radius:24px; border:3px solid var(--azul);
+  width:min(100%,860px); max-height:92vh; overflow:auto; padding:20px 22px 24px;
+  box-shadow:var(--sombra);
+}
+.painel-topo{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.painel-topo h2{ margin:0; font-size:1.3rem; color:var(--azul-escuro); }
+
+.instrucao{ font-size:1.15em; line-height:1.45; margin:10px 0; }
+.acoes{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:18px; }
+
+.passos{ display:flex; gap:8px; margin-bottom:6px; }
+.passo{
+  width:34px; height:34px; display:grid; place-items:center; border-radius:50%;
+  border:2px solid var(--borda); font-weight:800; color:var(--texto-suave); background:#f6f8fd;
+}
+.passo.atual{ border-color:var(--azul); color:var(--azul); }
+.passo.feito{ background:var(--verde); border-color:var(--verde); color:#fff; }
+
+/* mídia da palavra */
+.midia{ display:flex; gap:18px; align-items:center; flex-wrap:wrap;
+  background:#f6f8fd; border:2px solid var(--borda); border-radius:var(--raio); padding:14px; }
+.midia-visual canvas, .midia-visual video{ border-radius:12px; background:#fff; max-width:260px; }
+.midia-texto{ flex:1; min-width:200px; }
+.palavra-grande{ font-size:2.4rem; font-weight:800; margin:0; letter-spacing:.06em; color:var(--azul-escuro); }
+.palavra-frase{ margin:.2em 0 .8em; color:var(--texto-suave); }
+
+/* cartões de escolha */
+.cartoes{ display:flex; gap:16px; flex-wrap:wrap; justify-content:center; margin-top:14px; }
+.cartao{
+  display:grid; justify-items:center; gap:6px; cursor:pointer;
+  background:var(--cartao); border:3px solid var(--borda); border-radius:20px;
+  padding:12px 16px; font:inherit; font-weight:800; letter-spacing:.05em;
+  min-width:150px; transition:transform .15s, border-color .15s;
+}
+.cartao:hover{ transform:translateY(-3px); border-color:var(--azul); }
+.cartao:focus-visible{ outline:4px solid var(--amarelo); outline-offset:3px; }
+.cartao.certo{ border-color:var(--verde); background:#dcfce7; }
+.cartao.errado{ border-color:#94a3b8; background:#f1f5f9; opacity:.6; }
+.cartao.apoio{ border-color:var(--amarelo); box-shadow:0 0 0 6px rgba(255,214,10,.35); }
+
+/* trilho de sílabas/letras */
+.trilho{ display:flex; gap:10px; justify-content:center; margin:18px 0; flex-wrap:wrap; }
+.vaga{
+  min-width:96px; height:78px; display:grid; place-items:center;
+  border:3px dashed var(--borda); border-radius:16px;
+  font-size:2rem; font-weight:800; color:var(--azul-escuro); background:#f6f8fd;
+}
+.vaga.preenchida{ border-style:solid; border-color:var(--verde); background:#dcfce7; }
+.pecas{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+.pecas.grandes .peca{ font-size:2rem; }
+.peca{
+  font:inherit; font-size:1.7rem; font-weight:800; letter-spacing:.05em;
+  min-width:92px; min-height:70px; cursor:pointer;
+  background:var(--cartao); border:3px solid var(--azul); border-radius:16px; color:var(--azul-escuro);
+  transition:transform .12s, background .12s;
+}
+.peca:hover{ transform:translateY(-2px); background:#eef2ff; }
+.peca:focus-visible{ outline:4px solid var(--amarelo); outline-offset:3px; }
+.peca.usada{ opacity:.45; border-color:var(--borda); color:var(--texto-suave); cursor:default; }
+.peca.errado{ background:#fee2e2; border-color:#ef4444; }
+.peca.apoio{ box-shadow:0 0 0 6px rgba(255,214,10,.4); }
+
+/* recuperação pedagógica */
+.apoio-linha{ display:flex; gap:20px; align-items:center; flex-wrap:wrap; justify-content:center; }
+.apoio-partes{ display:flex; gap:10px; flex-wrap:wrap; }
+.parte{
+  font-size:2rem; font-weight:800; color:var(--azul-escuro);
+  background:#fff7cc; border:3px solid var(--amarelo); border-radius:14px; padding:.2em .5em;
+  animation:pulsa 1.6s ease-in-out infinite;
+}
+@keyframes pulsa{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.06); } }
+
+.conquista{ display:grid; justify-items:center; gap:6px; }
+
+/* avisos flutuantes */
+.aviso{
+  position:absolute; left:50%; top:18px; transform:translateX(-50%);
+  background:var(--verde); color:#fff; font-weight:700;
+  padding:.6em 1.2em; border-radius:999px; box-shadow:var(--sombra); z-index:9;
+}
+.aviso-atencao{ background:#eab308; color:#1f2937; }
+.aviso.saindo{ opacity:0; transition:opacity .4s; }
+html[data-contraste="alto"] .aviso{ background:#000; border:3px solid #fff; }
+
+/* ---------- cenas (abertura, personalizar, encerramento) ---------- */
+.camada-cenas{
+  position:fixed; inset:0; z-index:30; overflow:auto;
+  background:linear-gradient(160deg,#0f172a,#1e3a8a 60%,#2563eb);
+  display:grid; place-items:center; padding:20px;
+}
+html[data-contraste="alto"] .camada-cenas{ background:#000; }
+.cena{
+  background:var(--cartao); border-radius:26px; padding:22px 26px 26px;
+  width:min(100%,860px); box-shadow:var(--sombra); text-align:center;
+}
+.cena-titulo{ margin:0 0 4px; color:var(--azul-escuro); font-size:1.6rem; }
+.cena-subtitulo{ margin:0 0 14px; color:var(--texto-suave); }
+.cena canvas{ width:100%; height:auto; border-radius:18px; border:2px solid var(--borda); background:#0b1437; }
+.cena-texto{ font-size:1.2em; line-height:1.5; margin:14px 0 0; }
+.cena-passo{ color:var(--texto-suave); font-size:.85rem; margin:10px 0 0; }
+
+.personalizar-grade{ display:flex; gap:22px; flex-wrap:wrap; justify-content:center; text-align:left; }
+.previa{ display:grid; justify-items:center; gap:10px; }
+.previa canvas{ background:#eef3fb; }
+.campo{ display:grid; gap:4px; font-size:.85rem; color:var(--texto-suave); width:100%; }
+.entrada{ font:inherit; padding:.6em .8em; border:2px solid var(--borda); border-radius:12px; }
+.entrada:focus{ outline:3px solid var(--amarelo); border-color:var(--azul); }
+.opcoes{ flex:1; min-width:280px; display:grid; gap:12px; align-content:start; }
+.grupo{ border:2px solid var(--borda); border-radius:16px; padding:10px 12px; margin:0; }
+.grupo legend{ font-size:.8rem; font-weight:800; color:var(--texto-suave);
+  text-transform:uppercase; letter-spacing:.06em; padding:0 6px; }
+.linha-opcoes{ display:flex; gap:10px; flex-wrap:wrap; }
+.opcao{ cursor:pointer; border:3px solid var(--borda); border-radius:12px; font:inherit; font-weight:700;
+  min-height:44px; min-width:44px; background:var(--cartao); }
+.opcao-cor{ width:44px; }
+.opcao-texto{ padding:.4em .9em; }
+.opcao[aria-pressed="true"]{ border-color:var(--azul); box-shadow:0 0 0 4px rgba(29,30,216,.18); }
+.opcao:focus-visible{ outline:4px solid var(--amarelo); outline-offset:2px; }
+
+.palavras-finais{ display:flex; gap:20px; justify-content:center; flex-wrap:wrap; margin-top:16px; }
+.palavra-final{ display:grid; justify-items:center; gap:2px; font-weight:800; color:var(--azul-escuro); }
+.palavra-final small{ font-weight:600; color:var(--texto-suave); }
+
+.lista-lugares{ display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); }
+
+/* ---------- ajustes ---------- */
+.modal{ position:fixed; inset:0; z-index:40; background:rgba(15,23,42,.6); display:grid; place-items:center; padding:16px; }
+.modal-caixa{ background:var(--cartao); border-radius:24px; padding:22px; width:min(100%,620px);
+  max-height:92vh; overflow:auto; border:3px solid var(--azul); }
+.modal-caixa h2{ margin:0 0 6px; color:var(--azul-escuro); }
+.modal-caixa p.ajuda{ margin:0 0 14px; color:var(--texto-suave); font-size:.92em; }
+.perfis{ display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); margin-bottom:16px; }
+.perfil{ display:grid; gap:4px; text-align:left; cursor:pointer; font:inherit;
+  background:#f6f8fd; border:3px solid var(--borda); border-radius:16px; padding:10px 12px; }
+.perfil small{ color:var(--texto-suave); font-size:.82em; line-height:1.3; }
+.perfil.ativo{ border-color:var(--azul); background:#eef2ff; }
+.perfil:focus-visible{ outline:4px solid var(--amarelo); outline-offset:2px; }
+.ajustes-lista{ display:grid; gap:8px; }
+.interruptor{ display:flex; align-items:center; gap:10px; padding:8px 10px;
+  border:2px solid var(--borda); border-radius:12px; cursor:pointer; }
+.interruptor input{ width:22px; height:22px; accent-color:var(--azul); }
+
+.rodape{ text-align:center; color:var(--texto-suave); font-size:.8rem; padding:0 12px 28px; }
+.rodape a{ color:var(--azul-escuro); }
+
+@media (max-width:1180px){
+  .libras{ width:150px; right:8px; }
+}
+@media (max-width:640px){
+  .libras{ position:static; width:auto; margin:10px auto 0; }
+  .legenda{ bottom:12px; }
+  .midia-visual canvas, .midia-visual video{ max-width:100%; }
+}
+
+</style>
+</head>
+<body>
+<!-- avisos para leitores de tela -->
+<p id="aviso-vivo" class="sr" aria-live="polite" role="status"></p>
+
+<header class="topo">
+  <div class="marca">
+    <h1 id="titulo-jogo">Nix: O Código das Palavras</h1>
+    <small id="versao-jogo">MVP</small>
+  </div>
+  <button id="btn-ajustes" class="botao secundario">⚙️ Acessibilidade</button>
+  <button id="btn-recomecar" class="botao secundario">↺ Recomeçar</button>
+</header>
+
+<main>
+  <div id="palco" class="palco">
+    <div class="tela-caixa">
+      <canvas id="tela" width="960" height="576" aria-label="Jardim do jogo" role="img"></canvas>
+      <aside id="libras" class="libras" hidden aria-label="Janela de Libras"></aside>
+    </div>
+    <p id="legenda" class="legenda" hidden></p>
+
+    <div id="dialogo" class="dialogo" role="dialog" aria-live="polite" hidden>
+      <p id="dialogo-texto"></p>
+      <div id="dialogo-botoes" class="dialogo-botoes"></div>
+    </div>
+  </div>
+
+  <p id="alvo-proximo" class="alvo-proximo palco" hidden></p>
+
+  <div class="controles">
+    <div class="dpad" role="group" aria-label="Mover o personagem">
+      <button id="dpad-cima" aria-label="Andar para cima">▲</button>
+      <button id="dpad-esquerda" aria-label="Andar para a esquerda">◀</button>
+      <span class="miolo" aria-hidden="true">mover</span>
+      <button id="dpad-direita" aria-label="Andar para a direita">▶</button>
+      <button id="dpad-baixo" aria-label="Andar para baixo">▼</button>
+    </div>
+    <div class="acoes-jogo">
+      <button id="btn-interagir" class="botao principal">👉 Interagir</button>
+      <button id="btn-ir" class="botao secundario">🧭 Ir até…</button>
+      <button id="btn-dica" class="botao secundario">💡 Falar com Nix</button>
+    </div>
+  </div>
+
+  <section class="hud" aria-label="Seu progresso">
+    <div class="bloco">
+      <h2>Mochila</h2>
+      <ul id="mochila-itens" class="mochila-itens"></ul>
+    </div>
+    <div class="bloco">
+      <h2>Palavras</h2>
+      <ul id="palavras-hud" class="palavras-hud"></ul>
+    </div>
+    <div class="bloco">
+      <h2 id="objetivo">Objetivo</h2>
+      <div id="progresso" class="progresso" role="progressbar" aria-valuemin="0" aria-valuenow="0" aria-valuemax="12">
+        <i id="barra-progresso" style="width:0%"></i>
+      </div>
+      <p id="progresso-texto" class="progresso-texto">0 de 12</p>
+    </div>
+  </section>
+</main>
+
+<!-- painel das tarefas pedagógicas -->
+<div id="painel" class="painel" role="dialog" aria-modal="true" aria-labelledby="painel-titulo" hidden>
+  <div class="painel-caixa">
+    <div class="painel-topo">
+      <h2 id="painel-titulo" tabindex="-1">Tarefa</h2>
+      <button id="painel-fechar" class="botao secundario pequeno">Voltar ao jardim</button>
+    </div>
+    <div id="painel-corpo"></div>
+  </div>
+</div>
+
+<!-- cenas de tela cheia: abertura, personalização e encerramento -->
+<div id="camada-cenas" class="camada-cenas" hidden></div>
+
+<!-- ajustes de acessibilidade -->
+<div id="modal-ajustes" class="modal" role="dialog" aria-modal="true" aria-labelledby="ajustes-titulo" hidden>
+  <div class="modal-caixa">
+    <h2 id="ajustes-titulo">Acessibilidade</h2>
+    <p class="ajuda">Escolha um perfil ou ajuste cada recurso separadamente.
+       As escolhas ficam salvas neste computador.</p>
+    <div id="lista-perfis" class="perfis"></div>
+    <div id="lista-ajustes" class="ajustes-lista"></div>
+    <div class="acoes">
+      <button id="ajustes-fechar" class="botao principal">Pronto</button>
+    </div>
+  </div>
+</div>
+
+<p class="rodape">
+  Material de pesquisa · uso educacional. Versão em arquivo único — o painel do professor está na versão completa. Teclas: setas ou WASD para andar, Enter para interagir, Esc para fechar.
+</p>
+<script>
+const registro = {};
+registro['config'] = (() => {
+  /* Nix: O Código das Palavras — MVP
+     Configuração pedagógica e de conteúdo.
+     Todo o conteúdo textual/visual do MVP está centralizado aqui para que a
+     autora possa revisar e ajustar sem mexer na lógica do jogo. */
+  
+  const JOGO = {
+    titulo: 'Nix: O Código das Palavras',
+    versao: 'MVP 0.1',
+    subtitulo: 'O jardim das palavras perdidas'
+  };
+  
+  /* Enquanto os vídeos e áudios definitivos não forem produzidos, o jogo usa as
+     figuras desenhadas por código. Assim que os arquivos estiverem em
+     nix/assets/, mude para true e a mídia real passa a ser usada. */
+  const MIDIA_EXTERNA = false;
+  
+  /* ---------- Palavras centrais do MVP: VASO, ÁGUA, FLOR ---------- */
+  /* `silabas` e `letras` alimentam as tarefas de composição.
+     `midia` aponta para arquivos opcionais em nix/assets/. Quando o arquivo
+     não existe, o jogo exibe o desenho procedural + o espaço reservado,
+     sem quebrar a experiência. */
+  const PALAVRAS = {
+    vaso: {
+      id: 'vaso',
+      texto: 'VASO',
+      artigo: 'o',
+      silabas: ['VA', 'SO'],
+      letras: ['V', 'A', 'S', 'O'],
+      cor: '#c2703d',
+      frase: 'O vaso guarda a terra.',
+      dica: 'É de barro. A planta mora dentro dele.',
+      midia: {
+        video: 'assets/midia/vaso.mp4',
+        libras: 'assets/libras/vaso.mp4',
+        audio: 'assets/midia/vaso.mp3',
+        legenda: 'Vaso. O vaso guarda a terra da planta.'
+      }
+    },
+    agua: {
+      id: 'agua',
+      texto: 'ÁGUA',
+      artigo: 'a',
+      silabas: ['Á', 'GUA'],
+      letras: ['Á', 'G', 'U', 'A'],
+      cor: '#2f8fd8',
+      frase: 'A água mata a sede da planta.',
+      dica: 'Vem da torneira. É transparente e molha.',
+      midia: {
+        video: 'assets/midia/agua.mp4',
+        libras: 'assets/libras/agua.mp4',
+        audio: 'assets/midia/agua.mp3',
+        legenda: 'Água. A água mata a sede da planta.'
+      }
+    },
+    flor: {
+      id: 'flor',
+      texto: 'FLOR',
+      artigo: 'a',
+      silabas: ['FLOR'],
+      letras: ['F', 'L', 'O', 'R'],
+      cor: '#e05c8a',
+      frase: 'A flor nasce do vaso com água.',
+      dica: 'Tem pétalas coloridas e cheiro bom.',
+      midia: {
+        video: 'assets/midia/flor.mp4',
+        libras: 'assets/libras/flor.mp4',
+        audio: 'assets/midia/flor.mp3',
+        legenda: 'Flor. A flor nasce do vaso com água.'
+      }
+    }
+  };
+  
+  /* Ordem pedagógica do MVP: uma palavra depende da anterior.
+     `requer` implementa as regras de bloqueio/avanço. */
+  const TRILHA = [
+    { palavra: 'vaso', requer: [] },
+    { palavra: 'agua', requer: ['vaso'] },
+    { palavra: 'flor', requer: ['vaso', 'agua'] }
+  ];
+  
+  /* Etapas de cada palavra. Sempre na mesma ordem — previsibilidade é
+     requisito de acessibilidade para estudantes autistas. */
+  const ETAPAS = [
+    {
+      id: 'reconhecer',
+      titulo: 'Encontre a figura',
+      instrucao: (p) => `Toque na figura de ${p.artigo.toUpperCase()} ${p.texto}.`,
+      tipo: 'escolha'
+    },
+    {
+      id: 'silabas',
+      titulo: 'Monte as sílabas',
+      instrucao: (p) => `Coloque as sílabas na ordem para formar ${p.texto}.`,
+      tipo: 'ordenar'
+    },
+    {
+      id: 'letras',
+      titulo: 'Monte as letras',
+      instrucao: (p) => `Coloque as letras na ordem para escrever ${p.texto}.`,
+      tipo: 'ordenar'
+    }
+  ];
+  
+  /* Regras de tentativa e recuperação pedagógica.
+     Não existe "perder": o jogo apoia até a criança acertar. */
+  const REGRAS = {
+    tentativasAteApoio: 2,      // depois disso entra a recuperação pedagógica
+    alternativasApoio: 2,       // reduz o número de opções na recuperação
+    tempoLimite: null,          // sem tempo — decisão pedagógica do projeto
+    bloqueiaAvanco: true        // só avança cumprindo as condições da tarefa
+  };
+  
+  /* Abertura narrativa (quadros visuais + legenda + narração). */
+  const ABERTURA = [
+    {
+      cena: 'noite',
+      texto: 'Era uma noite quieta no jardim da escola.',
+      legenda: 'Era uma noite quieta no jardim da escola.'
+    },
+    {
+      cena: 'vento',
+      texto: 'Um vento levou as palavras que davam nome às coisas.',
+      legenda: 'Um vento levou as palavras que davam nome às coisas.'
+    },
+    {
+      cena: 'nix',
+      texto: 'Então Nix acendeu. Nix guarda o código das palavras.',
+      legenda: 'Então Nix acendeu. Nix guarda o código das palavras.'
+    },
+    {
+      cena: 'convite',
+      texto: 'Nix precisa de você para trazer VASO, ÁGUA e FLOR de volta.',
+      legenda: 'Nix precisa de você para trazer as palavras vaso, água e flor de volta.'
+    }
+  ];
+  
+  /* Personalização do personagem. Opções pensadas para representatividade
+     e para escolha rápida (poucos passos, sem sobrecarga visual). */
+  const PERSONALIZACAO = {
+    nome: { maximo: 14, padrao: '' },
+    pele: ['#f6d7c0', '#e8b48c', '#c98c5e', '#8d5a3a', '#5b3625'],
+    cabelo: ['#2b2118', '#6b4423', '#c9903c', '#9b2226', '#3f5c8a'],
+    penteado: ['curto', 'cacheado', 'trancas', 'longo'],
+    roupa: ['#1d1ed8', '#16a34a', '#e11d48', '#f59e0b', '#7c3aed'],
+    acessorio: ['nenhum', 'oculos', 'fone', 'lenco']
+  };
+  
+  /* Perfis de acessibilidade — atalhos que ajustam vários recursos de uma vez.
+     Todos os recursos continuam ajustáveis individualmente. */
+  const PERFIS = {
+    padrao: {
+      rotulo: 'Padrão',
+      descricao: 'Som, voz e legendas ligados.',
+      ajustes: { som: true, voz: true, legenda: true, libras: false, movimento: true, contraste: false, textoGrande: false }
+    },
+    surdo: {
+      rotulo: 'Visual / Libras',
+      descricao: 'Legendas sempre visíveis, janela de Libras e retorno visual reforçado.',
+      ajustes: { som: false, voz: false, legenda: true, libras: true, movimento: true, contraste: false, textoGrande: false }
+    },
+    baixoEstimulo: {
+      rotulo: 'Baixo estímulo',
+      descricao: 'Menos movimento, cores suaves, sons curtos e avisos do que vem a seguir.',
+      ajustes: { som: false, voz: true, legenda: true, libras: false, movimento: false, contraste: false, textoGrande: true }
+    },
+    baixaVisao: {
+      rotulo: 'Baixa visão',
+      descricao: 'Alto contraste, texto grande e narração ligada.',
+      ajustes: { som: true, voz: true, legenda: true, libras: false, movimento: true, contraste: true, textoGrande: true }
+    }
+  };
+  
+  /* Chaves de armazenamento local (funciona offline, sem servidor). */
+  const CHAVES = {
+    sessao: 'nix.sessao.v1',
+    ajustes: 'nix.ajustes.v1',
+    relatorios: 'nix.relatorios.v1'
+  };
+  
+  return { JOGO, MIDIA_EXTERNA, PALAVRAS, TRILHA, ETAPAS, REGRAS, ABERTURA, PERSONALIZACAO, PERFIS, CHAVES };
+})();
+
+registro['acessibilidade'] = (() => {
+  /* Recursos de acessibilidade do Nix.
+     Princípios adotados: previsibilidade, redundância de canais (visual + som +
+     texto + Libras), ausência de tempo e nenhuma penalização por erro. */
+  
+  const { CHAVES, PERFIS } = registro['config'];
+  
+  const padrao = {
+    perfil: 'padrao',
+    som: true,
+    voz: true,
+    legenda: true,
+    libras: false,
+    movimento: true,     // false = reduzir animações
+    contraste: false,
+    textoGrande: false
+  };
+  
+  const ajustes = carregar();
+  
+  function carregar() {
+    let salvo = {};
+    try {
+      salvo = JSON.parse(localStorage.getItem(CHAVES.ajustes) || '{}');
+    } catch { salvo = {}; }
+    const base = Object.assign({}, padrao, salvo);
+    /* respeita a preferência do sistema operacional na primeira abertura */
+    if (salvo.movimento === undefined &&
+        window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      base.movimento = false;
+    }
+    return base;
+  }
+  
+  function salvarAjustes() {
+    try { localStorage.setItem(CHAVES.ajustes, JSON.stringify(ajustes)); } catch {}
+    aplicar();
+  }
+  
+  function definirAjuste(chave, valor) {
+    ajustes[chave] = valor;
+    salvarAjustes();
+  }
+  
+  function aplicarPerfil(id) {
+    const perfil = PERFIS[id];
+    if (!perfil) return;
+    Object.assign(ajustes, perfil.ajustes, { perfil: id });
+    salvarAjustes();
+  }
+  
+  /* Reflete os ajustes no documento — o CSS reage aos atributos data-*. */
+  function aplicar() {
+    const raiz = document.documentElement;
+    raiz.dataset.contraste = ajustes.contraste ? 'alto' : 'normal';
+    raiz.dataset.movimento = ajustes.movimento ? 'normal' : 'reduzido';
+    raiz.dataset.texto = ajustes.textoGrande ? 'grande' : 'normal';
+    raiz.dataset.libras = ajustes.libras ? 'sim' : 'nao';
+    raiz.dataset.legenda = ajustes.legenda ? 'sim' : 'nao';
+  }
+  
+  /* ---------- narração (voz sintetizada do navegador, sem arquivos) ---------- */
+  
+  let vozPtBr = null;
+  function escolherVoz() {
+    const vozes = window.speechSynthesis?.getVoices?.() || [];
+    vozPtBr = vozes.find((v) => /pt[-_]BR/i.test(v.lang)) ||
+              vozes.find((v) => /^pt/i.test(v.lang)) || null;
+  }
+  if (window.speechSynthesis) {
+    escolherVoz();
+    window.speechSynthesis.onvoiceschanged = escolherVoz;
+  }
+  
+  function falar(texto, { forcar = false } = {}) {
+    if (!texto) return;
+    if (!ajustes.voz && !forcar) return;
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const fala = new SpeechSynthesisUtterance(texto);
+    fala.lang = 'pt-BR';
+    if (vozPtBr) fala.voice = vozPtBr;
+    fala.rate = ajustes.perfil === 'baixoEstimulo' ? 0.85 : 0.95;
+    fala.pitch = 1;
+    window.speechSynthesis.speak(fala);
+  }
+  
+  function calarVoz() {
+    window.speechSynthesis?.cancel();
+  }
+  
+  /* ---------- avisos para leitor de tela e para a faixa de legendas ---------- */
+  
+  let regiaoViva = null;
+  function regiao(el) { regiaoViva = el; }
+  
+  function anunciar(texto, { narrar = true } = {}) {
+    if (regiaoViva) {
+      regiaoViva.textContent = '';
+      // reatribuir no próximo quadro garante releitura de textos repetidos
+      requestAnimationFrame(() => { regiaoViva.textContent = texto; });
+    }
+    if (narrar) falar(texto);
+  }
+  
+  return { ajustes, salvarAjustes, definirAjuste, aplicarPerfil, aplicar, falar, calarVoz, regiao, anunciar };
+})();
+
+registro['som'] = (() => {
+  /* Sons do jogo gerados por Web Audio — nenhum arquivo externo, funciona
+     offline e nunca começa sozinho (só depois de uma ação da criança).
+     No perfil de baixo estímulo os sons são mais curtos e mais suaves. */
+  
+  const { ajustes } = registro['acessibilidade'];
+  
+  let ctx = null;
+  
+  function contexto() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ctx = new AC();
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  
+  function nota(freq, inicio, duracao, volume, tipo = 'sine') {
+    const c = contexto();
+    if (!c) return;
+    const osc = c.createOscillator();
+    const ganho = c.createGain();
+    osc.type = tipo;
+    osc.frequency.setValueAtTime(freq, c.currentTime + inicio);
+    ganho.gain.setValueAtTime(0.0001, c.currentTime + inicio);
+    ganho.gain.exponentialRampToValueAtTime(volume, c.currentTime + inicio + 0.02);
+    ganho.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + inicio + duracao);
+    osc.connect(ganho).connect(c.destination);
+    osc.start(c.currentTime + inicio);
+    osc.stop(c.currentTime + inicio + duracao + 0.05);
+  }
+  
+  function volumeBase() {
+    return ajustes.perfil === 'baixoEstimulo' ? 0.06 : 0.12;
+  }
+  
+  const som = {
+    acerto() {
+      if (!ajustes.som) return;
+      const v = volumeBase();
+      nota(523.25, 0, 0.18, v);
+      nota(659.25, 0.10, 0.20, v);
+      if (ajustes.perfil !== 'baixoEstimulo') nota(783.99, 0.20, 0.28, v);
+    },
+    /* Erro nunca soa punitivo: é um convite a tentar de novo. */
+    tentarDeNovo() {
+      if (!ajustes.som) return;
+      nota(392, 0, 0.16, volumeBase() * 0.8, 'triangle');
+    },
+    passo() {
+      if (!ajustes.som || ajustes.perfil === 'baixoEstimulo') return;
+      nota(180, 0, 0.05, 0.03, 'triangle');
+    },
+    guardar() {
+      if (!ajustes.som) return;
+      nota(440, 0, 0.10, volumeBase(), 'triangle');
+      nota(660, 0.08, 0.14, volumeBase(), 'triangle');
+    },
+    abrir() {
+      if (!ajustes.som) return;
+      nota(330, 0, 0.12, volumeBase() * 0.9, 'sine');
+    },
+    conquista() {
+      if (!ajustes.som) return;
+      const v = volumeBase();
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => nota(f, i * 0.12, 0.3, v));
+    }
+  };
+  
+  return { som };
+})();
+
+registro['desenho'] = (() => {
+  /* Desenho procedural (Canvas 2D).
+     O MVP não depende de arquivos de imagem: cenário, personagens e objetos são
+     desenhados por código. Isso mantém o jogo leve, offline e estável nos
+     computadores da escola, e permite trocar por arte definitiva depois. */
+  
+  const { PERSONALIZACAO } = registro['config'];
+  const { ajustes } = registro['acessibilidade'];
+  
+  function paleta() {
+    const alto = ajustes.contraste;
+    const suave = ajustes.perfil === 'baixoEstimulo';
+    return {
+      contorno: alto ? '#000000' : 'rgba(15,23,42,.35)',
+      linha: alto ? 3 : 1.5,
+      piso: alto ? '#ffffff' : (suave ? '#efeae1' : '#f3e9d8'),
+      pisoAlt: alto ? '#e6e6e6' : (suave ? '#e7e1d6' : '#ecdfc9'),
+      parede: alto ? '#111827' : (suave ? '#9aa7b4' : '#7f93a8'),
+      paredeTopo: alto ? '#374151' : (suave ? '#b6c1cc' : '#9fb2c4'),
+      grama: alto ? '#0b6b2e' : (suave ? '#8fae86' : '#7fb069'),
+      gramaAlt: alto ? '#0e8038' : (suave ? '#9cb994' : '#8fc07a'),
+      madeira: alto ? '#4a2c12' : '#a9743f',
+      madeiraClara: alto ? '#6b421d' : '#c99961',
+      agua: alto ? '#0047ab' : '#3aa0e0',
+      sombra: alto ? 'rgba(0,0,0,.45)' : 'rgba(15,23,42,.16)'
+    };
+  }
+  
+  function traco(ctx, cor) {
+    const p = paleta();
+    ctx.lineWidth = p.linha;
+    ctx.strokeStyle = cor || p.contorno;
+    ctx.stroke();
+  }
+  
+  function retanguloArredondado(ctx, x, y, l, a, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + l, y, x + l, y + a, r);
+    ctx.arcTo(x + l, y + a, x, y + a, r);
+    ctx.arcTo(x, y + a, x, y, r);
+    ctx.arcTo(x, y, x + l, y, r);
+    ctx.closePath();
+  }
+  
+  function sombraChao(ctx, x, y, l) {
+    const p = paleta();
+    ctx.save();
+    ctx.fillStyle = p.sombra;
+    ctx.beginPath();
+    ctx.ellipse(x, y, l * 0.36, l * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  
+  /* ---------- personagem da criança ---------- */
+  
+  function desenharPersonagem(ctx, x, y, tam, personagem, opcoes = {}) {
+    const { direcao = 'baixo', passo = 0 } = opcoes;
+    const pele = PERSONALIZACAO.pele[personagem.pele] || PERSONALIZACAO.pele[0];
+    const cabelo = PERSONALIZACAO.cabelo[personagem.cabelo] || PERSONALIZACAO.cabelo[0];
+    const roupa = PERSONALIZACAO.roupa[personagem.roupa] || PERSONALIZACAO.roupa[0];
+    const penteado = PERSONALIZACAO.penteado[personagem.penteado] || 'curto';
+    const acessorio = PERSONALIZACAO.acessorio[personagem.acessorio] || 'nenhum';
+    const u = tam / 32;                       // unidade de desenho
+    const balanco = Math.sin(passo) * 1.5 * u;
+  
+    ctx.save();
+    ctx.translate(x, y);
+    sombraChao(ctx, 0, tam * 0.46, tam);
+  
+    /* pernas */
+    ctx.fillStyle = '#3b4453';
+    ctx.fillRect(-5 * u, 8 * u + balanco * 0.4, 4 * u, 8 * u);
+    ctx.fillRect(1 * u, 8 * u - balanco * 0.4, 4 * u, 8 * u);
+  
+    /* corpo */
+    ctx.fillStyle = roupa;
+    retanguloArredondado(ctx, -7 * u, -2 * u, 14 * u, 12 * u, 4 * u);
+    ctx.fill(); traco(ctx);
+  
+    /* braços */
+    ctx.fillStyle = pele;
+    ctx.fillRect(-9.5 * u, 0, 3 * u, 8 * u);
+    ctx.fillRect(6.5 * u, 0, 3 * u, 8 * u);
+  
+    /* cabeça */
+    ctx.fillStyle = pele;
+    ctx.beginPath();
+    ctx.arc(0, -9 * u, 7 * u, 0, Math.PI * 2);
+    ctx.fill(); traco(ctx);
+  
+    /* cabelo por penteado */
+    ctx.fillStyle = cabelo;
+    if (penteado === 'curto') {
+      ctx.beginPath();
+      ctx.arc(0, -10 * u, 7.2 * u, Math.PI, 0);
+      ctx.fill();
+    } else if (penteado === 'cacheado') {
+      for (let i = -3; i <= 3; i++) {
+        ctx.beginPath();
+        ctx.arc(i * 2.4 * u, -14 * u + Math.abs(i) * 0.9 * u, 2.8 * u, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (penteado === 'trancas') {
+      ctx.beginPath();
+      ctx.arc(0, -10 * u, 7.2 * u, Math.PI, 0);
+      ctx.fill();
+      ctx.fillRect(-9.5 * u, -10 * u, 2.6 * u, 12 * u);
+      ctx.fillRect(6.9 * u, -10 * u, 2.6 * u, 12 * u);
+    } else { /* longo */
+      ctx.beginPath();
+      ctx.arc(0, -10 * u, 7.4 * u, Math.PI, 0);
+      ctx.fill();
+      ctx.fillRect(-7.6 * u, -10 * u, 15.2 * u, 10 * u);
+      ctx.fillStyle = pele;
+      ctx.beginPath();
+      ctx.arc(0, -9 * u, 6 * u, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  
+    /* rosto (só de frente e de lado — de costas fica sem rosto) */
+    if (direcao !== 'cima') {
+      const dx = direcao === 'esquerda' ? -1.6 * u : direcao === 'direita' ? 1.6 * u : 0;
+      ctx.fillStyle = '#1f2937';
+      ctx.beginPath(); ctx.arc(dx - 2.4 * u, -9.5 * u, 1 * u, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(dx + 2.4 * u, -9.5 * u, 1 * u, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#1f2937'; ctx.lineWidth = 1.2 * u;
+      ctx.beginPath(); ctx.arc(dx, -6.5 * u, 2.2 * u, 0.2 * Math.PI, 0.8 * Math.PI); ctx.stroke();
+    }
+  
+    /* acessórios */
+    if (acessorio === 'oculos') {
+      ctx.strokeStyle = '#1f2937'; ctx.lineWidth = 1.2 * u;
+      ctx.beginPath(); ctx.arc(-2.4 * u, -9.5 * u, 2.4 * u, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(2.4 * u, -9.5 * u, 2.4 * u, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-0.2 * u, -9.5 * u); ctx.lineTo(0.2 * u, -9.5 * u); ctx.stroke();
+    } else if (acessorio === 'fone') {
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(-9 * u, -12 * u, 2.4 * u, 5 * u);
+      ctx.fillRect(6.6 * u, -12 * u, 2.4 * u, 5 * u);
+      ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.6 * u;
+      ctx.beginPath(); ctx.arc(0, -11 * u, 8 * u, Math.PI, 0); ctx.stroke();
+    } else if (acessorio === 'lenco') {
+      ctx.fillStyle = '#e11d48';
+      ctx.fillRect(-7 * u, -3 * u, 14 * u, 2.6 * u);
+    }
+    ctx.restore();
+  }
+  
+  /* ---------- Nix, o guia luminoso ---------- */
+  
+  function desenharNix(ctx, x, y, tam, tempo = 0) {
+    const u = tam / 32;
+    const flutua = ajustes.movimento ? Math.sin(tempo / 420) * 3 * u : 0;
+    const brilho = ajustes.movimento ? 0.5 + Math.sin(tempo / 300) * 0.12 : 0.5;
+    ctx.save();
+    ctx.translate(x, y + flutua);
+    sombraChao(ctx, 0, tam * 0.5 - flutua, tam * 0.9);
+  
+    if (!ajustes.contraste) {
+      const halo = ctx.createRadialGradient(0, 0, tam * 0.15, 0, 0, tam * 0.85);
+      halo.addColorStop(0, `rgba(120,220,255,${brilho * 0.55})`);
+      halo.addColorStop(1, 'rgba(120,220,255,0)');
+      ctx.fillStyle = halo;
+      ctx.beginPath(); ctx.arc(0, 0, tam * 0.85, 0, Math.PI * 2); ctx.fill();
+    }
+  
+    /* corpo em gota */
+    ctx.fillStyle = ajustes.contraste ? '#0b3d91' : '#2f6fd0';
+    ctx.beginPath();
+    ctx.moveTo(0, -12 * u);
+    ctx.bezierCurveTo(9 * u, -8 * u, 9 * u, 8 * u, 0, 11 * u);
+    ctx.bezierCurveTo(-9 * u, 8 * u, -9 * u, -8 * u, 0, -12 * u);
+    ctx.closePath();
+    ctx.fill(); traco(ctx, '#0b3d91');
+  
+    /* olhos grandes e amigáveis */
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(-3 * u, -2 * u, 3 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(3 * u, -2 * u, 3 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath(); ctx.arc(-3 * u, -2 * u, 1.4 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(3 * u, -2 * u, 1.4 * u, 0, Math.PI * 2); ctx.fill();
+  
+    /* faísca de "código" */
+    ctx.fillStyle = '#ffe066';
+    ctx.font = `bold ${5 * u}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('{ }', 0, 7 * u);
+    ctx.restore();
+  }
+  
+  /* ---------- objetos do jardim ---------- */
+  
+  function desenharVaso(ctx, x, y, tam, opcoes = {}) {
+    const { comAgua = false, comFlor = false, vazio = false } = opcoes;
+    const u = tam / 32;
+    ctx.save();
+    ctx.translate(x, y);
+    sombraChao(ctx, 0, 12 * u, tam);
+  
+    if (!vazio) {
+      ctx.fillStyle = '#c2703d';
+      ctx.beginPath();
+      ctx.moveTo(-9 * u, -4 * u);
+      ctx.lineTo(9 * u, -4 * u);
+      ctx.lineTo(6 * u, 11 * u);
+      ctx.lineTo(-6 * u, 11 * u);
+      ctx.closePath();
+      ctx.fill(); traco(ctx, '#8a4b24');
+      ctx.fillStyle = '#a55c30';
+      ctx.fillRect(-10 * u, -6.5 * u, 20 * u, 3.5 * u);
+      traco(ctx, '#8a4b24');
+  
+      /* terra */
+      ctx.fillStyle = '#5b4130';
+      ctx.fillRect(-8.4 * u, -4 * u, 16.8 * u, 2.4 * u);
+    }
+  
+    if (comAgua) {
+      ctx.fillStyle = 'rgba(58,160,224,.75)';
+      ctx.fillRect(-8 * u, -3.4 * u, 16 * u, 1.6 * u);
+      ctx.fillStyle = '#3aa0e0';
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc(-4 * u + i * 4 * u, -5.6 * u, 1.1 * u, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  
+    if (comFlor) desenharFlor(ctx, 0, -6 * u, tam * 0.95, { semVaso: true });
+    ctx.restore();
+  }
+  
+  function desenharFlor(ctx, x, y, tam, opcoes = {}) {
+    const u = tam / 32;
+    ctx.save();
+    ctx.translate(x, y);
+    if (!opcoes.semVaso) sombraChao(ctx, 0, 12 * u, tam * 0.7);
+  
+    ctx.strokeStyle = '#3f7d3a';
+    ctx.lineWidth = 2 * u;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -12 * u);
+    ctx.stroke();
+  
+    ctx.fillStyle = '#4e9a45';
+    ctx.beginPath();
+    ctx.ellipse(-4 * u, -6 * u, 4 * u, 2 * u, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+  
+    const petalas = 6;
+    ctx.fillStyle = '#e05c8a';
+    for (let i = 0; i < petalas; i++) {
+      const a = (i / petalas) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.ellipse(Math.cos(a) * 4.4 * u, -12 * u + Math.sin(a) * 4.4 * u, 3.2 * u, 2.2 * u, a, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath(); ctx.arc(0, -12 * u, 3 * u, 0, Math.PI * 2); ctx.fill(); traco(ctx, '#c99a2e');
+    ctx.restore();
+  }
+  
+  function desenharTorneira(ctx, x, y, tam, opcoes = {}) {
+    const u = tam / 32;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(-2 * u, -14 * u, 4 * u, 10 * u);
+    ctx.fillRect(-2 * u, -14 * u, 12 * u, 3.4 * u);
+    ctx.fillStyle = '#64748b';
+    ctx.beginPath(); ctx.arc(-4 * u, -13 * u, 3 * u, 0, Math.PI * 2); ctx.fill();
+    traco(ctx, '#475569');
+    if (opcoes.pingando) {
+      ctx.fillStyle = '#3aa0e0';
+      ctx.beginPath(); ctx.arc(9 * u, -6 * u, 1.6 * u, 0, Math.PI * 2); ctx.fill();
+    }
+    /* balde/poça */
+    ctx.fillStyle = '#a1a1aa';
+    retanguloArredondado(ctx, -8 * u, -4 * u, 16 * u, 12 * u, 2 * u);
+    ctx.fill(); traco(ctx, '#71717a');
+    ctx.fillStyle = 'rgba(58,160,224,.85)';
+    ctx.fillRect(-6.6 * u, -2 * u, 13.2 * u, 3 * u);
+    ctx.restore();
+  }
+  
+  function desenharMesa(ctx, x, y, tam) {
+    const p = paleta();
+    const u = tam / 32;
+    ctx.save();
+    ctx.translate(x, y);
+    sombraChao(ctx, 0, 12 * u, tam * 1.3);
+    ctx.fillStyle = p.madeira;
+    ctx.fillRect(-5 * u, 0, 3 * u, 12 * u);
+    ctx.fillRect(2 * u, 0, 3 * u, 12 * u);
+    ctx.fillStyle = p.madeiraClara;
+    retanguloArredondado(ctx, -16 * u, -6 * u, 32 * u, 7 * u, 2 * u);
+    ctx.fill(); traco(ctx, '#7a4f22');
+    ctx.restore();
+  }
+  
+  function desenharPrateleira(ctx, x, y, tam) {
+    const p = paleta();
+    const u = tam / 32;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = p.madeira;
+    retanguloArredondado(ctx, -18 * u, -16 * u, 36 * u, 24 * u, 2 * u);
+    ctx.fill(); traco(ctx, '#7a4f22');
+    ctx.fillStyle = p.madeiraClara;
+    ctx.fillRect(-16 * u, -8 * u, 32 * u, 2.4 * u);
+    ctx.fillRect(-16 * u, 1 * u, 32 * u, 2.4 * u);
+    ctx.restore();
+  }
+  
+  function desenharCanteiro(ctx, x, y, tam, opcoes = {}) {
+    const p = paleta();
+    const u = tam / 32;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = p.madeira;
+    retanguloArredondado(ctx, -18 * u, -8 * u, 36 * u, 18 * u, 3 * u);
+    ctx.fill(); traco(ctx, '#7a4f22');
+    ctx.fillStyle = '#5b4130';
+    ctx.fillRect(-15 * u, -5 * u, 30 * u, 12 * u);
+    if (opcoes.florido) {
+      desenharFlor(ctx, -8 * u, 4 * u, tam * 0.7, { semVaso: true });
+      desenharFlor(ctx, 8 * u, 4 * u, tam * 0.7, { semVaso: true });
+    } else {
+      ctx.fillStyle = '#6b7f5a';
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.ellipse(-10 * u + i * 7 * u, 2 * u, 2.4 * u, 1.4 * u, 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+  
+  function desenharPorta(ctx, x, y, tam, opcoes = {}) {
+    const u = tam / 32;
+    ctx.save();
+    ctx.translate(x, y);
+    if (opcoes.aberta && !ajustes.contraste) {
+      const halo = ctx.createRadialGradient(0, 0, 2 * u, 0, 0, 22 * u);
+      halo.addColorStop(0, 'rgba(255,224,102,.55)');
+      halo.addColorStop(1, 'rgba(255,224,102,0)');
+      ctx.fillStyle = halo;
+      ctx.beginPath(); ctx.arc(0, 0, 22 * u, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = opcoes.aberta ? '#ffe066' : '#6b7280';
+    retanguloArredondado(ctx, -11 * u, -18 * u, 22 * u, 30 * u, 3 * u);
+    ctx.fill(); traco(ctx, '#374151');
+    ctx.fillStyle = '#374151';
+    ctx.beginPath(); ctx.arc(6 * u, -2 * u, 1.6 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  
+  function desenharPlaca(ctx, x, y, tam, texto) {
+    const u = tam / 32;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = '#c99961';
+    retanguloArredondado(ctx, -16 * u, -12 * u, 32 * u, 14 * u, 2 * u);
+    ctx.fill(); traco(ctx, '#7a4f22');
+    ctx.fillStyle = '#3b2712';
+    ctx.font = `bold ${6 * u}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(texto, 0, -3 * u);
+    ctx.fillStyle = '#8a5a2b';
+    ctx.fillRect(-2 * u, 2 * u, 4 * u, 10 * u);
+    ctx.restore();
+  }
+  
+  /* Mapa id → função de desenho, usado nas tarefas e na mochila. */
+  const FIGURAS = {
+    vaso: (ctx, x, y, t) => desenharVaso(ctx, x, y, t),
+    agua: (ctx, x, y, t) => {
+      const u = t / 32;
+      ctx.save(); ctx.translate(x, y);
+      ctx.fillStyle = '#3aa0e0';
+      ctx.beginPath();
+      ctx.moveTo(0, -13 * u);
+      ctx.bezierCurveTo(10 * u, -1 * u, 7 * u, 11 * u, 0, 11 * u);
+      ctx.bezierCurveTo(-7 * u, 11 * u, -10 * u, -1 * u, 0, -13 * u);
+      ctx.closePath(); ctx.fill(); traco(ctx, '#1d6ea8');
+      ctx.fillStyle = 'rgba(255,255,255,.6)';
+      ctx.beginPath(); ctx.ellipse(-3 * u, 3 * u, 2 * u, 3 * u, -0.3, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    },
+    flor: (ctx, x, y, t) => desenharFlor(ctx, x, y + 6 * (t / 32), t),
+    sapato: (ctx, x, y, t) => {
+      const u = t / 32;
+      ctx.save(); ctx.translate(x, y);
+      ctx.fillStyle = '#7c3aed';
+      retanguloArredondado(ctx, -12 * u, -2 * u, 24 * u, 9 * u, 3 * u);
+      ctx.fill(); traco(ctx, '#4c1d95');
+      ctx.fillStyle = '#4c1d95'; ctx.fillRect(-12 * u, 5 * u, 24 * u, 2.4 * u);
+      ctx.restore();
+    },
+    bola: (ctx, x, y, t) => {
+      const u = t / 32;
+      ctx.save(); ctx.translate(x, y);
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath(); ctx.arc(0, 0, 11 * u, 0, Math.PI * 2); ctx.fill(); traco(ctx, '#b45309');
+      ctx.strokeStyle = '#b45309'; ctx.lineWidth = 1.6 * u;
+      ctx.beginPath(); ctx.moveTo(-11 * u, 0); ctx.lineTo(11 * u, 0); ctx.stroke();
+      ctx.restore();
+    },
+    livro: (ctx, x, y, t) => {
+      const u = t / 32;
+      ctx.save(); ctx.translate(x, y);
+      ctx.fillStyle = '#16a34a';
+      retanguloArredondado(ctx, -11 * u, -9 * u, 22 * u, 18 * u, 2 * u);
+      ctx.fill(); traco(ctx, '#14532d');
+      ctx.fillStyle = '#f8fafc'; ctx.fillRect(-1 * u, -9 * u, 2 * u, 18 * u);
+      ctx.restore();
+    },
+    janela: (ctx, x, y, t) => {
+      const u = t / 32;
+      ctx.save(); ctx.translate(x, y);
+      ctx.fillStyle = '#bfdbfe';
+      retanguloArredondado(ctx, -11 * u, -10 * u, 22 * u, 20 * u, 2 * u);
+      ctx.fill(); traco(ctx, '#1e3a8a');
+      ctx.strokeStyle = '#1e3a8a'; ctx.lineWidth = 2 * u;
+      ctx.beginPath(); ctx.moveTo(0, -10 * u); ctx.lineTo(0, 10 * u);
+      ctx.moveTo(-11 * u, 0); ctx.lineTo(11 * u, 0); ctx.stroke();
+      ctx.restore();
+    },
+    chave: (ctx, x, y, t) => {
+      const u = t / 32;
+      ctx.save(); ctx.translate(x, y);
+      ctx.strokeStyle = '#ca8a04'; ctx.lineWidth = 3 * u;
+      ctx.beginPath(); ctx.arc(-5 * u, 0, 5 * u, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(11 * u, 0);
+      ctx.moveTo(8 * u, 0); ctx.lineTo(8 * u, 5 * u); ctx.stroke();
+      ctx.restore();
+    }
+  };
+  
+  /* Devolve um <canvas> pronto com a figura pedida (usado nos cartões). */
+  function figuraEmCanvas(id, tamanho = 120) {
+    const c = document.createElement('canvas');
+    const escala = window.devicePixelRatio || 1;
+    c.width = tamanho * escala;
+    c.height = tamanho * escala;
+    c.style.width = tamanho + 'px';
+    c.style.height = tamanho + 'px';
+    const ctx = c.getContext('2d');
+    ctx.scale(escala, escala);
+    const desenhar = FIGURAS[id];
+    if (desenhar) desenhar(ctx, tamanho / 2, tamanho / 2, tamanho * 0.9);
+    return c;
+  }
+  
+  function personagemEmCanvas(personagem, tamanho = 140) {
+    const c = document.createElement('canvas');
+    const escala = window.devicePixelRatio || 1;
+    c.width = tamanho * escala;
+    c.height = tamanho * escala;
+    c.style.width = tamanho + 'px';
+    c.style.height = tamanho + 'px';
+    const ctx = c.getContext('2d');
+    ctx.scale(escala, escala);
+    desenharPersonagem(ctx, tamanho / 2, tamanho * 0.66, tamanho * 0.78, personagem, { direcao: 'baixo' });
+    return c;
+  }
+  
+  return { paleta, sombraChao, desenharPersonagem, desenharNix, desenharVaso, desenharFlor, desenharTorneira, desenharMesa, desenharPrateleira, desenharCanteiro, desenharPorta, desenharPlaca, FIGURAS, figuraEmCanvas, personagemEmCanvas };
+})();
+
+registro['estado'] = (() => {
+  /* Estado do jogo, persistência local e registro pedagógico.
+     Tudo em localStorage: o jogo roda offline no computador da escola. */
+  
+  const { CHAVES, PALAVRAS, TRILHA, ETAPAS } = registro['config'];
+  
+  const ouvintes = new Set();
+  
+  function estadoInicial() {
+    return {
+      aluno: { id: null, nome: '' },
+      personagem: { pele: 0, cabelo: 0, penteado: 0, roupa: 0, acessorio: 0 },
+      cena: 'abertura',              // abertura | personalizar | mundo | encerramento
+      mochila: [],                   // ids de itens conquistados
+      /* progresso por palavra: etapas concluídas + item aplicado no ambiente */
+      progresso: Object.fromEntries(
+        Object.keys(PALAVRAS).map((id) => [id, { etapas: [], aplicado: false }])
+      ),
+      ambiente: { vaso: false, agua: false, flor: false },
+      iniciadoEm: null,
+      concluidoEm: null
+    };
+  }
+  
+  const estado = carregar();
+  
+  function carregar() {
+    try {
+      const bruto = localStorage.getItem(CHAVES.sessao);
+      if (!bruto) return estadoInicial();
+      const salvo = JSON.parse(bruto);
+      return Object.assign(estadoInicial(), salvo);
+    } catch {
+      return estadoInicial();
+    }
+  }
+  
+  function salvar() {
+    try {
+      localStorage.setItem(CHAVES.sessao, JSON.stringify(estado));
+    } catch {
+      /* modo anônimo / armazenamento bloqueado: o jogo continua na memória */
+    }
+  }
+  
+  function reiniciar() {
+    Object.assign(estado, estadoInicial());
+    salvar();
+    avisar();
+  }
+  
+  function aoMudar(fn) {
+    ouvintes.add(fn);
+    return () => ouvintes.delete(fn);
+  }
+  
+  function avisar() {
+    ouvintes.forEach((fn) => fn(estado));
+  }
+  
+  /* ---------- consultas de progresso ---------- */
+  
+  function etapaConcluida(palavraId, etapaId) {
+    return estado.progresso[palavraId]?.etapas.includes(etapaId);
+  }
+  
+  function palavraCompleta(palavraId) {
+    const p = estado.progresso[palavraId];
+    return !!p && ETAPAS.every((e) => p.etapas.includes(e.id));
+  }
+  
+  function palavraAplicada(palavraId) {
+    return !!estado.progresso[palavraId]?.aplicado;
+  }
+  
+  /* Regra de bloqueio/avanço: uma palavra só abre quando as anteriores
+     já foram aplicadas no ambiente. */
+  function palavraLiberada(palavraId) {
+    const item = TRILHA.find((t) => t.palavra === palavraId);
+    if (!item) return false;
+    return item.requer.every((req) => palavraAplicada(req));
+  }
+  
+  function proximaEtapa(palavraId) {
+    return ETAPAS.find((e) => !etapaConcluida(palavraId, e.id)) || null;
+  }
+  
+  function jogoCompleto() {
+    return TRILHA.every((t) => palavraAplicada(t.palavra));
+  }
+  
+  function totalEtapas() {
+    return TRILHA.length * (ETAPAS.length + 1); // etapas + aplicação no ambiente
+  }
+  
+  function etapasFeitas() {
+    return TRILHA.reduce((soma, t) => {
+      const p = estado.progresso[t.palavra];
+      return soma + p.etapas.length + (p.aplicado ? 1 : 0);
+    }, 0);
+  }
+  
+  /* ---------- mutações ---------- */
+  
+  function concluirEtapa(palavraId, etapaId) {
+    const p = estado.progresso[palavraId];
+    if (p && !p.etapas.includes(etapaId)) p.etapas.push(etapaId);
+    salvar();
+    avisar();
+  }
+  
+  function guardarNaMochila(itemId) {
+    if (!estado.mochila.includes(itemId)) estado.mochila.push(itemId);
+    salvar();
+    avisar();
+  }
+  
+  function aplicarNoAmbiente(palavraId) {
+    estado.progresso[palavraId].aplicado = true;
+    estado.ambiente[palavraId] = true;
+    estado.mochila = estado.mochila.filter((i) => i !== palavraId);
+    salvar();
+    avisar();
+  }
+  
+  function definirCena(cena) {
+    estado.cena = cena;
+    if (cena === 'mundo' && !estado.iniciadoEm) estado.iniciadoEm = Date.now();
+    if (cena === 'encerramento') estado.concluidoEm = Date.now();
+    salvar();
+    avisar();
+  }
+  
+  /* ---------- registro pedagógico (para o painel do professor) ---------- */
+  
+  const sessaoAtual = {
+    inicio: Date.now(),
+    eventos: []
+  };
+  
+  function registrar(tipo, dados = {}) {
+    sessaoAtual.eventos.push({ tipo, ...dados, em: Date.now() });
+    gravarRelatorio();
+  }
+  
+  function gravarRelatorio() {
+    try {
+      const lista = JSON.parse(localStorage.getItem(CHAVES.relatorios) || '[]');
+      const registro = {
+        id: 'sessao-' + sessaoAtual.inicio,
+        aluno: estado.aluno,
+        inicio: sessaoAtual.inicio,
+        fim: Date.now(),
+        eventos: sessaoAtual.eventos,
+        resumo: resumoPedagogico()
+      };
+      const i = lista.findIndex((r) => r.id === registro.id);
+      if (i >= 0) lista[i] = registro; else lista.push(registro);
+      localStorage.setItem(CHAVES.relatorios, JSON.stringify(lista.slice(-60)));
+    } catch {
+      /* sem armazenamento: o jogo segue, apenas sem histórico */
+    }
+  }
+  
+  function resumoPedagogico() {
+    const porPalavra = {};
+    for (const id of Object.keys(PALAVRAS)) {
+      const eventos = sessaoAtual.eventos.filter((e) => e.palavra === id);
+      porPalavra[id] = {
+        acertos: eventos.filter((e) => e.tipo === 'acerto').length,
+        erros: eventos.filter((e) => e.tipo === 'erro').length,
+        apoios: eventos.filter((e) => e.tipo === 'recuperacao').length,
+        concluida: palavraAplicada(id)
+      };
+    }
+    return {
+      porPalavra,
+      etapasFeitas: etapasFeitas(),
+      totalEtapas: totalEtapas(),
+      completo: jogoCompleto()
+    };
+  }
+  
+  return { estado, salvar, reiniciar, aoMudar, avisar, etapaConcluida, palavraCompleta, palavraAplicada, palavraLiberada, proximaEtapa, jogoCompleto, totalEtapas, etapasFeitas, concluirEtapa, guardarNaMochila, aplicarNoAmbiente, definirCena, registrar, resumoPedagogico };
+})();
+
+registro['interface'] = (() => {
+  /* Elementos de interface reutilizados por todas as cenas:
+     diálogo do Nix, painel de tarefa, faixa de legenda e janela de Libras.
+     Toda fala aparece em três canais: texto, legenda e (se ligada) voz. */
+  
+  const { MIDIA_EXTERNA } = registro['config'];
+  const { ajustes, anunciar, falar, calarVoz } = registro['acessibilidade'];
+  const { som } = registro['som'];
+  
+  const el = (sel) => document.querySelector(sel);
+  
+  const elementos = {};
+  
+  function prepararInterface() {
+    elementos.dialogo = el('#dialogo');
+    elementos.dialogoTexto = el('#dialogo-texto');
+    elementos.dialogoBotoes = el('#dialogo-botoes');
+    elementos.painel = el('#painel');
+    elementos.painelCorpo = el('#painel-corpo');
+    elementos.painelTitulo = el('#painel-titulo');
+    elementos.legenda = el('#legenda');
+    elementos.libras = el('#libras');
+    elementos.cenas = el('#camada-cenas');
+  }
+  
+  /* ---------- legendas ---------- */
+  
+  function legendar(texto) {
+    if (!elementos.legenda) return;
+    elementos.legenda.textContent = texto || '';
+    elementos.legenda.hidden = !texto || !ajustes.legenda;
+  }
+  
+  /* ---------- janela de Libras ---------- */
+  /* Enquanto os vídeos definitivos não são produzidos, a janela mostra um
+     espaço reservado identificado — o recurso já está no lugar certo da tela. */
+  function libras(arquivo, descricao) {
+    const alvo = elementos.libras;
+    if (!alvo) return;
+    alvo.hidden = !ajustes.libras;
+    if (!ajustes.libras) return;
+    alvo.innerHTML = '';
+    const titulo = document.createElement('p');
+    titulo.className = 'libras-titulo';
+    titulo.textContent = 'Libras';
+    alvo.appendChild(titulo);
+  
+    if (arquivo && MIDIA_EXTERNA) {
+      const video = document.createElement('video');
+      video.src = arquivo;
+      video.autoplay = true; video.loop = true; video.muted = true;
+      video.playsInline = true;
+      video.setAttribute('aria-label', 'Vídeo em Libras: ' + (descricao || ''));
+      video.addEventListener('error', () => { video.replaceWith(reservado(descricao)); });
+      alvo.appendChild(video);
+    } else {
+      alvo.appendChild(reservado(descricao));
+    }
+  }
+  
+  function reservado(descricao) {
+    const caixa = document.createElement('div');
+    caixa.className = 'reservado';
+    caixa.innerHTML = `<span aria-hidden="true">🤟</span>
+      <small>Espaço reservado para o vídeo em Libras${descricao ? ': ' + descricao : ''}</small>`;
+    return caixa;
+  }
+  
+  /* ---------- diálogo ---------- */
+  
+  function dialogo(texto, botoes = [{ rotulo: 'Continuar' }], opcoes = {}) {
+    return new Promise((resolve) => {
+      const d = elementos.dialogo;
+      d.hidden = false;
+      elementos.dialogoTexto.textContent = texto;
+      /* o próprio diálogo já mostra o texto em tamanho grande: repetir na
+         faixa de legenda só duplicaria a leitura */
+      legendar('');
+      libras(opcoes.libras, opcoes.descricaoLibras || texto);
+      anunciar(texto);
+  
+      elementos.dialogoBotoes.innerHTML = '';
+      botoes.forEach((b, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'botao ' + (b.estilo || (i === 0 ? 'principal' : 'secundario'));
+        btn.textContent = b.rotulo;
+        btn.addEventListener('click', () => {
+          som.abrir();
+          fecharDialogo();
+          resolve(b.valor ?? i);
+        });
+        elementos.dialogoBotoes.appendChild(btn);
+      });
+      elementos.dialogoBotoes.querySelector('button')?.focus();
+    });
+  }
+  
+  function fecharDialogo() {
+    calarVoz();
+    elementos.dialogo.hidden = true;
+    legendar('');
+  }
+  
+  /* ---------- painel de tarefa ---------- */
+  
+  let aoFecharPainel = null;
+  
+  function abrirPainel(titulo, { aoFechar = null, rotuloFechar = 'Voltar ao jardim' } = {}) {
+    elementos.painel.hidden = false;
+    elementos.painelTitulo.textContent = titulo;
+    elementos.painelCorpo.innerHTML = '';
+    aoFecharPainel = aoFechar;
+    const btn = document.querySelector('#painel-fechar');
+    btn.textContent = rotuloFechar;
+    elementos.painel.querySelector('#painel-corpo').setAttribute('tabindex', '-1');
+    elementos.painelTitulo.focus?.();
+    return elementos.painelCorpo;
+  }
+  
+  function fecharPainel() {
+    elementos.painel.hidden = true;
+    elementos.painelCorpo.innerHTML = '';
+    legendar('');
+    calarVoz();
+    const fn = aoFecharPainel;
+    aoFecharPainel = null;
+    fn?.();
+  }
+  
+  function painelAberto() {
+    return !elementos.painel.hidden;
+  }
+  
+  /* ---------- avisos curtos sobre o palco ---------- */
+  
+  function aviso(texto, tipo = 'ok') {
+    const caixa = document.createElement('div');
+    caixa.className = 'aviso aviso-' + tipo;
+    caixa.setAttribute('role', 'status');
+    caixa.textContent = texto;
+    document.querySelector('#palco').appendChild(caixa);
+    anunciar(texto, { narrar: false });
+    falar(texto);
+    const some = () => caixa.remove();
+    if (ajustes.movimento) {
+      setTimeout(() => { caixa.classList.add('saindo'); setTimeout(some, 400); }, 2600);
+    } else {
+      setTimeout(some, 3200);
+    }
+  }
+  
+  /* Botão padrão do jogo. */
+  function botao(rotulo, aoClicar, estilo = 'principal') {
+    const b = document.createElement('button');
+    b.className = 'botao ' + estilo;
+    b.textContent = rotulo;
+    b.addEventListener('click', aoClicar);
+    return b;
+  }
+  
+  return { elementos, prepararInterface, legendar, libras, dialogo, fecharDialogo, abrirPainel, fecharPainel, painelAberto, aviso, botao };
+})();
+
+registro['midia'] = (() => {
+  /* Exibição integrada de mídia: figura, vídeo, áudio, legenda e Libras.
+     Quando o arquivo definitivo ainda não existe, entra a figura desenhada por
+     código e um espaço reservado — a tarefa continua funcionando. */
+  
+  const { MIDIA_EXTERNA } = registro['config'];
+  const { ajustes, falar } = registro['acessibilidade'];
+  const { figuraEmCanvas } = registro['desenho'];
+  const { libras, legendar } = registro['interface'];
+  
+  function cartaoDaPalavra(palavra, { comVideo = true } = {}) {
+    const caixa = document.createElement('div');
+    caixa.className = 'midia';
+  
+    const visual = document.createElement('div');
+    visual.className = 'midia-visual';
+  
+    if (comVideo && MIDIA_EXTERNA && palavra.midia?.video) {
+      const video = document.createElement('video');
+      video.src = palavra.midia.video;
+      video.controls = true;
+      video.playsInline = true;
+      video.preload = 'metadata';
+      video.setAttribute('aria-label', 'Vídeo sobre ' + palavra.texto);
+      /* sem arquivo publicado ainda → cai para a figura desenhada */
+      video.addEventListener('error', () => video.replaceWith(figuraEmCanvas(palavra.id, 160)));
+      visual.appendChild(video);
+    } else {
+      visual.appendChild(figuraEmCanvas(palavra.id, 160));
+    }
+  
+    const texto = document.createElement('div');
+    texto.className = 'midia-texto';
+    texto.innerHTML = `<p class="palavra-grande">${palavra.texto}</p>
+                       <p class="palavra-frase">${palavra.frase}</p>`;
+  
+    const ouvir = document.createElement('button');
+    ouvir.className = 'botao secundario';
+    ouvir.innerHTML = '<span aria-hidden="true">🔊</span> Ouvir a palavra';
+    ouvir.addEventListener('click', () => falar(`${palavra.texto}. ${palavra.frase}`, { forcar: true }));
+    texto.appendChild(ouvir);
+  
+    caixa.append(visual, texto);
+  
+    legendar(palavra.midia?.legenda || palavra.frase);
+    libras(palavra.midia?.libras, palavra.texto);
+    if (ajustes.voz) falar(`${palavra.texto}. ${palavra.frase}`);
+    return caixa;
+  }
+  
+  function tocarAudio(caminho) {
+    if (!ajustes.som || !caminho || !MIDIA_EXTERNA) return;
+    const a = new Audio(caminho);
+    a.play().catch(() => { /* arquivo ainda não publicado: silencia */ });
+  }
+  
+  return { cartaoDaPalavra, tocarAudio };
+})();
+
+registro['mundo'] = (() => {
+  /* Ambiente 2D: mapa, movimentação, colisão, objetos interativos e o
+     retorno visual de progresso (o jardim muda conforme as palavras voltam). */
+  
+  const { estado, palavraLiberada, palavraAplicada, jogoCompleto } = registro['estado'];
+  const { ajustes } = registro['acessibilidade'];
+  const { som } = registro['som'];
+  const arte = registro['desenho'];
+  
+  const LARGURA = 960;
+  const ALTURA = 576;
+  const TILE = 48;
+  const VELOCIDADE = 2.6;          // px por quadro a 60fps
+  const RAIO_INTERACAO = 96;
+  
+  /* Objetos do jardim. `alvo` liga o objeto a uma palavra/ação. */
+  const OBJETOS = [
+    {
+      id: 'prateleira', rotulo: 'Prateleira', x: 200, y: 170, alvo: 'vaso',
+      solido: { l: 120, a: 70 }, acao: 'tarefa',
+      dica: 'Aqui mora o vaso. Fale com a prateleira para começar.'
+    },
+    {
+      id: 'torneira', rotulo: 'Torneira', x: 180, y: 420, alvo: 'agua',
+      solido: { l: 100, a: 60 }, acao: 'tarefa',
+      dica: 'A torneira guarda a água.'
+    },
+    {
+      id: 'canteiro', rotulo: 'Canteiro', x: 760, y: 420, alvo: 'flor',
+      solido: { l: 130, a: 60 }, acao: 'tarefa',
+      dica: 'No canteiro nasce a flor.'
+    },
+    {
+      id: 'mesa', rotulo: 'Mesa do jardim', x: 480, y: 300, alvo: null,
+      solido: { l: 130, a: 60 }, acao: 'aplicar',
+      dica: 'Leve o que está na mochila até a mesa do jardim.'
+    },
+    {
+      id: 'nix', rotulo: 'Nix', x: 620, y: 200, alvo: null,
+      solido: null, acao: 'falar',
+      dica: 'Nix explica a próxima tarefa.'
+    },
+    {
+      id: 'porta', rotulo: 'Portão do jardim', x: 480, y: 96, alvo: null,
+      solido: { l: 90, a: 40 }, acao: 'sair',
+      dica: 'O portão abre quando as três palavras voltarem.'
+    },
+    {
+      id: 'placa', rotulo: 'Placa', x: 830, y: 190, alvo: null,
+      solido: { l: 70, a: 30 }, acao: 'ler',
+      dica: 'Uma placa de madeira com o nome do lugar.'
+    }
+  ];
+  
+  const jogador = {
+    x: 480, y: 455, direcao: 'cima', passo: 0, andando: false,
+    destino: null,  // ponto atual do trajeto
+    rota: []        // pontos restantes até o alvo do "Ir até"
+  };
+  
+  const teclas = new Set();
+  let ctx = null;
+  let canvas = null;
+  let tempo = 0;
+  let rodando = false;
+  let aoInteragir = () => {};
+  let aoAproximar = () => {};
+  let objetoProximo = null;
+  let bloqueado = false;   // durante diálogos/tarefas o jogador não anda
+  
+  /* ---------- limites e colisão ---------- */
+  
+  const MARGEM = { esq: TILE + 10, dir: LARGURA - TILE - 10, topo: TILE + 30, baixo: ALTURA - TILE - 6 };
+  
+  function colide(x, y) {
+    if (x < MARGEM.esq || x > MARGEM.dir || y < MARGEM.topo || y > MARGEM.baixo) return true;
+    for (const o of OBJETOS) {
+      if (!o.solido) continue;
+      const meio = o.solido.a / 2;
+      if (Math.abs(x - o.x) < o.solido.l / 2 + 12 && Math.abs(y - o.y) < meio + 10) return true;
+    }
+    return false;
+  }
+  
+  /* ---------- caminho automático ----------
+     O jogo caminha sozinho até o lugar escolhido, desviando dos móveis.
+     É o que torna o "Ir até..." utilizável por quem não usa as setas. */
+  
+  const CEL = 24;
+  const COLUNAS = Math.floor(LARGURA / CEL);
+  const LINHAS = Math.floor(ALTURA / CEL);
+  let malha = null;
+  
+  function construirMalha() {
+    malha = new Uint8Array(COLUNAS * LINHAS);
+    for (let cy = 0; cy < LINHAS; cy++) {
+      for (let cx = 0; cx < COLUNAS; cx++) {
+        malha[cy * COLUNAS + cx] = colide(cx * CEL + CEL / 2, cy * CEL + CEL / 2) ? 1 : 0;
+      }
+    }
+  }
+  
+  function livre(cx, cy) {
+    return cx >= 0 && cy >= 0 && cx < COLUNAS && cy < LINHAS && malha[cy * COLUNAS + cx] === 0;
+  }
+  
+  function celulaMaisProxima(cx, cy) {
+    if (livre(cx, cy)) return { cx, cy };
+    for (let raio = 1; raio < 12; raio++) {
+      for (let dy = -raio; dy <= raio; dy++) {
+        for (let dx = -raio; dx <= raio; dx++) {
+          if (Math.abs(dx) !== raio && Math.abs(dy) !== raio) continue;
+          if (livre(cx + dx, cy + dy)) return { cx: cx + dx, cy: cy + dy };
+        }
+      }
+    }
+    return null;
+  }
+  
+  /* Busca em largura: caminho curto e previsível, sem custo perceptível
+     num mapa deste tamanho. */
+  function rotaAte(destinoX, destinoY) {
+    if (!malha) construirMalha();
+    const inicio = celulaMaisProxima(Math.floor(jogador.x / CEL), Math.floor(jogador.y / CEL));
+    const fim = celulaMaisProxima(Math.floor(destinoX / CEL), Math.floor(destinoY / CEL));
+    if (!inicio || !fim) return null;
+  
+    const anterior = new Int32Array(COLUNAS * LINHAS).fill(-1);
+    const visitado = new Uint8Array(COLUNAS * LINHAS);
+    const fila = [inicio.cy * COLUNAS + inicio.cx];
+    visitado[fila[0]] = 1;
+    const alvo = fim.cy * COLUNAS + fim.cx;
+  
+    for (let i = 0; i < fila.length; i++) {
+      const atual = fila[i];
+      if (atual === alvo) break;
+      const cx = atual % COLUNAS, cy = (atual - cx) / COLUNAS;
+      const vizinhos = [[cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1]];
+      for (const [vx, vy] of vizinhos) {
+        if (!livre(vx, vy)) continue;
+        const idx = vy * COLUNAS + vx;
+        if (visitado[idx]) continue;
+        visitado[idx] = 1;
+        anterior[idx] = atual;
+        fila.push(idx);
+      }
+    }
+    if (!visitado[alvo]) return null;
+  
+    const pontos = [];
+    for (let no = alvo; no !== -1; no = anterior[no]) {
+      const cx = no % COLUNAS, cy = (no - cx) / COLUNAS;
+      pontos.unshift({ x: cx * CEL + CEL / 2, y: cy * CEL + CEL / 2 });
+      if (no === inicio.cy * COLUNAS + inicio.cx) break;
+    }
+    return enxugar(pontos);
+  }
+  
+  /* Mantém só os pontos onde o trajeto muda de direção. */
+  function enxugar(pontos) {
+    if (pontos.length < 3) return pontos;
+    const limpo = [pontos[0]];
+    for (let i = 1; i < pontos.length - 1; i++) {
+      const a = pontos[i - 1], b = pontos[i], c = pontos[i + 1];
+      const mesmaDirecao = (a.x === b.x && b.x === c.x) || (a.y === b.y && b.y === c.y);
+      if (!mesmaDirecao) limpo.push(b);
+    }
+    limpo.push(pontos[pontos.length - 1]);
+    return limpo;
+  }
+  
+  function seguirRota(destinoX, destinoY, aoChegar = null) {
+    const pontos = rotaAte(destinoX, destinoY);
+    if (!pontos || !pontos.length) {
+      jogador.rota = [];
+      jogador.destino = { x: destinoX, y: destinoY, interagir: aoChegar };
+      return;
+    }
+    const ultimo = pontos[pontos.length - 1];
+    ultimo.interagir = aoChegar;
+    jogador.rota = pontos.slice(1);
+    jogador.destino = jogador.rota.shift() || ultimo;
+  }
+  
+  /* ---------- ciclo principal ---------- */
+  
+  function iniciarMundo(elCanvas, manipuladores = {}) {
+    canvas = elCanvas;
+    canvas.width = LARGURA;
+    canvas.height = ALTURA;
+    ctx = canvas.getContext('2d');
+    aoInteragir = manipuladores.aoInteragir || (() => {});
+    aoAproximar = manipuladores.aoAproximar || (() => {});
+  
+    window.addEventListener('keydown', teclaBaixo);
+    window.addEventListener('keyup', teclaCima);
+    canvas.addEventListener('pointerdown', cliqueNoMapa);
+  
+    construirMalha();
+    if (!rodando) { rodando = true; requestAnimationFrame(quadro); }
+  }
+  
+  function pararMundo() {
+    rodando = false;
+    window.removeEventListener('keydown', teclaBaixo);
+    window.removeEventListener('keyup', teclaCima);
+    canvas?.removeEventListener('pointerdown', cliqueNoMapa);
+  }
+  
+  function objetoEmFoco() {
+    return objetoProximo;
+  }
+  
+  function bloquearJogador(v) {
+    bloqueado = v;
+    if (v) { teclas.clear(); jogador.destino = null; jogador.rota = []; jogador.andando = false; }
+  }
+  
+  function teclaBaixo(e) {
+    if (bloqueado) return;
+    const k = e.key.toLowerCase();
+    if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(k)) {
+      teclas.add(k); jogador.destino = null; jogador.rota = []; e.preventDefault();
+    }
+    if (k === 'enter' || k === ' ' || k === 'e') {
+      e.preventDefault();
+      if (objetoProximo) aoInteragir(objetoProximo);
+    }
+  }
+  
+  function teclaCima(e) { teclas.delete(e.key.toLowerCase()); }
+  
+  function cliqueNoMapa(e) {
+    if (bloqueado) return;
+    const r = canvas.getBoundingClientRect();
+    const x = (e.clientX - r.left) * (LARGURA / r.width);
+    const y = (e.clientY - r.top) * (ALTURA / r.height);
+    const alvo = OBJETOS.find((o) => Math.hypot(o.x - x, o.y - y) < 70);
+    if (alvo) irAte(alvo.id, true);
+    else seguirRota(x, y);
+  }
+  
+  /* Caminho acessível: leva o personagem até o objeto sem exigir precisão
+     motora nem uso do teclado direcional. */
+  function irAte(idObjeto, interagirAoChegar = false) {
+    const o = OBJETOS.find((obj) => obj.id === idObjeto);
+    if (!o || bloqueado) return;
+    const abaixo = o.y + (o.solido ? o.solido.a / 2 + 46 : 60);
+    seguirRota(o.x, Math.min(abaixo, MARGEM.baixo), interagirAoChegar ? o : null);
+  }
+  
+  function moverPorBotao(direcao, ativo) {
+    const mapa = { cima: 'arrowup', baixo: 'arrowdown', esquerda: 'arrowleft', direita: 'arrowright' };
+    if (bloqueado) return;
+    jogador.destino = null; jogador.rota = [];
+    if (ativo) teclas.add(mapa[direcao]); else teclas.delete(mapa[direcao]);
+  }
+  
+  function quadro(t) {
+    if (!rodando) return;
+    tempo = t;
+    atualizar();
+    desenhar();
+    requestAnimationFrame(quadro);
+  }
+  
+  let contadorPasso = 0;
+  
+  function atualizar() {
+    let dx = 0, dy = 0;
+    if (teclas.has('arrowup') || teclas.has('w')) dy -= 1;
+    if (teclas.has('arrowdown') || teclas.has('s')) dy += 1;
+    if (teclas.has('arrowleft') || teclas.has('a')) dx -= 1;
+    if (teclas.has('arrowright') || teclas.has('d')) dx += 1;
+  
+    if (!dx && !dy && jogador.destino) {
+      const d = jogador.destino;
+      const distX = d.x - jogador.x, distY = d.y - jogador.y;
+      const dist = Math.hypot(distX, distY);
+      if (dist < 6) {
+        const alvo = d.interagir;
+        jogador.destino = jogador.rota.length ? jogador.rota.shift() : null;
+        if (!jogador.destino && alvo) aoInteragir(alvo);
+      } else {
+        dx = distX / dist; dy = distY / dist;
+      }
+    }
+  
+    jogador.andando = !!(dx || dy);
+    if (jogador.andando) {
+      const n = Math.hypot(dx, dy) || 1;
+      const passoX = (dx / n) * VELOCIDADE;
+      const passoY = (dy / n) * VELOCIDADE;
+      if (!colide(jogador.x + passoX, jogador.y)) jogador.x += passoX;
+      if (!colide(jogador.x, jogador.y + passoY)) jogador.y += passoY;
+      if (Math.abs(dx) > Math.abs(dy)) jogador.direcao = dx > 0 ? 'direita' : 'esquerda';
+      else jogador.direcao = dy > 0 ? 'baixo' : 'cima';
+      jogador.passo += 0.22;
+      if (++contadorPasso % 26 === 0) som.passo();
+    } else {
+      jogador.passo = 0;
+    }
+  
+    /* objeto mais próximo dentro do raio de interação */
+    let melhor = null, melhorDist = RAIO_INTERACAO;
+    for (const o of OBJETOS) {
+      const d = Math.hypot(o.x - jogador.x, o.y - jogador.y);
+      if (d < melhorDist) { melhor = o; melhorDist = d; }
+    }
+    if (melhor !== objetoProximo) {
+      objetoProximo = melhor;
+      aoAproximar(melhor);
+    }
+  }
+  
+  /* ---------- desenho do cenário ---------- */
+  
+  function desenharPiso() {
+    const p = arte.paleta();
+    for (let cy = 0; cy < ALTURA / TILE; cy++) {
+      for (let cx = 0; cx < LARGURA / TILE; cx++) {
+        const jardim = cy > 4;
+        const alterna = (cx + cy) % 2 === 0;
+        ctx.fillStyle = jardim ? (alterna ? p.grama : p.gramaAlt) : (alterna ? p.piso : p.pisoAlt);
+        ctx.fillRect(cx * TILE, cy * TILE, TILE, TILE);
+      }
+    }
+    /* caminho de pedras ligando o portão à mesa — orienta o percurso */
+    ctx.fillStyle = ajustes.contraste ? '#d4d4d8' : 'rgba(214,205,186,.85)';
+    for (let i = 0; i < 8; i++) {
+      ctx.beginPath();
+      ctx.ellipse(480, 150 + i * 46, 26, 14, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  
+  function desenharParedes() {
+    const p = arte.paleta();
+    ctx.fillStyle = p.parede;
+    ctx.fillRect(0, 0, LARGURA, TILE);
+    ctx.fillRect(0, ALTURA - TILE, LARGURA, TILE);
+    ctx.fillRect(0, 0, TILE, ALTURA);
+    ctx.fillRect(LARGURA - TILE, 0, TILE, ALTURA);
+    ctx.fillStyle = p.paredeTopo;
+    ctx.fillRect(0, TILE - 8, LARGURA, 8);
+    ctx.fillRect(0, ALTURA - TILE, LARGURA, 8);
+  }
+  
+  function destaque(o) {
+    /* Uma única pista visual por vez: só o próximo objetivo pulsa. */
+    const pulso = ajustes.movimento ? 0.55 + Math.sin(tempo / 320) * 0.25 : 0.7;
+    ctx.save();
+    ctx.strokeStyle = `rgba(255,214,10,${pulso})`;
+    ctx.lineWidth = ajustes.contraste ? 7 : 5;
+    ctx.setLineDash([10, 8]);
+    ctx.beginPath();
+    ctx.ellipse(o.x, o.y + 18, 68, 42, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+  
+  function objetivoAtual() {
+    /* 1) tem item na mochila → levar à mesa; 2) senão, a próxima palavra liberada */
+    if (estado.mochila.length) return OBJETOS.find((o) => o.id === 'mesa');
+    if (jogoCompleto()) return OBJETOS.find((o) => o.id === 'porta');
+    for (const id of ['vaso', 'agua', 'flor']) {
+      if (!palavraAplicada(id) && palavraLiberada(id)) {
+        return OBJETOS.find((o) => o.alvo === id);
+      }
+    }
+    return null;
+  }
+  
+  function desenharObjeto(o) {
+    const amb = estado.ambiente;
+    switch (o.id) {
+      case 'prateleira':
+        arte.desenharPrateleira(ctx, o.x, o.y, 100);
+        if (!palavraAplicada('vaso') && !estado.mochila.includes('vaso')) {
+          arte.desenharVaso(ctx, o.x, o.y - 14, 52);
+        }
+        break;
+      case 'torneira':
+        arte.desenharTorneira(ctx, o.x, o.y, 96, { pingando: !palavraAplicada('agua') });
+        break;
+      case 'canteiro':
+        arte.desenharCanteiro(ctx, o.x, o.y, 110, { florido: amb.flor });
+        break;
+      case 'mesa':
+        arte.desenharMesa(ctx, o.x, o.y, 110);
+        if (amb.vaso) arte.desenharVaso(ctx, o.x, o.y - 34, 66, { comAgua: amb.agua, comFlor: amb.flor });
+        break;
+      case 'nix':
+        arte.desenharNix(ctx, o.x, o.y, 66, tempo);
+        break;
+      case 'porta':
+        arte.desenharPorta(ctx, o.x, o.y, 92, { aberta: jogoCompleto() });
+        break;
+      case 'placa':
+        arte.desenharPlaca(ctx, o.x, o.y, 80, 'JARDIM');
+        break;
+    }
+  }
+  
+  function desenhar() {
+    desenharPiso();
+    desenharParedes();
+  
+    const alvo = objetivoAtual();
+    if (alvo) destaque(alvo);
+  
+    /* profundidade simples: quem está mais abaixo é desenhado por último */
+    const lista = [...OBJETOS.map((o) => ({ tipo: 'obj', o, y: o.y })), { tipo: 'jogador', y: jogador.y }];
+    lista.sort((a, b) => a.y - b.y);
+    for (const item of lista) {
+      if (item.tipo === 'obj') desenharObjeto(item.o);
+      else arte.desenharPersonagem(ctx, jogador.x, jogador.y, 62, estado.personagem,
+        { direcao: jogador.direcao, passo: jogador.passo });
+    }
+  
+    /* marca de interação sobre o objeto próximo */
+    if (objetoProximo && !bloqueado) {
+      const o = objetoProximo;
+      const sobe = ajustes.movimento ? Math.sin(tempo / 260) * 4 : 0;
+      ctx.save();
+      ctx.fillStyle = '#111827';
+      ctx.strokeStyle = '#ffd60a';
+      ctx.lineWidth = 3;
+      const y = o.y - (o.solido ? o.solido.a : 40) - 40 + sobe;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(o.x - 22, y - 20, 44, 34, 8)
+                    : ctx.rect(o.x - 22, y - 20, 44, 34);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ffd60a';
+      ctx.font = 'bold 20px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('!', o.x, y + 5);
+      ctx.restore();
+    }
+  }
+  
+  return { LARGURA, ALTURA, OBJETOS, jogador, iniciarMundo, pararMundo, objetoEmFoco, bloquearJogador, irAte, moverPorBotao, objetivoAtual };
+})();
+
+registro['tarefas'] = (() => {
+  /* Tarefas pedagógicas do MVP (VASO, ÁGUA, FLOR).
+     Regras adotadas:
+     - sem tempo e sem pontuação punitiva;
+     - o erro não bloqueia: abre a recuperação pedagógica;
+     - o avanço só acontece quando a condição da tarefa é cumprida;
+     - toda instrução aparece em texto, legenda, voz e Libras. */
+  
+  const { PALAVRAS, ETAPAS, REGRAS } = registro['config'];
+  const { estado, etapaConcluida, concluirEtapa, proximaEtapa, guardarNaMochila, registrar } = registro['estado'];
+  const { anunciar, falar } = registro['acessibilidade'];
+  const { som } = registro['som'];
+  const { abrirPainel, fecharPainel, botao, legendar, libras, aviso } = registro['interface'];
+  const { cartaoDaPalavra } = registro['midia'];
+  const { figuraEmCanvas } = registro['desenho'];
+  
+  const DISTRATORES = ['sapato', 'bola', 'livro', 'janela', 'chave'];
+  
+  function embaralhar(lista) {
+    const c = [...lista];
+    for (let i = c.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [c[i], c[j]] = [c[j], c[i]];
+    }
+    return c;
+  }
+  
+  /* ---------- entrada ---------- */
+  
+  function abrirTarefa(palavraId, aoConcluir) {
+    const palavra = PALAVRAS[palavraId];
+    if (!palavra) return;
+    registrar('abriu-tarefa', { palavra: palavraId });
+    apresentar(palavra, aoConcluir);
+  }
+  
+  function apresentar(palavra, aoConcluir) {
+    const corpo = abrirPainel(`A palavra ${palavra.texto}`, { rotuloFechar: 'Sair da tarefa' });
+    corpo.appendChild(cartaoDaPalavra(palavra));
+  
+    const acoes = document.createElement('div');
+    acoes.className = 'acoes';
+    const etapa = proximaEtapa(palavra.id);
+    acoes.appendChild(botao(etapa ? 'Começar' : 'Continuar', () => {
+      som.abrir();
+      seguir(palavra, aoConcluir);
+    }));
+    corpo.appendChild(acoes);
+    acoes.querySelector('button').focus();
+  }
+  
+  function seguir(palavra, aoConcluir) {
+    const etapa = proximaEtapa(palavra.id);
+    if (!etapa) return finalizar(palavra, aoConcluir);
+    if (etapa.id === 'reconhecer') etapaReconhecer(palavra, etapa, aoConcluir);
+    else etapaCompor(palavra, etapa, aoConcluir);
+  }
+  
+  /* ---------- cabeçalho comum das etapas ---------- */
+  
+  function cabecalho(corpo, palavra, etapa) {
+    const passo = ETAPAS.findIndex((e) => e.id === etapa.id) + 1;
+    const barra = document.createElement('div');
+    barra.className = 'passos';
+    barra.setAttribute('aria-label', `Passo ${passo} de ${ETAPAS.length}`);
+    ETAPAS.forEach((e, i) => {
+      const ponto = document.createElement('span');
+      ponto.className = 'passo' +
+        (etapaConcluida(palavra.id, e.id) ? ' feito' : '') +
+        (i === passo - 1 ? ' atual' : '');
+      ponto.textContent = i + 1;
+      barra.appendChild(ponto);
+    });
+  
+    const instrucao = document.createElement('p');
+    instrucao.className = 'instrucao';
+    instrucao.textContent = etapa.instrucao(palavra);
+  
+    const ouvir = botao('🔊 Ouvir de novo',
+      () => falar(etapa.instrucao(palavra), { forcar: true }), 'secundario pequeno');
+  
+    corpo.append(barra, instrucao, ouvir);
+    legendar(etapa.instrucao(palavra));
+    libras(palavra.midia?.libras, palavra.texto);
+    anunciar(`${etapa.titulo}. ${etapa.instrucao(palavra)}`);
+  }
+  
+  /* ---------- etapa 1: reconhecer a figura ---------- */
+  
+  function etapaReconhecer(palavra, etapa, aoConcluir, apoio = false) {
+    const corpo = abrirPainel(`${palavra.texto} · ${etapa.titulo}`, { rotuloFechar: 'Sair da tarefa' });
+    cabecalho(corpo, palavra, etapa);
+  
+    const outras = Object.keys(PALAVRAS).filter((id) => id !== palavra.id);
+    const opcoes = apoio
+      ? [palavra.id, embaralhar(DISTRATORES)[0]]
+      : [palavra.id, embaralhar(outras)[0], embaralhar(DISTRATORES)[0]];
+  
+    const grade = document.createElement('div');
+    grade.className = 'cartoes';
+    let tentativas = 0;
+  
+    embaralhar(opcoes).forEach((id) => {
+      const cartao = document.createElement('button');
+      cartao.className = 'cartao';
+      cartao.setAttribute('aria-label', id === palavra.id ? palavra.texto : nomeFigura(id));
+      cartao.appendChild(figuraEmCanvas(id, 120));
+      const nome = document.createElement('span');
+      nome.textContent = id === palavra.id ? palavra.texto : nomeFigura(id).toUpperCase();
+      cartao.appendChild(nome);
+      if (apoio && id === palavra.id) cartao.classList.add('apoio');
+  
+      cartao.addEventListener('click', () => {
+        if (id === palavra.id) {
+          cartao.classList.add('certo');
+          acertou(palavra, etapa, aoConcluir);
+        } else {
+          tentativas++;
+          cartao.classList.add('errado');
+          cartao.disabled = true;
+          errou(palavra, etapa, tentativas,
+            () => etapaReconhecer(palavra, etapa, aoConcluir, true));
+        }
+      });
+      grade.appendChild(cartao);
+    });
+    corpo.appendChild(grade);
+    grade.querySelector('button').focus();
+  }
+  
+  function nomeFigura(id) {
+    const nomes = { sapato: 'sapato', bola: 'bola', livro: 'livro', janela: 'janela', chave: 'chave' };
+    return nomes[id] || PALAVRAS[id]?.texto || id;
+  }
+  
+  /* ---------- etapas 2 e 3: compor sílabas e letras ---------- */
+  
+  function etapaCompor(palavra, etapa, aoConcluir, apoio = false) {
+    const pecas = etapa.id === 'silabas' ? palavra.silabas : palavra.letras;
+  
+    /* palavra de uma sílaba só (FLOR): vira discriminação entre formas parecidas */
+    if (etapa.id === 'silabas' && pecas.length === 1) {
+      return etapaDiscriminar(palavra, etapa, aoConcluir, apoio);
+    }
+  
+    const corpo = abrirPainel(`${palavra.texto} · ${etapa.titulo}`, { rotuloFechar: 'Sair da tarefa' });
+    cabecalho(corpo, palavra, etapa);
+  
+    const linhaAlvo = document.createElement('div');
+    linhaAlvo.className = 'trilho';
+    const vagas = pecas.map((_, i) => {
+      const vaga = document.createElement('span');
+      vaga.className = 'vaga';
+      vaga.textContent = '';
+      vaga.setAttribute('aria-label', `Lugar ${i + 1} de ${pecas.length}`);
+      linhaAlvo.appendChild(vaga);
+      return vaga;
+    });
+  
+    const linhaPecas = document.createElement('div');
+    linhaPecas.className = 'pecas';
+  
+    let posicao = 0;
+    let tentativas = 0;
+  
+    function marcarApoio() {
+      linhaPecas.querySelectorAll('button').forEach((b) => {
+        b.classList.toggle('apoio', apoio && b.dataset.peca === pecas[posicao] && !b.disabled);
+      });
+    }
+  
+    embaralhar(pecas.map((p, i) => ({ p, i }))).forEach(({ p }) => {
+      const b = document.createElement('button');
+      b.className = 'peca';
+      b.textContent = p;
+      b.dataset.peca = p;
+      b.addEventListener('click', () => {
+        if (p === pecas[posicao]) {
+          vagas[posicao].textContent = p;
+          vagas[posicao].classList.add('preenchida');
+          b.disabled = true;
+          b.classList.add('usada');
+          posicao++;
+          falar(p);
+          if (posicao === pecas.length) {
+            acertou(palavra, etapa, aoConcluir);
+          } else {
+            som.guardar();
+            marcarApoio();
+          }
+        } else {
+          tentativas++;
+          b.classList.add('errado');
+          setTimeout(() => b.classList.remove('errado'), 500);
+          errou(palavra, etapa, tentativas,
+            () => etapaCompor(palavra, etapa, aoConcluir, true));
+        }
+      });
+      linhaPecas.appendChild(b);
+    });
+  
+    corpo.append(linhaAlvo, linhaPecas);
+    marcarApoio();
+    linhaPecas.querySelector('button').focus();
+  }
+  
+  function etapaDiscriminar(palavra, etapa, aoConcluir, apoio = false) {
+    const corpo = abrirPainel(`${palavra.texto} · ${etapa.titulo}`, { rotuloFechar: 'Sair da tarefa' });
+    cabecalho(corpo, palavra, etapa);
+  
+    const certo = palavra.texto;
+    const trocadas = [
+      certo.slice(1) + certo[0],
+      certo[0] + certo.slice(2) + certo[1]
+    ].filter((t) => t !== certo);
+    const opcoes = apoio ? [certo, trocadas[0]] : [certo, ...trocadas.slice(0, 2)];
+  
+    const linha = document.createElement('div');
+    linha.className = 'pecas grandes';
+    let tentativas = 0;
+  
+    embaralhar(opcoes).forEach((op) => {
+      const b = document.createElement('button');
+      b.className = 'peca' + (apoio && op === certo ? ' apoio' : '');
+      b.textContent = op;
+      b.addEventListener('click', () => {
+        if (op === certo) { b.classList.add('usada'); acertou(palavra, etapa, aoConcluir); }
+        else {
+          tentativas++;
+          b.classList.add('errado'); b.disabled = true;
+          errou(palavra, etapa, tentativas, () => etapaDiscriminar(palavra, etapa, aoConcluir, true));
+        }
+      });
+      linha.appendChild(b);
+    });
+    corpo.appendChild(linha);
+    linha.querySelector('button').focus();
+  }
+  
+  /* ---------- acerto, erro e recuperação ---------- */
+  
+  function acertou(palavra, etapa, aoConcluir) {
+    som.acerto();
+    registrar('acerto', { palavra: palavra.id, etapa: etapa.id });
+    concluirEtapa(palavra.id, etapa.id);
+    const texto = 'Muito bem! ' + palavra.texto;
+    legendar(texto);
+    anunciar(texto);
+    setTimeout(() => seguir(palavra, aoConcluir), 900);
+  }
+  
+  function errou(palavra, etapa, tentativas, abrirComApoio) {
+    som.tentarDeNovo();
+    registrar('erro', { palavra: palavra.id, etapa: etapa.id, tentativa: tentativas });
+    const texto = 'Quase! Tente outra vez.';
+    legendar(texto);
+    anunciar(texto);
+  
+    if (REGRAS.tentativasAteApoio && tentativas >= REGRAS.tentativasAteApoio) {
+      registrar('recuperacao', { palavra: palavra.id, etapa: etapa.id });
+      setTimeout(() => recuperacao(palavra, etapa, abrirComApoio), 700);
+    }
+  }
+  
+  /* Recuperação pedagógica: retoma a palavra devagar, por partes,
+     e devolve a criança à tarefa com menos alternativas. */
+  function recuperacao(palavra, etapa, abrirComApoio) {
+    const corpo = abrirPainel('Vamos juntos', { rotuloFechar: 'Sair da tarefa' });
+  
+    const linha = document.createElement('div');
+    linha.className = 'apoio-linha';
+    linha.appendChild(figuraEmCanvas(palavra.id, 120));
+  
+    const partes = document.createElement('div');
+    partes.className = 'apoio-partes';
+    const alvo = etapa.id === 'letras' ? palavra.letras : palavra.silabas;
+    alvo.forEach((p, i) => {
+      const s = document.createElement('span');
+      s.className = 'parte';
+      s.textContent = p;
+      s.style.animationDelay = (i * 0.35) + 's';
+      partes.appendChild(s);
+    });
+  
+    const explicacao = document.createElement('p');
+    explicacao.className = 'instrucao';
+    explicacao.textContent = `${palavra.texto}. ${palavra.dica}`;
+  
+    linha.appendChild(partes);
+    corpo.append(linha, explicacao);
+  
+    const acoes = document.createElement('div');
+    acoes.className = 'acoes';
+    acoes.appendChild(botao('🔊 Ouvir por partes', () => {
+      falar(alvo.join(', ') + '. ' + palavra.texto, { forcar: true });
+    }, 'secundario'));
+    acoes.appendChild(botao('Tentar de novo', () => { som.abrir(); abrirComApoio(); }));
+    corpo.appendChild(acoes);
+  
+    libras(palavra.midia?.libras, palavra.texto);
+    legendar(`${palavra.texto}. ${palavra.dica}`);
+    falar(`${palavra.texto}. ${alvo.join('. ')}. ${palavra.dica}`);
+    acoes.querySelector('.botao.principal')?.focus();
+  }
+  
+  /* ---------- fim da tarefa: o item vai para a mochila ---------- */
+  
+  function finalizar(palavra, aoConcluir) {
+    const corpo = abrirPainel('Palavra encontrada!', { rotuloFechar: 'Voltar ao jardim' });
+    som.conquista();
+    registrar('palavra-concluida', { palavra: palavra.id });
+    guardarNaMochila(palavra.id);
+  
+    const caixa = document.createElement('div');
+    caixa.className = 'conquista';
+    caixa.appendChild(figuraEmCanvas(palavra.id, 150));
+    const p = document.createElement('p');
+    p.className = 'palavra-grande';
+    p.textContent = palavra.texto;
+    const aviso2 = document.createElement('p');
+    aviso2.className = 'instrucao';
+    aviso2.textContent = `${palavra.texto} está na sua mochila. Leve até a mesa do jardim.`;
+    caixa.append(p, aviso2);
+    corpo.appendChild(caixa);
+  
+    const acoes = document.createElement('div');
+    acoes.className = 'acoes';
+    acoes.appendChild(botao('Voltar ao jardim', () => {
+      fecharPainel();
+      aviso(`${palavra.texto} guardado na mochila.`);
+      aoConcluir?.(palavra.id);
+    }));
+    corpo.appendChild(acoes);
+  
+    legendar(`${palavra.texto} está na sua mochila.`);
+    anunciar(`Você encontrou a palavra ${palavra.texto}. Leve até a mesa do jardim.`);
+    acoes.querySelector('button').focus();
+  }
+  
+  return { abrirTarefa };
+})();
+
+registro['abertura'] = (() => {
+  /* Abertura narrativa visual: quadros com desenho, texto, legenda,
+     narração e Libras. A criança avança no próprio ritmo — nada corre sozinho. */
+  
+  const { ABERTURA, JOGO } = registro['config'];
+  const { ajustes, anunciar } = registro['acessibilidade'];
+  const { som } = registro['som'];
+  const { legendar, libras, botao } = registro['interface'];
+  const arte = registro['desenho'];
+  const { estado } = registro['estado'];
+  
+  function abrirAbertura(container, aoTerminar) {
+    let indice = 0;
+    container.innerHTML = '';
+    container.hidden = false;
+  
+    const cena = document.createElement('section');
+    cena.className = 'cena cena-abertura';
+    cena.innerHTML = `
+      <h1 class="cena-titulo">${JOGO.titulo}</h1>
+      <p class="cena-subtitulo">${JOGO.subtitulo}</p>
+      <canvas id="quadro-abertura" width="720" height="320" role="img" aria-label="Quadro da história"></canvas>
+      <p class="cena-texto" id="texto-abertura"></p>
+      <div class="acoes" id="acoes-abertura"></div>
+      <p class="cena-passo" id="passo-abertura"></p>`;
+    container.appendChild(cena);
+  
+    const tela = cena.querySelector('#quadro-abertura');
+    const ctx = tela.getContext('2d');
+    const texto = cena.querySelector('#texto-abertura');
+    const acoes = cena.querySelector('#acoes-abertura');
+    const passo = cena.querySelector('#passo-abertura');
+  
+    let animacao = 0;
+    function laco(t) {
+      if (container.hidden) return;
+      desenharQuadro(ctx, ABERTURA[indice].cena, tela.width, tela.height, t);
+      animacao = requestAnimationFrame(laco);
+    }
+    animacao = requestAnimationFrame(laco);
+  
+    function mostrar() {
+      const q = ABERTURA[indice];
+      texto.textContent = q.texto;
+      passo.textContent = `Parte ${indice + 1} de ${ABERTURA.length}`;
+      legendar(q.legenda);
+      libras(q.libras, q.legenda);
+      anunciar(q.texto);
+  
+      acoes.innerHTML = '';
+      if (indice > 0) {
+        acoes.appendChild(botao('Voltar', () => { indice--; som.abrir(); mostrar(); }, 'secundario'));
+      }
+      const ultimo = indice === ABERTURA.length - 1;
+      acoes.appendChild(botao(ultimo ? 'Vamos lá!' : 'Continuar', () => {
+        som.abrir();
+        if (ultimo) { cancelAnimationFrame(animacao); container.hidden = true; legendar(''); aoTerminar(); }
+        else { indice++; mostrar(); }
+      }));
+      acoes.appendChild(botao('Pular história', () => {
+        cancelAnimationFrame(animacao); container.hidden = true; legendar(''); aoTerminar();
+      }, 'secundario pequeno'));
+      acoes.querySelector('.botao.principal').focus();
+    }
+    mostrar();
+  }
+  
+  /* ---------- desenho dos quadros ---------- */
+  
+  function ceu(ctx, l, a, de, para) {
+    const g = ctx.createLinearGradient(0, 0, 0, a);
+    g.addColorStop(0, de); g.addColorStop(1, para);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, l, a);
+  }
+  
+  function chao(ctx, l, a) {
+    ctx.fillStyle = ajustes.contraste ? '#0b6b2e' : '#4b7a48';
+    ctx.beginPath();
+    ctx.ellipse(l / 2, a + 40, l * 0.75, 90, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  function estrelas(ctx, l, a, t) {
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 40; i++) {
+      const x = (i * 97) % l;
+      const y = (i * 53) % (a * 0.6);
+      const brilho = ajustes.movimento ? 0.4 + Math.abs(Math.sin((t + i * 300) / 900)) * 0.6 : 0.7;
+      ctx.globalAlpha = brilho;
+      ctx.fillRect(x, y, 2, 2);
+    }
+    ctx.globalAlpha = 1;
+  }
+  
+  function desenharQuadro(ctx, id, l, a, t) {
+    ctx.clearRect(0, 0, l, a);
+    if (id === 'noite') {
+      ceu(ctx, l, a, '#0b1437', '#27407a');
+      estrelas(ctx, l, a, t);
+      chao(ctx, l, a);
+      arte.desenharCanteiro(ctx, l * 0.28, a - 60, 110);
+      arte.desenharMesa(ctx, l * 0.62, a - 70, 110);
+      arte.desenharPorta(ctx, l * 0.85, a - 110, 90);
+    } else if (id === 'vento') {
+      ceu(ctx, l, a, '#26304f', '#5b6f8f');
+      chao(ctx, l, a);
+      /* letras levadas pelo vento */
+      const letras = ['V', 'A', 'S', 'O', 'Á', 'G', 'U', 'A', 'F', 'L', 'O', 'R'];
+      ctx.font = 'bold 30px system-ui, sans-serif';
+      letras.forEach((c, i) => {
+        const desloc = ajustes.movimento ? Math.sin((t + i * 400) / 700) * 18 : 0;
+        ctx.fillStyle = `rgba(255,255,255,${0.35 + (i % 4) * 0.15})`;
+        ctx.fillText(c, 60 + i * 50, 120 + desloc + (i % 3) * 26);
+      });
+      arte.desenharCanteiro(ctx, l * 0.3, a - 60, 110);
+      arte.desenharMesa(ctx, l * 0.7, a - 70, 110);
+    } else if (id === 'nix') {
+      ceu(ctx, l, a, '#0b1437', '#1d3f6e');
+      estrelas(ctx, l, a, t);
+      chao(ctx, l, a);
+      arte.desenharNix(ctx, l / 2, a * 0.45, 150, t);
+    } else {
+      ceu(ctx, l, a, '#123b6b', '#3b7fb5');
+      chao(ctx, l, a);
+      arte.desenharNix(ctx, l * 0.34, a * 0.45, 110, t);
+      arte.desenharPersonagem(ctx, l * 0.62, a * 0.72, 120, estado.personagem, { direcao: 'esquerda' });
+      ctx.font = 'bold 26px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ['VASO', 'ÁGUA', 'FLOR'].forEach((p, i) => {
+        ctx.fillStyle = 'rgba(255,255,255,.92)';
+        ctx.fillText(p, l * 0.5 + (i - 1) * 130, 56);
+      });
+      ctx.textAlign = 'start';
+    }
+  }
+  
+  return { abrirAbertura, desenharQuadro };
+})();
+
+registro['personalizar'] = (() => {
+  /* Personalização do personagem: poucas escolhas, sempre visíveis,
+     com pré-visualização imediata. Nada é obrigatório — dá para pular. */
+  
+  const { PERSONALIZACAO } = registro['config'];
+  const { estado, salvar, definirCena } = registro['estado'];
+  const { anunciar } = registro['acessibilidade'];
+  const { som } = registro['som'];
+  const { legendar, botao } = registro['interface'];
+  const { desenharPersonagem } = registro['desenho'];
+  
+  const GRUPOS = [
+    { chave: 'pele', rotulo: 'Cor da pele', tipo: 'cor', opcoes: PERSONALIZACAO.pele },
+    { chave: 'cabelo', rotulo: 'Cor do cabelo', tipo: 'cor', opcoes: PERSONALIZACAO.cabelo },
+    { chave: 'penteado', rotulo: 'Cabelo', tipo: 'texto', opcoes: PERSONALIZACAO.penteado,
+      nomes: { curto: 'Curto', cacheado: 'Cacheado', trancas: 'Tranças', longo: 'Longo' } },
+    { chave: 'roupa', rotulo: 'Cor da roupa', tipo: 'cor', opcoes: PERSONALIZACAO.roupa },
+    { chave: 'acessorio', rotulo: 'Acessório', tipo: 'texto', opcoes: PERSONALIZACAO.acessorio,
+      nomes: { nenhum: 'Nenhum', oculos: 'Óculos', fone: 'Fone', lenco: 'Lenço' } }
+  ];
+  
+  function abrirPersonalizacao(container, aoTerminar) {
+    container.innerHTML = '';
+    container.hidden = false;
+  
+    const cena = document.createElement('section');
+    cena.className = 'cena cena-personalizar';
+    cena.innerHTML = `
+      <h1 class="cena-titulo">Quem vai entrar no jardim?</h1>
+      <div class="personalizar-grade">
+        <div class="previa">
+          <canvas id="previa-personagem" width="260" height="300" role="img"
+                  aria-label="Prévia do seu personagem"></canvas>
+          <label class="campo">
+            <span>Seu nome (opcional)</span>
+            <input id="nome-jogador" class="entrada" maxlength="${PERSONALIZACAO.nome.maximo}"
+                   autocomplete="off" placeholder="Digite seu nome">
+          </label>
+        </div>
+        <div class="opcoes" id="opcoes-personagem"></div>
+      </div>
+      <div class="acoes" id="acoes-personalizar"></div>`;
+    container.appendChild(cena);
+  
+    const tela = cena.querySelector('#previa-personagem');
+    const ctx = tela.getContext('2d');
+    const campoNome = cena.querySelector('#nome-jogador');
+    campoNome.value = estado.aluno.nome || '';
+    campoNome.addEventListener('input', () => {
+      estado.aluno.nome = campoNome.value.trim();
+      salvar();
+    });
+  
+    function redesenhar() {
+      ctx.clearRect(0, 0, tela.width, tela.height);
+      desenharPersonagem(ctx, tela.width / 2, tela.height * 0.72, 190, estado.personagem, { direcao: 'baixo' });
+    }
+  
+    const listaOpcoes = cena.querySelector('#opcoes-personagem');
+    GRUPOS.forEach((grupo) => {
+      const bloco = document.createElement('fieldset');
+      bloco.className = 'grupo';
+      const legendaEl = document.createElement('legend');
+      legendaEl.textContent = grupo.rotulo;
+      bloco.appendChild(legendaEl);
+  
+      const linha = document.createElement('div');
+      linha.className = 'linha-opcoes';
+      grupo.opcoes.forEach((valor, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'opcao ' + (grupo.tipo === 'cor' ? 'opcao-cor' : 'opcao-texto');
+        if (grupo.tipo === 'cor') {
+          b.style.background = valor;
+          b.setAttribute('aria-label', `${grupo.rotulo}, opção ${i + 1}`);
+        } else {
+          b.textContent = grupo.nomes?.[valor] || valor;
+        }
+        b.setAttribute('aria-pressed', String(estado.personagem[grupo.chave] === i));
+        b.addEventListener('click', () => {
+          estado.personagem[grupo.chave] = i;
+          salvar();
+          redesenhar();
+          som.abrir();
+          linha.querySelectorAll('button').forEach((o, j) =>
+            o.setAttribute('aria-pressed', String(j === i)));
+          anunciar(`${grupo.rotulo}: ${grupo.nomes?.[valor] || 'opção ' + (i + 1)}`, { narrar: false });
+        });
+        linha.appendChild(b);
+      });
+      bloco.appendChild(linha);
+      listaOpcoes.appendChild(bloco);
+    });
+  
+    const acoes = cena.querySelector('#acoes-personalizar');
+    acoes.appendChild(botao('Sortear', () => {
+      GRUPOS.forEach((g) => {
+        estado.personagem[g.chave] = Math.floor(Math.random() * g.opcoes.length);
+      });
+      salvar(); redesenhar(); som.guardar();
+      anunciar('Personagem sorteado.', { narrar: false });
+    }, 'secundario'));
+    acoes.appendChild(botao('Entrar no jardim', () => {
+      som.conquista();
+      container.hidden = true;
+      legendar('');
+      definirCena('mundo');
+      aoTerminar();
+    }));
+  
+    redesenhar();
+    legendar('Escolha como você quer ficar e entre no jardim.');
+    anunciar('Monte o seu personagem. Depois toque em entrar no jardim.');
+    acoes.querySelector('.botao.principal').focus();
+  }
+  
+  return { abrirPersonalizacao };
+})();
+
+registro['encerramento'] = (() => {
+  /* Encerramento previsto para o MVP: fecha a narrativa, mostra o que a criança
+     conquistou e oferece um caminho claro de saída (recomeçar ou encerrar). */
+  
+  const { PALAVRAS, TRILHA } = registro['config'];
+  const { estado, resumoPedagogico, definirCena, reiniciar } = registro['estado'];
+  const { anunciar } = registro['acessibilidade'];
+  const { som } = registro['som'];
+  const { legendar, libras, botao } = registro['interface'];
+  const { figuraEmCanvas, desenharVaso, desenharNix, desenharPersonagem } = registro['desenho'];
+  
+  function abrirEncerramento(container, aoReiniciar) {
+    definirCena('encerramento');
+    som.conquista();
+    container.innerHTML = '';
+    container.hidden = false;
+  
+    const nome = estado.aluno.nome ? `, ${estado.aluno.nome}` : '';
+    const cena = document.createElement('section');
+    cena.className = 'cena cena-encerramento';
+    cena.innerHTML = `
+      <h1 class="cena-titulo">O jardim voltou a ter nomes!</h1>
+      <canvas id="quadro-final" width="720" height="300" role="img"
+              aria-label="O jardim com o vaso, a água e a flor"></canvas>
+      <p class="cena-texto">Você trouxe de volta VASO, ÁGUA e FLOR${nome}.</p>
+      <div class="palavras-finais" id="palavras-finais"></div>
+      <div class="acoes" id="acoes-final"></div>`;
+    container.appendChild(cena);
+  
+    const tela = cena.querySelector('#quadro-final');
+    const ctx = tela.getContext('2d');
+    let animacao = 0;
+    (function laco(t) {
+      if (container.hidden) return cancelAnimationFrame(animacao);
+      ctx.clearRect(0, 0, tela.width, tela.height);
+      const g = ctx.createLinearGradient(0, 0, 0, tela.height);
+      g.addColorStop(0, '#8ec5e8'); g.addColorStop(1, '#cfe8b6');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, tela.width, tela.height);
+      desenharNix(ctx, 190, 150, 90, t);
+      desenharVaso(ctx, 360, 190, 130, { comAgua: true, comFlor: true });
+      desenharPersonagem(ctx, 540, 220, 120, estado.personagem, { direcao: 'esquerda' });
+      animacao = requestAnimationFrame(laco);
+    })(0);
+  
+    const lista = cena.querySelector('#palavras-finais');
+    const resumo = resumoPedagogico();
+    TRILHA.forEach(({ palavra }) => {
+      const p = PALAVRAS[palavra];
+      const item = document.createElement('div');
+      item.className = 'palavra-final';
+      item.appendChild(figuraEmCanvas(p.id, 90));
+      const t = document.createElement('span');
+      t.textContent = p.texto;
+      item.appendChild(t);
+      const dados = resumo.porPalavra[p.id];
+      const nota = document.createElement('small');
+      nota.textContent = dados.apoios > 0 ? 'com apoio do Nix' : 'sozinho(a)';
+      item.appendChild(nota);
+      lista.appendChild(item);
+    });
+  
+    const acoes = cena.querySelector('#acoes-final');
+    acoes.appendChild(botao('Jogar de novo', () => {
+      cancelAnimationFrame(animacao);
+      reiniciar();
+      container.hidden = true;
+      aoReiniciar();
+    }));
+    acoes.appendChild(botao('Encerrar', () => {
+      anunciar('Você pode fechar a janela ou chamar a professora.');
+      acoes.querySelectorAll('button').forEach((b) => { b.disabled = true; });
+      const fim = document.createElement('p');
+      fim.className = 'cena-texto';
+      fim.textContent = 'Até a próxima! Chame a professora ou o professor.';
+      acoes.after(fim);
+    }, 'secundario'));
+  
+    legendar('O jardim voltou a ter nomes. Você trouxe vaso, água e flor.');
+    libras(null, 'encerramento');
+    anunciar(`Parabéns${nome}! Você trouxe de volta as palavras vaso, água e flor.`);
+    acoes.querySelector('.botao.principal').focus();
+  }
+  
+  return { abrirEncerramento };
+})();
+
+registro['jogo'] = (() => {
+  /* Montagem do jogo: liga cenas, mundo, tarefas, mochila e ajustes. */
+  
+  const { JOGO, PALAVRAS, TRILHA, PERFIS } = registro['config'];
+  const { estado, aoMudar, definirCena, reiniciar, registrar, palavraLiberada, palavraAplicada, aplicarNoAmbiente, jogoCompleto, etapasFeitas, totalEtapas } = registro['estado'];
+  const { ajustes, aplicar, aplicarPerfil, definirAjuste, anunciar, regiao, falar } = registro['acessibilidade'];
+  const { som } = registro['som'];
+  const { prepararInterface, elementos, dialogo, abrirPainel, fecharPainel, painelAberto, botao, aviso, legendar } = registro['interface'];
+  const { iniciarMundo, bloquearJogador, irAte, moverPorBotao, OBJETOS, objetivoAtual, objetoEmFoco } = registro['mundo'];
+  const { abrirTarefa } = registro['tarefas'];
+  const { figuraEmCanvas } = registro['desenho'];
+  const { abrirAbertura } = registro['abertura'];
+  const { abrirPersonalizacao } = registro['personalizar'];
+  const { abrirEncerramento } = registro['encerramento'];
+  
+  const el = (sel) => document.querySelector(sel);
+  
+  function iniciar() {
+    prepararInterface();
+    regiao(el('#aviso-vivo'));
+    aplicar();
+    el('#titulo-jogo').textContent = JOGO.titulo;
+    el('#versao-jogo').textContent = JOGO.versao;
+  
+    ligarControles();
+    ligarAjustes();
+    aoMudar(atualizarHud);
+    atualizarHud();
+  
+    /* Retomada: quem já estava no jardim volta direto para onde parou. */
+    if (estado.iniciadoEm && !jogoCompleto()) {
+      entrarNoMundo({ retomando: true });
+    } else if (jogoCompleto()) {
+      entrarNoMundo({ retomando: true });
+    } else {
+      abrirAbertura(elementos.cenas, () => {
+        definirCena('personalizar');
+        abrirPersonalizacao(elementos.cenas, () => entrarNoMundo({}));
+      });
+    }
+  }
+  
+  /* ---------- mundo ---------- */
+  
+  function entrarNoMundo({ retomando = false }) {
+    elementos.cenas.hidden = true;
+    definirCena('mundo');
+    el('#palco').dataset.modo = 'mundo';
+    iniciarMundo(el('#tela'), { aoInteragir: interagir, aoAproximar: mostrarAlvoProximo });
+    atualizarHud();
+    if (retomando) {
+      aviso('Você voltou ao jardim.');
+    } else {
+      setTimeout(() => falarComNix(true), 500);
+    }
+  }
+  
+  function mostrarAlvoProximo(objeto) {
+    const dica = el('#alvo-proximo');
+    if (!objeto) { dica.textContent = ''; dica.hidden = true; return; }
+    dica.hidden = false;
+    dica.dataset.id = objeto.id;
+    dica.innerHTML = `<strong>${objeto.rotulo}</strong> — aperte <kbd>Enter</kbd> ou toque em <em>Interagir</em>`;
+  }
+  
+  async function interagir(objeto) {
+    if (painelAberto() || !elementos.dialogo.hidden) return;
+    bloquearJogador(true);
+    try {
+      switch (objeto.acao) {
+        case 'tarefa': return await interagirTarefa(objeto);
+        case 'aplicar': return await interagirMesa();
+        case 'falar': return await falarComNix();
+        case 'sair': return await interagirPorta();
+        case 'ler':
+          await dialogo('Placa de madeira: JARDIM DAS PALAVRAS.');
+          return;
+      }
+    } finally {
+      if (!painelAberto()) bloquearJogador(false);
+    }
+  }
+  
+  async function interagirTarefa(objeto) {
+    const id = objeto.alvo;
+    const palavra = PALAVRAS[id];
+  
+    if (palavraAplicada(id)) {
+      await dialogo(`${palavra.texto} já está no jardim. Muito bem!`);
+      return;
+    }
+    if (estado.mochila.includes(id)) {
+      await dialogo(`${palavra.texto} já está na sua mochila. Leve até a mesa do jardim.`,
+        [{ rotulo: 'Ir até a mesa', valor: 'mesa' }, { rotulo: 'Ficar aqui', valor: 'ficar' }])
+        .then((r) => { if (r === 'mesa') irAte('mesa'); });
+      return;
+    }
+    if (!palavraLiberada(id)) {
+      const falta = TRILHA.find((t) => t.palavra === id).requer.find((r) => !palavraAplicada(r));
+      await dialogo(`Ainda não. Primeiro precisamos de ${PALAVRAS[falta].texto}.`,
+        [{ rotulo: `Ir até ${PALAVRAS[falta].texto}`, valor: 'ir' }, { rotulo: 'Ficar aqui', valor: 'ficar' }])
+        .then((r) => {
+          if (r === 'ir') {
+            const destino = OBJETOS.find((o) => o.alvo === falta);
+            if (destino) irAte(destino.id);
+          }
+        });
+      return;
+    }
+  
+    bloquearJogador(true);
+    abrirTarefa(id, () => {
+      bloquearJogador(false);
+      atualizarHud();
+      setTimeout(() => aviso('Leve a palavra até a mesa do jardim.'), 1200);
+    });
+  }
+  
+  async function interagirMesa() {
+    if (!estado.mochila.length) {
+      const alvo = objetivoAtual();
+      const texto = jogoCompleto()
+        ? 'A mesa está completa. O portão do jardim já pode abrir.'
+        : `A mochila está vazia. Vá até ${alvo ? alvo.rotulo.toLowerCase() : 'o próximo lugar'}.`;
+      await dialogo(texto, [{ rotulo: alvo ? `Ir até ${alvo.rotulo}` : 'Continuar', valor: 'ir' },
+                            { rotulo: 'Ficar aqui', valor: 'ficar' }])
+        .then((r) => { if (r === 'ir' && alvo) irAte(alvo.id); });
+      return;
+    }
+  
+    const id = estado.mochila[0];
+    const palavra = PALAVRAS[id];
+    await dialogo(`Colocar ${palavra.artigo.toUpperCase()} ${palavra.texto} na mesa do jardim?`,
+      [{ rotulo: 'Sim, colocar', valor: 'sim' }, { rotulo: 'Agora não', valor: 'nao' }])
+      .then(async (r) => {
+        if (r !== 'sim') return;
+        aplicarNoAmbiente(id);
+        registrar('aplicou-no-ambiente', { palavra: id });
+        som.conquista();
+        aviso(`${palavra.texto} está no jardim!`);
+        atualizarHud();
+  
+        if (jogoCompleto()) {
+          await dialogo('As três palavras voltaram! O portão do jardim está aberto.',
+            [{ rotulo: 'Ir até o portão', valor: 'ir' }, { rotulo: 'Ficar mais um pouco', valor: 'ficar' }])
+            .then((res) => { if (res === 'ir') irAte('porta', true); });
+        } else {
+          const proximo = objetivoAtual();
+          await dialogo(`${palavra.frase} Agora vamos buscar a próxima palavra.`,
+            [{ rotulo: proximo ? `Ir até ${proximo.rotulo}` : 'Continuar', valor: 'ir' },
+             { rotulo: 'Explorar sozinho', valor: 'ficar' }])
+            .then((res) => { if (res === 'ir' && proximo) irAte(proximo.id); });
+        }
+      });
+  }
+  
+  async function falarComNix(primeiraVez = false) {
+    const alvo = objetivoAtual();
+    let fala;
+    if (primeiraVez) {
+      fala = 'Oi! Eu sou o Nix. O vento levou três palavras do jardim: VASO, ÁGUA e FLOR. Vamos trazer de volta?';
+    } else if (jogoCompleto()) {
+      fala = 'Conseguimos! Agora é só ir até o portão do jardim.';
+    } else if (estado.mochila.length) {
+      const p = PALAVRAS[estado.mochila[0]];
+      fala = `${p.texto} está na sua mochila. Leve até a mesa do jardim.`;
+    } else if (alvo) {
+      fala = `A próxima palavra está ${alvo.rotulo === 'Prateleira' ? 'na' : 'n' + (alvo.rotulo === 'Torneira' ? 'a' : 'o')} ${alvo.rotulo.toLowerCase()}. ${alvo.dica}`;
+    } else {
+      fala = 'Vamos explorar o jardim.';
+    }
+    const opcoes = [{ rotulo: 'Entendi', valor: 'ok' }];
+    if (alvo) opcoes.unshift({ rotulo: `Me leve até ${alvo.rotulo}`, valor: 'ir' });
+    const r = await dialogo(fala, opcoes, { descricaoLibras: fala });
+    if (r === 'ir' && alvo) irAte(alvo.id);
+  }
+  
+  async function interagirPorta() {
+    if (!jogoCompleto()) {
+      const faltam = TRILHA.filter((t) => !palavraAplicada(t.palavra))
+        .map((t) => PALAVRAS[t.palavra].texto).join(' e ');
+      await dialogo(`O portão abre quando as palavras voltarem. Ainda falta: ${faltam}.`);
+      return;
+    }
+    const r = await dialogo('Quer encerrar a aventura de hoje?',
+      [{ rotulo: 'Sim, encerrar', valor: 'sim' }, { rotulo: 'Ficar no jardim', valor: 'nao' }]);
+    if (r === 'sim') {
+      registrar('encerramento', {});
+      bloquearJogador(true);
+      abrirEncerramento(elementos.cenas, () => { location.reload(); });
+    }
+  }
+  
+  /* ---------- HUD: mochila, progresso, objetivo ---------- */
+  
+  function atualizarHud() {
+    const mochila = el('#mochila-itens');
+    if (mochila) {
+      mochila.innerHTML = '';
+      if (!estado.mochila.length) {
+        const vazio = document.createElement('li');
+        vazio.className = 'mochila-vazia';
+        vazio.textContent = 'vazia';
+        mochila.appendChild(vazio);
+      }
+      estado.mochila.forEach((id) => {
+        const item = document.createElement('li');
+        item.className = 'mochila-item';
+        item.title = PALAVRAS[id].texto;
+        item.appendChild(figuraEmCanvas(id, 46));
+        const nome = document.createElement('span');
+        nome.textContent = PALAVRAS[id].texto;
+        item.appendChild(nome);
+        mochila.appendChild(item);
+      });
+    }
+  
+    const feitas = etapasFeitas(), total = totalEtapas();
+    const barra = el('#barra-progresso');
+    if (barra) {
+      barra.style.width = Math.round((feitas / total) * 100) + '%';
+      el('#progresso').setAttribute('aria-valuenow', String(feitas));
+      el('#progresso').setAttribute('aria-valuemax', String(total));
+      el('#progresso-texto').textContent = `${feitas} de ${total}`;
+    }
+  
+    const lista = el('#palavras-hud');
+    if (lista) {
+      lista.innerHTML = '';
+      TRILHA.forEach(({ palavra }) => {
+        const li = document.createElement('li');
+        const estadoPalavra = palavraAplicada(palavra) ? 'feita'
+          : palavraLiberada(palavra) ? 'aberta' : 'bloqueada';
+        li.className = 'palavra-hud ' + estadoPalavra;
+        li.innerHTML = `<span aria-hidden="true">${estadoPalavra === 'feita' ? '✓' : estadoPalavra === 'aberta' ? '●' : '🔒'}</span> ${PALAVRAS[palavra].texto}`;
+        li.setAttribute('aria-label',
+          `${PALAVRAS[palavra].texto}: ${estadoPalavra === 'feita' ? 'concluída' : estadoPalavra === 'aberta' ? 'disponível' : 'bloqueada'}`);
+        lista.appendChild(li);
+      });
+    }
+  
+    const alvo = objetivoAtual();
+    const objetivo = el('#objetivo');
+    if (objetivo) objetivo.textContent = alvo ? `Objetivo: ${alvo.rotulo}` : 'Objetivo: explorar o jardim';
+  }
+  
+  /* ---------- controles ---------- */
+  
+  function ligarControles() {
+    ['cima', 'baixo', 'esquerda', 'direita'].forEach((dir) => {
+      const b = el(`#dpad-${dir}`);
+      if (!b) return;
+      const liga = (e) => { e.preventDefault(); moverPorBotao(dir, true); };
+      const desliga = () => moverPorBotao(dir, false);
+      b.addEventListener('pointerdown', liga);
+      b.addEventListener('pointerup', desliga);
+      b.addEventListener('pointerleave', desliga);
+      b.addEventListener('pointercancel', desliga);
+    });
+  
+    el('#btn-interagir')?.addEventListener('click', () => {
+      /* interage com o que está perto; sem nada por perto, caminha até o objetivo */
+      const perto = objetoEmFoco();
+      if (perto) return interagir(perto);
+      const alvo = objetivoAtual();
+      if (alvo) irAte(alvo.id, true);
+      else aviso('Chegue mais perto de alguma coisa do jardim.');
+    });
+  
+    el('#btn-dica')?.addEventListener('click', () => falarComNix());
+    el('#btn-ir')?.addEventListener('click', abrirIrAte);
+    el('#painel-fechar')?.addEventListener('click', () => { fecharPainel(); bloquearJogador(false); });
+  
+    el('#btn-recomecar')?.addEventListener('click', async () => {
+      const r = await dialogo('Quer começar tudo de novo? O progresso de hoje será apagado.',
+        [{ rotulo: 'Não', valor: 'nao' }, { rotulo: 'Sim, recomeçar', valor: 'sim' }]);
+      if (r === 'sim') { reiniciar(); location.reload(); }
+    });
+  
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (painelAberto()) { fecharPainel(); bloquearJogador(false); }
+        else if (!el('#modal-ajustes').hidden) fecharAjustes();
+      }
+    });
+  }
+  
+  /* Lista "Ir até": alternativa acessível ao uso das setas. */
+  function abrirIrAte() {
+    const corpo = abrirPainel('Ir até...', { rotuloFechar: 'Fechar', aoFechar: () => bloquearJogador(false) });
+    bloquearJogador(true);
+    const lista = document.createElement('div');
+    lista.className = 'lista-lugares';
+    OBJETOS.filter((o) => o.id !== 'placa').forEach((o) => {
+      const b = botao(o.rotulo, () => {
+        fecharPainel();
+        bloquearJogador(false);
+        irAte(o.id, true);
+      }, 'secundario');
+      b.title = o.dica;
+      lista.appendChild(b);
+    });
+    corpo.appendChild(lista);
+    legendar('Escolha um lugar do jardim.');
+    anunciar('Escolha para onde ir.');
+    lista.querySelector('button').focus();
+  }
+  
+  /* ---------- ajustes de acessibilidade ---------- */
+  
+  const INTERRUPTORES = [
+    { chave: 'som', rotulo: 'Sons do jogo' },
+    { chave: 'voz', rotulo: 'Narração em voz' },
+    { chave: 'legenda', rotulo: 'Legendas' },
+    { chave: 'libras', rotulo: 'Janela de Libras' },
+    { chave: 'movimento', rotulo: 'Animações' },
+    { chave: 'contraste', rotulo: 'Alto contraste' },
+    { chave: 'textoGrande', rotulo: 'Texto grande' }
+  ];
+  
+  function ligarAjustes() {
+    el('#btn-ajustes')?.addEventListener('click', abrirAjustes);
+    el('#ajustes-fechar')?.addEventListener('click', fecharAjustes);
+    montarAjustes();
+  }
+  
+  function montarAjustes() {
+    const perfis = el('#lista-perfis');
+    perfis.innerHTML = '';
+    Object.entries(PERFIS).forEach(([id, perfil]) => {
+      const b = document.createElement('button');
+      b.className = 'perfil' + (ajustes.perfil === id ? ' ativo' : '');
+      b.innerHTML = `<strong>${perfil.rotulo}</strong><small>${perfil.descricao}</small>`;
+      b.setAttribute('aria-pressed', String(ajustes.perfil === id));
+      b.addEventListener('click', () => {
+        aplicarPerfil(id);
+        montarAjustes();
+        anunciar(`Perfil ${perfil.rotulo} ativado.`, { narrar: false });
+      });
+      perfis.appendChild(b);
+    });
+  
+    const lista = el('#lista-ajustes');
+    lista.innerHTML = '';
+    INTERRUPTORES.forEach(({ chave, rotulo }) => {
+      const linha = document.createElement('label');
+      linha.className = 'interruptor';
+      const entrada = document.createElement('input');
+      entrada.type = 'checkbox';
+      entrada.checked = !!ajustes[chave];
+      entrada.addEventListener('change', () => {
+        definirAjuste(chave, entrada.checked);
+        el('#lista-perfis').querySelectorAll('.perfil').forEach((p) => p.classList.remove('ativo'));
+      });
+      const texto = document.createElement('span');
+      texto.textContent = rotulo;
+      linha.append(entrada, texto);
+      lista.appendChild(linha);
+    });
+  }
+  
+  function abrirAjustes() {
+    montarAjustes();
+    el('#modal-ajustes').hidden = false;
+    bloquearJogador(true);
+    el('#ajustes-fechar').focus();
+  }
+  
+  function fecharAjustes() {
+    el('#modal-ajustes').hidden = true;
+    if (!painelAberto()) bloquearJogador(false);
+  }
+  
+  return { iniciar };
+})();
+registro['jogo'].iniciar();
+</script>
+</body>
+</html>
