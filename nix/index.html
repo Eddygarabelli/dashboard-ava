@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-contraste="normal" data-movimento="normal" data-texto="normal"
+      data-legenda="sim" data-libras="nao">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nix: O Código das Palavras</title>
+<meta name="description" content="Jogo educacional de alfabetização com acessibilidade — MVP.">
+<link rel="stylesheet" href="css/nix.css">
+</head>
+<body>
+
+<!-- avisos para leitores de tela -->
+<p id="aviso-vivo" class="sr" aria-live="polite" role="status"></p>
+
+<header class="topo">
+  <div class="marca">
+    <h1 id="titulo-jogo">Nix: O Código das Palavras</h1>
+    <small id="versao-jogo">MVP</small>
+  </div>
+  <button id="btn-ajustes" class="botao secundario">⚙️ Acessibilidade</button>
+  <button id="btn-recomecar" class="botao secundario">↺ Recomeçar</button>
+  <a class="botao secundario" href="professor.html">👩‍🏫 Professor</a>
+</header>
+
+<main>
+  <div id="palco" class="palco">
+    <div class="tela-caixa">
+      <canvas id="tela" width="960" height="576" aria-label="Jardim do jogo" role="img"></canvas>
+      <aside id="libras" class="libras" hidden aria-label="Janela de Libras"></aside>
+    </div>
+    <p id="legenda" class="legenda" hidden></p>
+
+    <div id="dialogo" class="dialogo" role="dialog" aria-live="polite" hidden>
+      <p id="dialogo-texto"></p>
+      <div id="dialogo-botoes" class="dialogo-botoes"></div>
+    </div>
+  </div>
+
+  <p id="alvo-proximo" class="alvo-proximo palco" hidden></p>
+
+  <div class="controles">
+    <div class="dpad" role="group" aria-label="Mover o personagem">
+      <button id="dpad-cima" aria-label="Andar para cima">▲</button>
+      <button id="dpad-esquerda" aria-label="Andar para a esquerda">◀</button>
+      <span class="miolo" aria-hidden="true">mover</span>
+      <button id="dpad-direita" aria-label="Andar para a direita">▶</button>
+      <button id="dpad-baixo" aria-label="Andar para baixo">▼</button>
+    </div>
+    <div class="acoes-jogo">
+      <button id="btn-interagir" class="botao principal">👉 Interagir</button>
+      <button id="btn-ir" class="botao secundario">🧭 Ir até…</button>
+      <button id="btn-dica" class="botao secundario">💡 Falar com Nix</button>
+    </div>
+  </div>
+
+  <section class="hud" aria-label="Seu progresso">
+    <div class="bloco">
+      <h2>Mochila</h2>
+      <ul id="mochila-itens" class="mochila-itens"></ul>
+    </div>
+    <div class="bloco">
+      <h2>Palavras</h2>
+      <ul id="palavras-hud" class="palavras-hud"></ul>
+    </div>
+    <div class="bloco">
+      <h2 id="objetivo">Objetivo</h2>
+      <div id="progresso" class="progresso" role="progressbar" aria-valuemin="0" aria-valuenow="0" aria-valuemax="12">
+        <i id="barra-progresso" style="width:0%"></i>
+      </div>
+      <p id="progresso-texto" class="progresso-texto">0 de 12</p>
+    </div>
+  </section>
+</main>
+
+<!-- painel das tarefas pedagógicas -->
+<div id="painel" class="painel" role="dialog" aria-modal="true" aria-labelledby="painel-titulo" hidden>
+  <div class="painel-caixa">
+    <div class="painel-topo">
+      <h2 id="painel-titulo" tabindex="-1">Tarefa</h2>
+      <button id="painel-fechar" class="botao secundario pequeno">Voltar ao jardim</button>
+    </div>
+    <div id="painel-corpo"></div>
+  </div>
+</div>
+
+<!-- cenas de tela cheia: abertura, personalização e encerramento -->
+<div id="camada-cenas" class="camada-cenas" hidden></div>
+
+<!-- ajustes de acessibilidade -->
+<div id="modal-ajustes" class="modal" role="dialog" aria-modal="true" aria-labelledby="ajustes-titulo" hidden>
+  <div class="modal-caixa">
+    <h2 id="ajustes-titulo">Acessibilidade</h2>
+    <p class="ajuda">Escolha um perfil ou ajuste cada recurso separadamente.
+       As escolhas ficam salvas neste computador.</p>
+    <div id="lista-perfis" class="perfis"></div>
+    <div id="lista-ajustes" class="ajustes-lista"></div>
+    <div class="acoes">
+      <button id="ajustes-fechar" class="botao principal">Pronto</button>
+    </div>
+  </div>
+</div>
+
+<p class="rodape">
+  Material de pesquisa · uso educacional. Teclas: setas ou WASD para andar, Enter para interagir, Esc para fechar.
+</p>
+
+<script type="module">
+  import { iniciar } from './js/jogo.js';
+  iniciar();
+</script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-contraste="normal" data-movimento="normal" data-texto="normal">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nix · Painel do professor</title>
+<link rel="stylesheet" href="css/nix.css">
+<style>
+  .conteudo{ max-width:1000px; margin:20px auto; padding:0 14px; display:grid; gap:18px; }
+  table{ width:100%; border-collapse:collapse; font-size:.92rem; }
+  th,td{ padding:9px 10px; border-bottom:1px solid var(--borda); text-align:left; }
+  th{ background:#f6f8fd; color:var(--texto-suave); font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; }
+  .marcador{ display:inline-block; padding:.15em .6em; border-radius:999px; font-weight:700; font-size:.8rem; }
+  .marcador.ok{ background:#dcfce7; color:#14532d; }
+  .marcador.parcial{ background:#fff7cc; color:#713f12; }
+  .vazio{ color:var(--texto-suave); font-style:italic; padding:18px 0; }
+  .linha-form{ display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
+  .linha-form .campo{ min-width:220px; }
+  @media print{ .topo,.acoes,.linha-form,.botao{ display:none !important; } }
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <div class="marca">
+    <h1>Nix · Painel do professor</h1>
+    <small>registro pedagógico do MVP</small>
+  </div>
+  <a class="botao secundario" href="index.html">🎮 Abrir o jogo</a>
+  <a class="botao secundario" href="../index.html">← Voltar ao AVA</a>
+</header>
+
+<main class="conteudo">
+
+  <section class="bloco">
+    <h2>Antes de começar a sessão</h2>
+    <div class="linha-form">
+      <label class="campo">
+        <span>Aluno (da lista do AVA, quando disponível)</span>
+        <select id="aluno-select" class="entrada"><option value="">— carregando —</option></select>
+      </label>
+      <label class="campo">
+        <span>Ou digite o nome</span>
+        <input id="aluno-nome" class="entrada" placeholder="Nome do aluno" autocomplete="off">
+      </label>
+      <button id="btn-preparar" class="botao principal">Preparar sessão e abrir o jogo</button>
+    </div>
+    <p class="progresso-texto" id="aviso-preparo"></p>
+  </section>
+
+  <section class="bloco">
+    <h2>Sessões registradas neste computador</h2>
+    <div class="acoes" style="justify-content:flex-start">
+      <button id="btn-csv" class="botao secundario">⬇️ Exportar CSV</button>
+      <button id="btn-imprimir" class="botao secundario">🖨️ Imprimir</button>
+      <button id="btn-limpar" class="botao secundario">🗑️ Apagar registros</button>
+    </div>
+    <div id="tabela"></div>
+    <p class="progresso-texto">
+      Os dados ficam apenas neste navegador (localStorage). Nenhuma informação é enviada para fora do computador.
+    </p>
+  </section>
+
+  <section class="bloco">
+    <h2>Como o jogo apoia a criança</h2>
+    <ul>
+      <li>Sem tempo e sem pontuação punitiva: o erro abre a <strong>recuperação pedagógica</strong>.</li>
+      <li>Após 2 tentativas na mesma etapa, o Nix retoma a palavra por partes e reduz as alternativas.</li>
+      <li>Cada palavra tem 3 etapas (figura → sílabas → letras) e só depois vai para a mochila.</li>
+      <li>ÁGUA só abre depois de VASO; FLOR só abre depois de VASO e ÁGUA.</li>
+      <li>Perfis de acessibilidade: padrão, visual/Libras, baixo estímulo e baixa visão.</li>
+    </ul>
+  </section>
+</main>
+
+<script type="module">
+import { CHAVES, PALAVRAS } from './js/config.js';
+
+const el = (s) => document.querySelector(s);
+
+/* ---------- lista de alunos do AVA (opcional) ---------- */
+const select = el('#aluno-select');
+try {
+  const { supabase } = await import('../js/supabaseClient.js');
+  const { data, error } = await supabase.from('alunos').select('id,nome').order('nome');
+  if (error) throw error;
+  select.innerHTML = '<option value="">— selecionar —</option>' +
+    (data || []).map((a) => `<option value="${a.id}">${a.nome}</option>`).join('');
+} catch {
+  select.innerHTML = '<option value="">— lista do AVA indisponível —</option>';
+  select.disabled = true;
+}
+
+el('#btn-preparar').addEventListener('click', () => {
+  const opcao = select.options[select.selectedIndex];
+  const nome = el('#aluno-nome').value.trim() || (opcao && opcao.value ? opcao.text : '');
+  const id = opcao && opcao.value ? opcao.value : null;
+  if (!nome) { el('#aviso-preparo').textContent = 'Escolha um aluno ou digite um nome.'; return; }
+  let sessao = {};
+  try { sessao = JSON.parse(localStorage.getItem(CHAVES.sessao) || '{}'); } catch {}
+  sessao.aluno = { id, nome };
+  localStorage.setItem(CHAVES.sessao, JSON.stringify(sessao));
+  location.href = 'index.html';
+});
+
+/* ---------- relatórios ---------- */
+function carregar() {
+  try { return JSON.parse(localStorage.getItem(CHAVES.relatorios) || '[]'); } catch { return []; }
+}
+
+function duracao(r) {
+  const min = Math.max(1, Math.round((r.fim - r.inicio) / 60000));
+  return min + ' min';
+}
+
+function render() {
+  const dados = carregar().sort((a, b) => b.inicio - a.inicio);
+  const alvo = el('#tabela');
+  if (!dados.length) {
+    alvo.innerHTML = '<p class="vazio">Nenhuma sessão registrada ainda.</p>';
+    return;
+  }
+  const ids = Object.keys(PALAVRAS);
+  alvo.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Aluno</th><th>Data</th><th>Duração</th>
+        ${ids.map((i) => `<th>${PALAVRAS[i].texto}</th>`).join('')}
+        <th>Acertos</th><th>Erros</th><th>Apoios</th><th>Situação</th>
+      </tr></thead>
+      <tbody>${dados.map((r) => linha(r, ids)).join('')}</tbody>
+    </table>`;
+}
+
+function linha(r, ids) {
+  const s = r.resumo || { porPalavra: {}, completo: false };
+  const soma = (campo) => ids.reduce((t, i) => t + (s.porPalavra[i]?.[campo] || 0), 0);
+  return `<tr>
+    <td>${r.aluno?.nome || '(sem nome)'}</td>
+    <td>${new Date(r.inicio).toLocaleString('pt-BR')}</td>
+    <td>${duracao(r)}</td>
+    ${ids.map((i) => {
+      const p = s.porPalavra[i] || {};
+      return `<td>${p.concluida ? '✓' : '—'}${p.apoios ? ` <small>(apoio ${p.apoios}×)</small>` : ''}</td>`;
+    }).join('')}
+    <td>${soma('acertos')}</td>
+    <td>${soma('erros')}</td>
+    <td>${soma('apoios')}</td>
+    <td><span class="marcador ${s.completo ? 'ok' : 'parcial'}">${s.completo ? 'concluiu' : 'em andamento'}</span></td>
+  </tr>`;
+}
+
+el('#btn-csv').addEventListener('click', () => {
+  const ids = Object.keys(PALAVRAS);
+  const cabecalho = ['aluno', 'inicio', 'duracao_min', ...ids.map((i) => 'concluiu_' + i),
+    'acertos', 'erros', 'apoios', 'completo'];
+  const linhas = carregar().map((r) => {
+    const s = r.resumo || { porPalavra: {} };
+    const soma = (c) => ids.reduce((t, i) => t + (s.porPalavra[i]?.[c] || 0), 0);
+    return [
+      r.aluno?.nome || '', new Date(r.inicio).toLocaleString('pt-BR'),
+      Math.max(1, Math.round((r.fim - r.inicio) / 60000)),
+      ...ids.map((i) => (s.porPalavra[i]?.concluida ? 'sim' : 'nao')),
+      soma('acertos'), soma('erros'), soma('apoios'), s.completo ? 'sim' : 'nao'
+    ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(';');
+  });
+  const csv = '﻿' + [cabecalho.join(';'), ...linhas].join('\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'nix-relatorio.csv'; a.click();
+  URL.revokeObjectURL(url);
+});
+
+el('#btn-imprimir').addEventListener('click', () => window.print());
+el('#btn-limpar').addEventListener('click', () => {
+  if (confirm('Apagar todos os registros deste computador?')) {
+    localStorage.removeItem(CHAVES.relatorios);
+    render();
+  }
+});
+
+render();
+</script>
+</body>
+</html>

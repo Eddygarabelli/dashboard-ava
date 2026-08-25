@@ -23,3 +23,9 @@
 - **Novo Aluno** (card verde) → Cadastro → grava em `alunos`.
 - **Cursos** → **Novo Curso** → crie Anos > Componentes > Disciplinas → Salvar.
 - Após salvar → **Matrículas por Disciplina**: escolha o **Ano**, marque checkboxes e **Salvar**.
+
+## Educação Especial — Nix: O Código das Palavras
+Jogo educacional 2D de alfabetização acessível (surdos, autistas, ouvintes),
+estático como o resto do AVA. Abre pelo botão **🌱 Educação Especial** no
+cabeçalho ou direto em `/nix/`. Painel do professor em `/nix/professor.html`.
+Documentação: [`nix/README.md`](nix/README.md).

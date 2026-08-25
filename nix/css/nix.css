@@ -1,0 +1,344 @@
+/* Nix: O Código das Palavras — estilos do MVP.
+   Os ajustes de acessibilidade chegam como data-* no <html>:
+   data-contraste, data-movimento, data-texto, data-legenda, data-libras. */
+
+:root{
+  --azul:#1d1ed8;
+  --azul-escuro:#141a8f;
+  --verde:#16a34a;
+  --amarelo:#ffd60a;
+  --rosa:#e05c8a;
+  --texto:#0f172a;
+  --texto-suave:#475569;
+  --fundo:#eef3fb;
+  --cartao:#ffffff;
+  --borda:#d7e0ef;
+  --sombra:0 10px 30px rgba(15,23,42,.10);
+  --raio:18px;
+  --base:17px;
+}
+
+html[data-texto="grande"]{ --base:21px; }
+
+html[data-contraste="alto"]{
+  --azul:#0000cc; --azul-escuro:#000080; --verde:#006400; --rosa:#a3004c;
+  --texto:#000000; --texto-suave:#111111; --fundo:#ffffff; --cartao:#ffffff;
+  --borda:#000000; --sombra:none;
+}
+
+*{ box-sizing:border-box; }
+/* display:grid nas camadas sobrepõe o padrão de [hidden] — reforçamos aqui */
+[hidden]{ display:none !important; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,'Segoe UI',Roboto,Ubuntu,'Helvetica Neue',Arial,sans-serif;
+  font-size:var(--base);
+  color:var(--texto);
+  background:var(--fundo);
+}
+html[data-contraste="alto"] body{ background:#fff; }
+
+html[data-movimento="reduzido"] *{
+  animation-duration:.001ms !important;
+  animation-iteration-count:1 !important;
+  transition-duration:.001ms !important;
+}
+
+.sr{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+
+/* ---------- topo ---------- */
+.topo{
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  padding:10px 16px; background:var(--cartao);
+  border-bottom:2px solid var(--borda);
+}
+.marca{ display:flex; align-items:baseline; gap:8px; margin-right:auto; }
+.marca h1{ font-size:1.05rem; margin:0; color:var(--azul-escuro); }
+.marca small{ color:var(--texto-suave); font-size:.75rem; }
+
+.botao{
+  font:inherit; font-weight:700; cursor:pointer;
+  border:2px solid transparent; border-radius:999px;
+  padding:.6em 1.2em; min-height:44px;
+  transition:transform .15s, box-shadow .15s, background .15s;
+}
+.botao:focus-visible{ outline:4px solid var(--amarelo); outline-offset:3px; }
+.botao:hover{ transform:translateY(-1px); }
+.botao.principal{ background:var(--azul); color:#fff; box-shadow:0 6px 14px rgba(29,30,216,.28); }
+.botao.principal:hover{ background:var(--azul-escuro); }
+.botao.secundario{ background:#e6ecf8; color:var(--azul-escuro); border-color:var(--borda); }
+.botao.pequeno{ padding:.35em .9em; min-height:36px; font-size:.85em; }
+html[data-contraste="alto"] .botao{ border-color:#000; box-shadow:none; }
+
+/* ---------- palco ---------- */
+.palco{
+  position:relative; max-width:1000px; margin:14px auto; padding:0 12px;
+}
+.tela-caixa{ position:relative; }
+#tela{
+  width:100%; height:auto; display:block;
+  border-radius:var(--raio); border:3px solid var(--borda);
+  background:#7fb069; box-shadow:var(--sombra);
+  touch-action:none;
+}
+
+.alvo-proximo{
+  margin:8px 0 0; padding:8px 14px; border-radius:12px;
+  background:var(--cartao); border:2px solid var(--borda);
+  color:var(--texto-suave); font-size:.9em;
+}
+.alvo-proximo strong{ color:var(--azul-escuro); }
+kbd{
+  font:inherit; font-size:.85em; background:#e6ecf8; border:1px solid var(--borda);
+  border-bottom-width:3px; border-radius:6px; padding:1px 7px;
+}
+
+/* Legenda logo abaixo do jardim: fica sempre legível e nunca cobre o
+   personagem nem os objetos — occlusão é problema de acessibilidade. */
+.legenda{
+  display:block; margin:10px auto 0; max-width:min(100%,860px);
+  background:rgba(15,23,42,.92); color:#fff;
+  padding:.55em 1em; border-radius:12px; font-size:1.05em; text-align:center;
+  line-height:1.35; pointer-events:none;
+}
+html[data-contraste="alto"] .legenda{ background:#000; border:3px solid #fff; }
+html[data-legenda="nao"] .legenda{ display:none; }
+
+/* Janela de Libras: fica acima de tudo, inclusive do painel de tarefas —
+   para quem depende dela, ela nunca pode ficar escondida. */
+.libras{
+  position:fixed; right:18px; top:84px; width:190px;
+  background:var(--cartao); border:3px solid var(--azul);
+  border-radius:14px; padding:8px; box-shadow:var(--sombra); z-index:25;
+}
+.libras video{ width:100%; border-radius:8px; display:block; }
+.libras-titulo{ margin:0 0 6px; font-size:.75em; font-weight:700; color:var(--azul-escuro);
+  text-transform:uppercase; letter-spacing:.06em; }
+.reservado{
+  display:grid; place-items:center; gap:6px; padding:14px 8px;
+  background:#f1f5fb; border:2px dashed var(--azul); border-radius:8px;
+  text-align:center; color:var(--texto-suave);
+}
+.reservado span{ font-size:1.8rem; }
+.reservado small{ font-size:.7rem; line-height:1.25; }
+
+/* ---------- controles ---------- */
+.controles{
+  display:flex; align-items:center; justify-content:center; gap:22px;
+  flex-wrap:wrap; margin:14px auto; max-width:1000px; padding:0 12px;
+}
+.dpad{ display:grid; grid-template-columns:repeat(3,56px); grid-template-rows:repeat(3,56px); gap:6px; }
+.dpad button{
+  font-size:1.4rem; border-radius:14px; border:2px solid var(--borda);
+  background:var(--cartao); cursor:pointer; touch-action:none;
+}
+.dpad button:active{ background:var(--amarelo); }
+.dpad button:focus-visible{ outline:4px solid var(--amarelo); outline-offset:2px; }
+#dpad-cima{ grid-area:1/2; } #dpad-esquerda{ grid-area:2/1; }
+#dpad-direita{ grid-area:2/3; } #dpad-baixo{ grid-area:3/2; }
+.dpad .miolo{ grid-area:2/2; display:grid; place-items:center; color:var(--texto-suave); font-size:.7rem; }
+.acoes-jogo{ display:flex; flex-direction:column; gap:10px; }
+
+/* ---------- HUD ---------- */
+.hud{
+  max-width:1000px; margin:0 auto 24px; padding:0 12px;
+  display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+}
+.bloco{
+  background:var(--cartao); border:2px solid var(--borda);
+  border-radius:var(--raio); padding:12px 14px;
+}
+.bloco h2{ margin:0 0 8px; font-size:.85rem; text-transform:uppercase;
+  letter-spacing:.06em; color:var(--texto-suave); }
+.mochila-itens{ list-style:none; margin:0; padding:0; display:flex; gap:12px; flex-wrap:wrap; }
+.mochila-item{ display:grid; justify-items:center; gap:2px; font-size:.8rem; font-weight:700; }
+.mochila-item canvas{ background:#f6f8fd; border-radius:10px; border:2px solid var(--borda); }
+.mochila-vazia{ color:var(--texto-suave); font-style:italic; }
+
+.progresso{ height:16px; background:#e6ecf8; border-radius:999px; overflow:hidden; border:2px solid var(--borda); }
+.progresso i{ display:block; height:100%; background:linear-gradient(90deg,var(--azul),var(--verde)); }
+html[data-contraste="alto"] .progresso i{ background:#000; }
+.progresso-texto{ font-size:.85rem; color:var(--texto-suave); margin:6px 0 0; }
+
+.palavras-hud{ list-style:none; margin:0; padding:0; display:flex; gap:10px; flex-wrap:wrap; }
+.palavra-hud{ font-weight:700; padding:.3em .8em; border-radius:999px; border:2px solid var(--borda); }
+.palavra-hud.feita{ background:#dcfce7; border-color:var(--verde); color:#14532d; }
+.palavra-hud.aberta{ background:#fff7cc; border-color:#eab308; }
+.palavra-hud.bloqueada{ background:#f1f5f9; color:var(--texto-suave); }
+
+/* ---------- diálogo ----------
+   Fica abaixo do palco, em fluxo normal: assim a fala do Nix nunca cobre
+   o personagem nem os objetos do jardim. */
+.dialogo{
+  margin:10px auto 0; width:min(100%,860px); background:var(--cartao);
+  border:3px solid var(--azul); border-radius:var(--raio);
+  padding:16px 18px; box-shadow:var(--sombra); z-index:8;
+}
+.dialogo p{ margin:0 0 12px; font-size:1.1em; line-height:1.45; }
+.dialogo-botoes{ display:flex; gap:10px; flex-wrap:wrap; }
+
+/* ---------- painel de tarefa ---------- */
+.painel{
+  position:fixed; inset:0; z-index:20;
+  background:rgba(15,23,42,.55);
+  display:grid; place-items:center; padding:16px;
+}
+html[data-contraste="alto"] .painel{ background:rgba(0,0,0,.8); }
+.painel-caixa{
+  background:var(--cartao); border-radius:24px; border:3px solid var(--azul);
+  width:min(100%,860px); max-height:92vh; overflow:auto; padding:20px 22px 24px;
+  box-shadow:var(--sombra);
+}
+.painel-topo{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.painel-topo h2{ margin:0; font-size:1.3rem; color:var(--azul-escuro); }
+
+.instrucao{ font-size:1.15em; line-height:1.45; margin:10px 0; }
+.acoes{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:18px; }
+
+.passos{ display:flex; gap:8px; margin-bottom:6px; }
+.passo{
+  width:34px; height:34px; display:grid; place-items:center; border-radius:50%;
+  border:2px solid var(--borda); font-weight:800; color:var(--texto-suave); background:#f6f8fd;
+}
+.passo.atual{ border-color:var(--azul); color:var(--azul); }
+.passo.feito{ background:var(--verde); border-color:var(--verde); color:#fff; }
+
+/* mídia da palavra */
+.midia{ display:flex; gap:18px; align-items:center; flex-wrap:wrap;
+  background:#f6f8fd; border:2px solid var(--borda); border-radius:var(--raio); padding:14px; }
+.midia-visual canvas, .midia-visual video{ border-radius:12px; background:#fff; max-width:260px; }
+.midia-texto{ flex:1; min-width:200px; }
+.palavra-grande{ font-size:2.4rem; font-weight:800; margin:0; letter-spacing:.06em; color:var(--azul-escuro); }
+.palavra-frase{ margin:.2em 0 .8em; color:var(--texto-suave); }
+
+/* cartões de escolha */
+.cartoes{ display:flex; gap:16px; flex-wrap:wrap; justify-content:center; margin-top:14px; }
+.cartao{
+  display:grid; justify-items:center; gap:6px; cursor:pointer;
+  background:var(--cartao); border:3px solid var(--borda); border-radius:20px;
+  padding:12px 16px; font:inherit; font-weight:800; letter-spacing:.05em;
+  min-width:150px; transition:transform .15s, border-color .15s;
+}
+.cartao:hover{ transform:translateY(-3px); border-color:var(--azul); }
+.cartao:focus-visible{ outline:4px solid var(--amarelo); outline-offset:3px; }
+.cartao.certo{ border-color:var(--verde); background:#dcfce7; }
+.cartao.errado{ border-color:#94a3b8; background:#f1f5f9; opacity:.6; }
+.cartao.apoio{ border-color:var(--amarelo); box-shadow:0 0 0 6px rgba(255,214,10,.35); }
+
+/* trilho de sílabas/letras */
+.trilho{ display:flex; gap:10px; justify-content:center; margin:18px 0; flex-wrap:wrap; }
+.vaga{
+  min-width:96px; height:78px; display:grid; place-items:center;
+  border:3px dashed var(--borda); border-radius:16px;
+  font-size:2rem; font-weight:800; color:var(--azul-escuro); background:#f6f8fd;
+}
+.vaga.preenchida{ border-style:solid; border-color:var(--verde); background:#dcfce7; }
+.pecas{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+.pecas.grandes .peca{ font-size:2rem; }
+.peca{
+  font:inherit; font-size:1.7rem; font-weight:800; letter-spacing:.05em;
+  min-width:92px; min-height:70px; cursor:pointer;
+  background:var(--cartao); border:3px solid var(--azul); border-radius:16px; color:var(--azul-escuro);
+  transition:transform .12s, background .12s;
+}
+.peca:hover{ transform:translateY(-2px); background:#eef2ff; }
+.peca:focus-visible{ outline:4px solid var(--amarelo); outline-offset:3px; }
+.peca.usada{ opacity:.45; border-color:var(--borda); color:var(--texto-suave); cursor:default; }
+.peca.errado{ background:#fee2e2; border-color:#ef4444; }
+.peca.apoio{ box-shadow:0 0 0 6px rgba(255,214,10,.4); }
+
+/* recuperação pedagógica */
+.apoio-linha{ display:flex; gap:20px; align-items:center; flex-wrap:wrap; justify-content:center; }
+.apoio-partes{ display:flex; gap:10px; flex-wrap:wrap; }
+.parte{
+  font-size:2rem; font-weight:800; color:var(--azul-escuro);
+  background:#fff7cc; border:3px solid var(--amarelo); border-radius:14px; padding:.2em .5em;
+  animation:pulsa 1.6s ease-in-out infinite;
+}
+@keyframes pulsa{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.06); } }
+
+.conquista{ display:grid; justify-items:center; gap:6px; }
+
+/* avisos flutuantes */
+.aviso{
+  position:absolute; left:50%; top:18px; transform:translateX(-50%);
+  background:var(--verde); color:#fff; font-weight:700;
+  padding:.6em 1.2em; border-radius:999px; box-shadow:var(--sombra); z-index:9;
+}
+.aviso-atencao{ background:#eab308; color:#1f2937; }
+.aviso.saindo{ opacity:0; transition:opacity .4s; }
+html[data-contraste="alto"] .aviso{ background:#000; border:3px solid #fff; }
+
+/* ---------- cenas (abertura, personalizar, encerramento) ---------- */
+.camada-cenas{
+  position:fixed; inset:0; z-index:30; overflow:auto;
+  background:linear-gradient(160deg,#0f172a,#1e3a8a 60%,#2563eb);
+  display:grid; place-items:center; padding:20px;
+}
+html[data-contraste="alto"] .camada-cenas{ background:#000; }
+.cena{
+  background:var(--cartao); border-radius:26px; padding:22px 26px 26px;
+  width:min(100%,860px); box-shadow:var(--sombra); text-align:center;
+}
+.cena-titulo{ margin:0 0 4px; color:var(--azul-escuro); font-size:1.6rem; }
+.cena-subtitulo{ margin:0 0 14px; color:var(--texto-suave); }
+.cena canvas{ width:100%; height:auto; border-radius:18px; border:2px solid var(--borda); background:#0b1437; }
+.cena-texto{ font-size:1.2em; line-height:1.5; margin:14px 0 0; }
+.cena-passo{ color:var(--texto-suave); font-size:.85rem; margin:10px 0 0; }
+
+.personalizar-grade{ display:flex; gap:22px; flex-wrap:wrap; justify-content:center; text-align:left; }
+.previa{ display:grid; justify-items:center; gap:10px; }
+.previa canvas{ background:#eef3fb; }
+.campo{ display:grid; gap:4px; font-size:.85rem; color:var(--texto-suave); width:100%; }
+.entrada{ font:inherit; padding:.6em .8em; border:2px solid var(--borda); border-radius:12px; }
+.entrada:focus{ outline:3px solid var(--amarelo); border-color:var(--azul); }
+.opcoes{ flex:1; min-width:280px; display:grid; gap:12px; align-content:start; }
+.grupo{ border:2px solid var(--borda); border-radius:16px; padding:10px 12px; margin:0; }
+.grupo legend{ font-size:.8rem; font-weight:800; color:var(--texto-suave);
+  text-transform:uppercase; letter-spacing:.06em; padding:0 6px; }
+.linha-opcoes{ display:flex; gap:10px; flex-wrap:wrap; }
+.opcao{ cursor:pointer; border:3px solid var(--borda); border-radius:12px; font:inherit; font-weight:700;
+  min-height:44px; min-width:44px; background:var(--cartao); }
+.opcao-cor{ width:44px; }
+.opcao-texto{ padding:.4em .9em; }
+.opcao[aria-pressed="true"]{ border-color:var(--azul); box-shadow:0 0 0 4px rgba(29,30,216,.18); }
+.opcao:focus-visible{ outline:4px solid var(--amarelo); outline-offset:2px; }
+
+.palavras-finais{ display:flex; gap:20px; justify-content:center; flex-wrap:wrap; margin-top:16px; }
+.palavra-final{ display:grid; justify-items:center; gap:2px; font-weight:800; color:var(--azul-escuro); }
+.palavra-final small{ font-weight:600; color:var(--texto-suave); }
+
+.lista-lugares{ display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); }
+
+/* ---------- ajustes ---------- */
+.modal{ position:fixed; inset:0; z-index:40; background:rgba(15,23,42,.6); display:grid; place-items:center; padding:16px; }
+.modal-caixa{ background:var(--cartao); border-radius:24px; padding:22px; width:min(100%,620px);
+  max-height:92vh; overflow:auto; border:3px solid var(--azul); }
+.modal-caixa h2{ margin:0 0 6px; color:var(--azul-escuro); }
+.modal-caixa p.ajuda{ margin:0 0 14px; color:var(--texto-suave); font-size:.92em; }
+.perfis{ display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); margin-bottom:16px; }
+.perfil{ display:grid; gap:4px; text-align:left; cursor:pointer; font:inherit;
+  background:#f6f8fd; border:3px solid var(--borda); border-radius:16px; padding:10px 12px; }
+.perfil small{ color:var(--texto-suave); font-size:.82em; line-height:1.3; }
+.perfil.ativo{ border-color:var(--azul); background:#eef2ff; }
+.perfil:focus-visible{ outline:4px solid var(--amarelo); outline-offset:2px; }
+.ajustes-lista{ display:grid; gap:8px; }
+.interruptor{ display:flex; align-items:center; gap:10px; padding:8px 10px;
+  border:2px solid var(--borda); border-radius:12px; cursor:pointer; }
+.interruptor input{ width:22px; height:22px; accent-color:var(--azul); }
+
+.rodape{ text-align:center; color:var(--texto-suave); font-size:.8rem; padding:0 12px 28px; }
+.rodape a{ color:var(--azul-escuro); }
+
+@media (max-width:1180px){
+  .libras{ width:150px; right:8px; }
+}
+@media (max-width:640px){
+  .libras{ position:static; width:auto; margin:10px auto 0; }
+  .legenda{ bottom:12px; }
+  .midia-visual canvas, .midia-visual video{ max-width:100%; }
+}
