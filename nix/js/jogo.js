@@ -9,7 +9,7 @@ import {
 import { ajustes, aplicar, aplicarPerfil, definirAjuste, anunciar, regiao, falar } from './acessibilidade.js';
 import { som } from './som.js';
 import { prepararInterface, elementos, dialogo, abrirPainel, fecharPainel, painelAberto, botao, aviso, legendar } from './interface.js';
-import { iniciarMundo, bloquearJogador, irAte, moverPorBotao, OBJETOS, objetivoAtual, objetoEmFoco } from './mundo.js';
+import { iniciarMundo, bloquearJogador, irAte, moverPorBotao, OBJETOS, objetivoAtual, objetoEmFoco, atualizarVisual } from './mundo.js';
 import { abrirTarefa } from './tarefas.js';
 import { figuraEmCanvas } from './desenho.js';
 import { abrirAbertura } from './cenas/abertura.js';
@@ -168,7 +168,7 @@ async function falarComNix(primeiraVez = false) {
     const p = PALAVRAS[estado.mochila[0]];
     fala = `${p.texto} está na sua mochila. Leve até a mesa do jardim.`;
   } else if (alvo) {
-    fala = `A próxima palavra está ${alvo.rotulo === 'Prateleira' ? 'na' : 'n' + (alvo.rotulo === 'Torneira' ? 'a' : 'o')} ${alvo.rotulo.toLowerCase()}. ${alvo.dica}`;
+    fala = `A próxima palavra está ${alvo.artigo} ${alvo.rotulo.toLowerCase()}. ${alvo.dica}`;
   } else {
     fala = 'Vamos explorar o jardim.';
   }
@@ -337,6 +337,7 @@ function montarAjustes() {
     b.setAttribute('aria-pressed', String(ajustes.perfil === id));
     b.addEventListener('click', () => {
       aplicarPerfil(id);
+      atualizarVisual();
       montarAjustes();
       anunciar(`Perfil ${perfil.rotulo} ativado.`, { narrar: false });
     });
@@ -353,6 +354,7 @@ function montarAjustes() {
     entrada.checked = !!ajustes[chave];
     entrada.addEventListener('change', () => {
       definirAjuste(chave, entrada.checked);
+      if (chave === 'contraste') atualizarVisual();
       el('#lista-perfis').querySelectorAll('.perfil').forEach((p) => p.classList.remove('ativo'));
     });
     const texto = document.createElement('span');

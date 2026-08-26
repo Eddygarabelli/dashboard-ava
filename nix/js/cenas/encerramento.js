@@ -19,7 +19,7 @@ export function abrirEncerramento(container, aoReiniciar) {
   cena.className = 'cena cena-encerramento';
   cena.innerHTML = `
     <h1 class="cena-titulo">O jardim voltou a ter nomes!</h1>
-    <canvas id="quadro-final" width="720" height="300" role="img"
+    <canvas id="quadro-final" width="240" height="100" role="img"
             aria-label="O jardim com o vaso, a água e a flor"></canvas>
     <p class="cena-texto">Você trouxe de volta VASO, ÁGUA e FLOR${nome}.</p>
     <div class="palavras-finais" id="palavras-finais"></div>
@@ -28,6 +28,7 @@ export function abrirEncerramento(container, aoReiniciar) {
 
   const tela = cena.querySelector('#quadro-final');
   const ctx = tela.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
   let animacao = 0;
   (function laco(t) {
     if (container.hidden) return cancelAnimationFrame(animacao);
@@ -35,9 +36,13 @@ export function abrirEncerramento(container, aoReiniciar) {
     const g = ctx.createLinearGradient(0, 0, 0, tela.height);
     g.addColorStop(0, '#8ec5e8'); g.addColorStop(1, '#cfe8b6');
     ctx.fillStyle = g; ctx.fillRect(0, 0, tela.width, tela.height);
-    desenharNix(ctx, 190, 150, 90, t);
-    desenharVaso(ctx, 360, 190, 130, { comAgua: true, comFlor: true });
-    desenharPersonagem(ctx, 540, 220, 120, estado.personagem, { direcao: 'esquerda' });
+    ctx.fillStyle = '#5c9440';
+    ctx.fillRect(0, tela.height - 20, tela.width, 20);
+    ctx.fillStyle = '#7cb356';
+    ctx.fillRect(0, tela.height - 20, tela.width, 1);
+    desenharNix(ctx, 70, tela.height - 26, 36, t);
+    desenharVaso(ctx, 122, tela.height - 8, 40, { comAgua: true, comFlor: true });
+    desenharPersonagem(ctx, 176, tela.height - 8, 48, estado.personagem, { direcao: 'esquerda' });
     animacao = requestAnimationFrame(laco);
   })(0);
 

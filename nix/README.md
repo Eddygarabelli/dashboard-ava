@@ -23,10 +23,10 @@ painel do professor.)
 |---|---|
 | Abertura narrativa visual | `js/cenas/abertura.js` — 4 quadros com texto, legenda, narração e Libras |
 | Personalização do personagem | `js/cenas/personalizar.js` — pele, cabelo, penteado, roupa, acessório e nome |
-| Exploração de ambiente 2D | `js/mundo.js` — jardim 960×576, movimento livre, colisão, profundidade |
+| Exploração de ambiente 2D | `js/mundo.js` — jardim de 44×28 tiles com câmera que acompanha o personagem |
 | Interação com objetos e itens | prateleira, torneira, canteiro, mesa, portão, placa e o Nix |
 | Mochila / inventário simples | `js/estado.js` + HUD em `index.html` |
-| Imagens, vídeos, áudio e microanimações | `js/desenho.js` (arte procedural), `js/midia.js`, `js/som.js` |
+| Imagens, vídeos, áudio e microanimações | `js/desenho.js` (pixel art), `js/cenario.js` (tiles), `js/midia.js`, `js/som.js` |
 | Tarefas centrais: VASO, ÁGUA, FLOR | `js/tarefas.js` + `js/config.js` |
 | Feedback visual de progresso no ambiente | o vaso aparece na mesa, enche de água e floresce; o canteiro floresce; o portão acende |
 | Encerramento previsto para o MVP | `js/cenas/encerramento.js` |
@@ -84,10 +84,36 @@ separadamente e fica salvo no computador.
 - Os dados ficam **apenas no navegador do computador** (localStorage); nada é
   enviado para fora.
 
+## Motor gráfico
+
+O jogo é desenhado em **pixel art de 16 bits**, no estilo dos RPGs de mapa:
+tiles de 16×16, personagem de 16×24 com quatro direções e três quadros de
+caminhada, muralhas de rocha com face e platô, caminhos de terra com borda
+pontilhada.
+
+- **Resolução interna de 480×288**, ampliada pelo CSS com `image-rendering:
+  pixelated` — os pixels ficam quadrados em qualquer tamanho de tela.
+- **Câmera que acompanha o personagem** (rolagem nos dois eixos, presa aos
+  limites do mapa), como em videogame.
+- **Passo fixo de 60 Hz com interpolação no desenho**: a velocidade é a mesma
+  em computador rápido ou lento, sem tremer.
+- **Camada estática pré-renderizada**: o chão inteiro é desenhado uma vez num
+  canvas fora da tela; a cada quadro só se recorta a parte visível. Medido em
+  teste automatizado: 60 fps estáveis, pior quadro em 16,7 ms.
+- **Sprites em cache**, redesenhados apenas quando o alto contraste muda.
+- Caminho automático com busca em largura na grade de tiles, com margem para
+  não encostar nos obstáculos e proteção contra travamento.
+
+Não foi adotada uma engine de terceiros (avaliei GDevelop, melonJS, LittleJS e
+Phaser): todas passariam de 1 MB, exigiriam empacotamento e quebrariam o
+requisito de rodar em arquivo único e offline. Se um dia o projeto precisar de
+engine, a mais próxima desse perfil é a LittleJS (sem dependências).
+
 ## Arte, vídeo e áudio
 
-Toda a arte do MVP é **desenhada por código** (`js/desenho.js`): o jogo roda
-offline, sem baixar nada, e é leve em máquinas antigas.
+Toda a arte do MVP é **desenhada por código** (`js/desenho.js` e
+`js/cenario.js`): o jogo roda offline, sem baixar nada, e é leve em máquinas
+antigas.
 
 Quando os materiais definitivos existirem, coloque-os em
 `nix/assets/midia/` e `nix/assets/libras/` com os nomes já previstos em
@@ -107,8 +133,9 @@ nix/
     estado.js         progresso, salvamento e registro pedagógico
     acessibilidade.js perfis, legendas, narração, avisos
     som.js            sons sintetizados (Web Audio)
-    desenho.js        arte procedural (personagens, objetos, figuras)
-    mundo.js          mapa 2D, colisão, caminho automático, objetos
+    desenho.js        sprites em pixel art (personagens, objetos, figuras)
+    cenario.js        tiles, mapa do jardim e camada estática pré-renderizada
+    mundo.js          câmera, laço de passo fixo, colisão e caminho automático
     interface.js      diálogos, painéis, legenda, janela de Libras
     midia.js          exibição integrada de figura/vídeo/áudio
     tarefas.js        as 3 etapas, acerto/erro e recuperação pedagógica

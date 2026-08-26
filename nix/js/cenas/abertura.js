@@ -18,7 +18,7 @@ export function abrirAbertura(container, aoTerminar) {
   cena.innerHTML = `
     <h1 class="cena-titulo">${JOGO.titulo}</h1>
     <p class="cena-subtitulo">${JOGO.subtitulo}</p>
-    <canvas id="quadro-abertura" width="720" height="320" role="img" aria-label="Quadro da história"></canvas>
+    <canvas id="quadro-abertura" width="240" height="108" role="img" aria-label="Quadro da história"></canvas>
     <p class="cena-texto" id="texto-abertura"></p>
     <div class="acoes" id="acoes-abertura"></div>
     <p class="cena-passo" id="passo-abertura"></p>`;
@@ -26,6 +26,7 @@ export function abrirAbertura(container, aoTerminar) {
 
   const tela = cena.querySelector('#quadro-abertura');
   const ctx = tela.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
   const texto = cena.querySelector('#texto-abertura');
   const acoes = cena.querySelector('#acoes-abertura');
   const passo = cena.querySelector('#passo-abertura');
@@ -73,62 +74,75 @@ function ceu(ctx, l, a, de, para) {
   ctx.fillRect(0, 0, l, a);
 }
 
-function chao(ctx, l, a) {
-  ctx.fillStyle = ajustes.contraste ? '#0b6b2e' : '#4b7a48';
-  ctx.beginPath();
-  ctx.ellipse(l / 2, a + 40, l * 0.75, 90, 0, 0, Math.PI * 2);
-  ctx.fill();
+/* faixa de grama em pixels, no mesmo estilo do jardim */
+function chao(ctx, l, a, noturno) {
+  const altura = 22;
+  const base = noturno ? ['#2f5a2c', '#3a6b36', '#274d25'] : ['#5c9440', '#6ba24a', '#528a38'];
+  ctx.fillStyle = base[0];
+  ctx.fillRect(0, a - altura, l, altura);
+  for (let x = 0; x < l; x++) {
+    for (let y = a - altura; y < a; y++) {
+      const r = ((x * 37 + y * 91) % 17) / 17;
+      if (r > 0.82) { ctx.fillStyle = base[1]; ctx.fillRect(x, y, 1, 1); }
+      else if (r < 0.12) { ctx.fillStyle = base[2]; ctx.fillRect(x, y, 1, 1); }
+    }
+  }
+  ctx.fillStyle = noturno ? '#4a7a44' : '#7cb356';
+  ctx.fillRect(0, a - altura, l, 1);
 }
 
 function estrelas(ctx, l, a, t) {
   ctx.fillStyle = '#ffffff';
-  for (let i = 0; i < 40; i++) {
-    const x = (i * 97) % l;
-    const y = (i * 53) % (a * 0.6);
-    const brilho = ajustes.movimento ? 0.4 + Math.abs(Math.sin((t + i * 300) / 900)) * 0.6 : 0.7;
+  for (let i = 0; i < 34; i++) {
+    /* posições embaralhadas: em progressão simples as estrelas viram riscos */
+    const h = Math.imul(i + 1, 2654435761) >>> 0;
+    const x = h % l;
+    const y = (h >>> 9) % Math.floor(a * 0.55);
+    const brilho = ajustes.movimento ? 0.35 + Math.abs(Math.sin((t + i * 300) / 900)) * 0.65 : 0.7;
     ctx.globalAlpha = brilho;
-    ctx.fillRect(x, y, 2, 2);
+    ctx.fillRect(x, y, 1, 1);
   }
   ctx.globalAlpha = 1;
 }
 
 export function desenharQuadro(ctx, id, l, a, t) {
+  ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, l, a);
+  const chaoY = a - 6;
   if (id === 'noite') {
     ceu(ctx, l, a, '#0b1437', '#27407a');
     estrelas(ctx, l, a, t);
-    chao(ctx, l, a);
-    arte.desenharCanteiro(ctx, l * 0.28, a - 60, 110);
-    arte.desenharMesa(ctx, l * 0.62, a - 70, 110);
-    arte.desenharPorta(ctx, l * 0.85, a - 110, 90);
+    chao(ctx, l, a, true);
+    arte.desenharCanteiro(ctx, l * 0.24, chaoY, 22);
+    arte.desenharMesa(ctx, l * 0.52, chaoY, 22);
+    arte.desenharPorta(ctx, l * 0.82, chaoY, 36, { aberta: false });
   } else if (id === 'vento') {
     ceu(ctx, l, a, '#26304f', '#5b6f8f');
-    chao(ctx, l, a);
-    /* letras levadas pelo vento */
+    chao(ctx, l, a, true);
     const letras = ['V', 'A', 'S', 'O', 'Á', 'G', 'U', 'A', 'F', 'L', 'O', 'R'];
-    ctx.font = 'bold 30px system-ui, sans-serif';
+    ctx.font = 'bold 10px monospace';
     letras.forEach((c, i) => {
-      const desloc = ajustes.movimento ? Math.sin((t + i * 400) / 700) * 18 : 0;
-      ctx.fillStyle = `rgba(255,255,255,${0.35 + (i % 4) * 0.15})`;
-      ctx.fillText(c, 60 + i * 50, 120 + desloc + (i % 3) * 26);
+      const desloc = ajustes.movimento ? Math.round(Math.sin((t + i * 400) / 700) * 5) : 0;
+      ctx.fillStyle = `rgba(255,255,255,${0.4 + (i % 4) * 0.15})`;
+      ctx.fillText(c, 14 + i * 18, 34 + desloc + (i % 3) * 9);
     });
-    arte.desenharCanteiro(ctx, l * 0.3, a - 60, 110);
-    arte.desenharMesa(ctx, l * 0.7, a - 70, 110);
+    arte.desenharCanteiro(ctx, l * 0.28, chaoY, 22);
+    arte.desenharMesa(ctx, l * 0.68, chaoY, 22);
   } else if (id === 'nix') {
     ceu(ctx, l, a, '#0b1437', '#1d3f6e');
     estrelas(ctx, l, a, t);
-    chao(ctx, l, a);
-    arte.desenharNix(ctx, l / 2, a * 0.45, 150, t);
+    chao(ctx, l, a, true);
+    arte.desenharNix(ctx, l / 2, chaoY - 6, 54, t);
   } else {
     ceu(ctx, l, a, '#123b6b', '#3b7fb5');
-    chao(ctx, l, a);
-    arte.desenharNix(ctx, l * 0.34, a * 0.45, 110, t);
-    arte.desenharPersonagem(ctx, l * 0.62, a * 0.72, 120, estado.personagem, { direcao: 'esquerda' });
-    ctx.font = 'bold 26px system-ui, sans-serif';
+    chao(ctx, l, a, false);
+    arte.desenharNix(ctx, l * 0.32, chaoY - 4, 36, t);
+    arte.desenharPersonagem(ctx, l * 0.62, chaoY, 48, estado.personagem, { direcao: 'esquerda' });
+    ctx.font = 'bold 11px monospace';
     ctx.textAlign = 'center';
     ['VASO', 'ÁGUA', 'FLOR'].forEach((p, i) => {
-      ctx.fillStyle = 'rgba(255,255,255,.92)';
-      ctx.fillText(p, l * 0.5 + (i - 1) * 130, 56);
+      ctx.fillStyle = 'rgba(255,255,255,.95)';
+      ctx.fillText(p, l * 0.5 + (i - 1) * 74, 20);
     });
     ctx.textAlign = 'start';
   }

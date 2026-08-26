@@ -80,11 +80,17 @@ html[data-contraste="alto"] .botao{ border-color:#000; box-shadow:none; }
 }
 .tela-caixa{ position:relative; }
 #tela{
-  width:100%; height:auto; display:block;
+  width:100%; height:auto; display:block; aspect-ratio:5/3;
   border-radius:var(--raio); border:3px solid var(--borda);
-  background:#7fb069; box-shadow:var(--sombra);
+  background:#5c9440; box-shadow:var(--sombra);
   touch-action:none;
+  /* pixel art: amplia sem borrar */
+  image-rendering:pixelated;
+  image-rendering:crisp-edges;
 }
+/* as figuras das tarefas e da mochila seguem a mesma regra */
+.cartao canvas, .mochila-item canvas, .midia-visual canvas,
+.previa canvas, .palavra-final canvas, .apoio-linha canvas{ image-rendering:pixelated; }
 
 .alvo-proximo{
   margin:8px 0 0; padding:8px 14px; border-radius:12px;
@@ -286,7 +292,8 @@ html[data-contraste="alto"] .camada-cenas{ background:#000; }
 }
 .cena-titulo{ margin:0 0 4px; color:var(--azul-escuro); font-size:1.6rem; }
 .cena-subtitulo{ margin:0 0 14px; color:var(--texto-suave); }
-.cena canvas{ width:100%; height:auto; border-radius:18px; border:2px solid var(--borda); background:#0b1437; }
+.cena canvas{ width:100%; height:auto; border-radius:18px; border:2px solid var(--borda);
+  background:#0b1437; image-rendering:pixelated; image-rendering:crisp-edges; }
 .cena-texto{ font-size:1.2em; line-height:1.5; margin:14px 0 0; }
 .cena-passo{ color:var(--texto-suave); font-size:.85rem; margin:10px 0 0; }
 

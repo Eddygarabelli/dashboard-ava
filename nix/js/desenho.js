@@ -1,469 +1,516 @@
-/* Desenho procedural (Canvas 2D).
-   O MVP não depende de arquivos de imagem: cenário, personagens e objetos são
-   desenhados por código. Isso mantém o jogo leve, offline e estável nos
-   computadores da escola, e permite trocar por arte definitiva depois. */
+/* Arte em pixel art, estilo RPG 16 bits.
+   Tudo é gerado por código numa resolução baixa (16×16 por tile, 16×24 para o
+   personagem) e depois ampliado sem suavização — é o que dá o aspecto de
+   videogame antigo e mantém o jogo leve, offline e sem arquivos de imagem.
+
+   Cada sprite é desenhado uma única vez e fica em cache. */
 
 import { PERSONALIZACAO } from './config.js';
 import { ajustes } from './acessibilidade.js';
 
-export function paleta() {
-  const alto = ajustes.contraste;
-  const suave = ajustes.perfil === 'baixoEstimulo';
-  return {
-    contorno: alto ? '#000000' : 'rgba(15,23,42,.35)',
-    linha: alto ? 3 : 1.5,
-    piso: alto ? '#ffffff' : (suave ? '#efeae1' : '#f3e9d8'),
-    pisoAlt: alto ? '#e6e6e6' : (suave ? '#e7e1d6' : '#ecdfc9'),
-    parede: alto ? '#111827' : (suave ? '#9aa7b4' : '#7f93a8'),
-    paredeTopo: alto ? '#374151' : (suave ? '#b6c1cc' : '#9fb2c4'),
-    grama: alto ? '#0b6b2e' : (suave ? '#8fae86' : '#7fb069'),
-    gramaAlt: alto ? '#0e8038' : (suave ? '#9cb994' : '#8fc07a'),
-    madeira: alto ? '#4a2c12' : '#a9743f',
-    madeiraClara: alto ? '#6b421d' : '#c99961',
-    agua: alto ? '#0047ab' : '#3aa0e0',
-    sombra: alto ? 'rgba(0,0,0,.45)' : 'rgba(15,23,42,.16)'
+export const TILE = 16;          // tamanho lógico do tile
+export const ESCALA = 2;         // ampliação para a tela
+
+/* ---------- base ---------- */
+
+export function telaPixel(largura, altura) {
+  const c = document.createElement('canvas');
+  c.width = largura; c.height = altura;
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  return { c, ctx };
+}
+
+/* Ruído estável: o mesmo cenário em toda partida. */
+export function ruido(semente) {
+  let s = semente >>> 0;
+  return () => {
+    s += 0x6d2b79f5;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
 
-function traco(ctx, cor) {
-  const p = paleta();
-  ctx.lineWidth = p.linha;
-  ctx.strokeStyle = cor || p.contorno;
-  ctx.stroke();
+/* Contorno escuro em volta da silhueta — leitura clara sobre qualquer fundo. */
+function contornar(ctx, largura, altura, cor = '#2a2118') {
+  const img = ctx.getImageData(0, 0, largura, altura);
+  const px = img.data;
+  const opaco = (x, y) =>
+    x >= 0 && y >= 0 && x < largura && y < altura && px[(y * largura + x) * 4 + 3] > 40;
+  const marcados = [];
+  for (let y = 0; y < altura; y++) {
+    for (let x = 0; x < largura; x++) {
+      if (opaco(x, y)) continue;
+      if (opaco(x - 1, y) || opaco(x + 1, y) || opaco(x, y - 1) || opaco(x, y + 1)) {
+        marcados.push([x, y]);
+      }
+    }
+  }
+  ctx.fillStyle = cor;
+  marcados.forEach(([x, y]) => ctx.fillRect(x, y, 1, 1));
 }
 
-function retanguloArredondado(ctx, x, y, l, a, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + l, y, x + l, y + a, r);
-  ctx.arcTo(x + l, y + a, x, y + a, r);
-  ctx.arcTo(x, y + a, x, y, r);
-  ctx.arcTo(x, y, x + l, y, r);
-  ctx.closePath();
+const cache = new Map();
+function comCache(chave, largura, altura, desenhar, opcoes = {}) {
+  const id = chave + '|' + (ajustes.contraste ? 'ac' : 'n');
+  if (cache.has(id)) return cache.get(id);
+  const { c, ctx } = telaPixel(largura, altura);
+  desenhar(ctx);
+  if (opcoes.contorno !== false) contornar(ctx, largura, altura, opcoes.cor);
+  cache.set(id, c);
+  return c;
 }
 
-export function sombraChao(ctx, x, y, l) {
-  const p = paleta();
+export function limparCache() { cache.clear(); }
+
+/* Amplia um sprite mantendo os pixels quadrados. */
+export function escalar(origem, tamanho) {
+  const fator = Math.max(1, Math.round(tamanho / Math.max(origem.width, origem.height)));
+  const { c, ctx } = telaPixel(origem.width * fator, origem.height * fator);
+  ctx.drawImage(origem, 0, 0, c.width, c.height);
+  c.style.width = c.width + 'px';
+  c.style.height = c.height + 'px';
+  return c;
+}
+
+/* Desenha um sprite com o "pé" apoiado em (x, y). */
+export function pousar(ctx, sprite, x, y, escala = 1) {
+  ctx.drawImage(sprite,
+    Math.round(x - (sprite.width * escala) / 2),
+    Math.round(y - sprite.height * escala),
+    sprite.width * escala, sprite.height * escala);
+}
+
+/* ---------- paleta ---------- */
+
+export function cores() {
+  const alto = ajustes.contraste;
+  return {
+    contorno: alto ? '#000000' : '#2a2118',
+    grama: alto ? ['#0f7a33', '#0b6b2c', '#128a3b'] : ['#5c9440', '#6ba24a', '#528a38'],
+    gramaAlta: alto ? '#17a04a' : '#7cb356',
+    flor: ['#e8d44d', '#e06a9b', '#f2f2f2'],
+    terra: alto ? ['#ffffff', '#eeeeee', '#dddddd'] : ['#d9c48f', '#cbb47c', '#e3d1a4'],
+    rochaTopo: alto ? ['#f5f5f5', '#e4e4e4'] : ['#ded0ab', '#cfbf96'],
+    rochaFace: alto ? ['#5a5a5a', '#3d3d3d', '#787878'] : ['#c0a273', '#a98a5c', '#8e7047'],
+    madeira: ['#a9743f', '#8a5a2b', '#c99961'],
+    folha: alto ? ['#0b6b2c', '#128a3b'] : ['#3f7a3a', '#4e9a45'],
+    agua: alto ? ['#0047ab', '#0066dd'] : ['#3aa0e0', '#68c1ee'],
+    pedra: ['#9aa3ab', '#7d868e', '#b6bec5']
+  };
+}
+
+/* ---------- personagem ---------- */
+
+const LARG_P = 16, ALT_P = 24;
+
+function spritePersonagem(personagem, direcao, quadro) {
+  const chave = `p${personagem.pele}${personagem.cabelo}${personagem.penteado}` +
+                `${personagem.roupa}${personagem.acessorio}|${direcao}|${quadro}`;
+  return comCache(chave, LARG_P, ALT_P, (ctx) => {
+    const pele = PERSONALIZACAO.pele[personagem.pele] || PERSONALIZACAO.pele[0];
+    const cabelo = PERSONALIZACAO.cabelo[personagem.cabelo] || PERSONALIZACAO.cabelo[0];
+    const roupa = PERSONALIZACAO.roupa[personagem.roupa] || PERSONALIZACAO.roupa[0];
+    const penteado = PERSONALIZACAO.penteado[personagem.penteado] || 'curto';
+    const acessorio = PERSONALIZACAO.acessorio[personagem.acessorio] || 'nenhum';
+    const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+    const sobe = quadro === 0 ? 0 : 0;      // o corpo fica firme; só as pernas andam
+    const calca = '#3b4453';
+
+    /* pernas (3 quadros de caminhada) */
+    if (quadro === 0) {
+      p(5, 19, 3, 4, calca); p(8, 19, 3, 4, calca);
+      p(5, 23, 3, 1, '#2b2f38'); p(8, 23, 3, 1, '#2b2f38');
+    } else if (quadro === 1) {
+      p(4, 19, 3, 4, calca); p(9, 20, 3, 3, calca);
+      p(4, 23, 3, 1, '#2b2f38'); p(9, 23, 3, 1, '#2b2f38');
+    } else {
+      p(9, 19, 3, 4, calca); p(4, 20, 3, 3, calca);
+      p(9, 23, 3, 1, '#2b2f38'); p(4, 23, 3, 1, '#2b2f38');
+    }
+
+    /* tronco e braços */
+    p(4, 12 + sobe, 8, 7, roupa);
+    p(3, 13 + sobe, 1, 5, roupa);
+    p(12, 13 + sobe, 1, 5, roupa);
+    p(3, 18 + sobe, 1, 2, pele);
+    p(12, 18 + sobe, 1, 2, pele);
+    if (acessorio === 'lenco') p(4, 12 + sobe, 8, 2, '#e11d48');
+
+    /* cabeça */
+    p(4, 4 + sobe, 8, 8, pele);
+    p(5, 12 + sobe, 6, 1, pele);
+
+    /* cabelo */
+    if (penteado === 'curto') {
+      p(4, 3 + sobe, 8, 3, cabelo); p(3, 5 + sobe, 1, 3, cabelo); p(12, 5 + sobe, 1, 3, cabelo);
+    } else if (penteado === 'cacheado') {
+      p(3, 2 + sobe, 10, 4, cabelo); p(2, 4 + sobe, 2, 4, cabelo); p(12, 4 + sobe, 2, 4, cabelo);
+      p(4, 1 + sobe, 2, 2, cabelo); p(10, 1 + sobe, 2, 2, cabelo);
+    } else if (penteado === 'trancas') {
+      p(4, 3 + sobe, 8, 3, cabelo);
+      p(2, 5 + sobe, 2, 8, cabelo); p(12, 5 + sobe, 2, 8, cabelo);
+      p(2, 13 + sobe, 2, 2, '#e8d44d'); p(12, 13 + sobe, 2, 2, '#e8d44d');
+    } else {
+      p(4, 3 + sobe, 8, 3, cabelo);
+      p(3, 5 + sobe, 1, 10, cabelo); p(12, 5 + sobe, 1, 10, cabelo);
+      p(4, 3 + sobe, 8, 2, cabelo);
+    }
+
+    /* rosto conforme a direção */
+    const olho = '#2a2118';
+    if (direcao === 'baixo') {
+      p(6, 8 + sobe, 1, 2, olho); p(9, 8 + sobe, 1, 2, olho);
+      p(7, 11 + sobe, 2, 1, '#c98c7a');
+    } else if (direcao === 'esquerda') {
+      p(5, 8 + sobe, 1, 2, olho);
+      p(4, 8 + sobe, 1, 1, pele);
+    } else if (direcao === 'direita') {
+      p(10, 8 + sobe, 1, 2, olho);
+    }
+
+    /* acessórios */
+    if (acessorio === 'oculos') {
+      p(5, 8 + sobe, 2, 2, '#f2f2f2'); p(9, 8 + sobe, 2, 2, '#f2f2f2');
+      p(7, 9 + sobe, 2, 1, '#2a2118');
+      p(5, 8 + sobe, 2, 1, '#2a2118'); p(9, 8 + sobe, 2, 1, '#2a2118');
+    } else if (acessorio === 'fone') {
+      p(2, 4 + sobe, 2, 5, '#334155'); p(12, 4 + sobe, 2, 5, '#334155');
+      p(4, 2 + sobe, 8, 1, '#334155');
+    }
+  });
+}
+
+export function desenharPersonagem(ctx, x, y, tam, personagem, opcoes = {}) {
+  const { direcao = 'baixo', passo = 0, escala = null, semSombra = false } = opcoes;
+  const quadro = passo ? (Math.floor(passo) % 2 === 0 ? 1 : 2) : 0;
+  const sprite = spritePersonagem(personagem, direcao, quadro);
+  const fator = escala || Math.max(1, Math.round(tam / ALT_P));
+  if (!semSombra) sombra(ctx, x, y, LARG_P * fator * 0.55);
+  pousar(ctx, sprite, x, y, fator);
+}
+
+export function personagemEmCanvas(personagem, tamanho = 140) {
+  return escalar(spritePersonagem(personagem, 'baixo', 0), tamanho);
+}
+
+export function sombra(ctx, x, y, largura) {
   ctx.save();
-  ctx.fillStyle = p.sombra;
+  ctx.fillStyle = 'rgba(20,30,15,.28)';
   ctx.beginPath();
-  ctx.ellipse(x, y, l * 0.36, l * 0.12, 0, 0, Math.PI * 2);
+  ctx.ellipse(Math.round(x), Math.round(y) - 1, largura / 2, Math.max(2, largura / 5), 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
 
-/* ---------- personagem da criança ---------- */
+/* ---------- Nix ---------- */
 
-export function desenharPersonagem(ctx, x, y, tam, personagem, opcoes = {}) {
-  const { direcao = 'baixo', passo = 0 } = opcoes;
-  const pele = PERSONALIZACAO.pele[personagem.pele] || PERSONALIZACAO.pele[0];
-  const cabelo = PERSONALIZACAO.cabelo[personagem.cabelo] || PERSONALIZACAO.cabelo[0];
-  const roupa = PERSONALIZACAO.roupa[personagem.roupa] || PERSONALIZACAO.roupa[0];
-  const penteado = PERSONALIZACAO.penteado[personagem.penteado] || 'curto';
-  const acessorio = PERSONALIZACAO.acessorio[personagem.acessorio] || 'nenhum';
-  const u = tam / 32;                       // unidade de desenho
-  const balanco = Math.sin(passo) * 1.5 * u;
-
-  ctx.save();
-  ctx.translate(x, y);
-  sombraChao(ctx, 0, tam * 0.46, tam);
-
-  /* pernas */
-  ctx.fillStyle = '#3b4453';
-  ctx.fillRect(-5 * u, 8 * u + balanco * 0.4, 4 * u, 8 * u);
-  ctx.fillRect(1 * u, 8 * u - balanco * 0.4, 4 * u, 8 * u);
-
-  /* corpo */
-  ctx.fillStyle = roupa;
-  retanguloArredondado(ctx, -7 * u, -2 * u, 14 * u, 12 * u, 4 * u);
-  ctx.fill(); traco(ctx);
-
-  /* braços */
-  ctx.fillStyle = pele;
-  ctx.fillRect(-9.5 * u, 0, 3 * u, 8 * u);
-  ctx.fillRect(6.5 * u, 0, 3 * u, 8 * u);
-
-  /* cabeça */
-  ctx.fillStyle = pele;
-  ctx.beginPath();
-  ctx.arc(0, -9 * u, 7 * u, 0, Math.PI * 2);
-  ctx.fill(); traco(ctx);
-
-  /* cabelo por penteado */
-  ctx.fillStyle = cabelo;
-  if (penteado === 'curto') {
-    ctx.beginPath();
-    ctx.arc(0, -10 * u, 7.2 * u, Math.PI, 0);
-    ctx.fill();
-  } else if (penteado === 'cacheado') {
-    for (let i = -3; i <= 3; i++) {
-      ctx.beginPath();
-      ctx.arc(i * 2.4 * u, -14 * u + Math.abs(i) * 0.9 * u, 2.8 * u, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  } else if (penteado === 'trancas') {
-    ctx.beginPath();
-    ctx.arc(0, -10 * u, 7.2 * u, Math.PI, 0);
-    ctx.fill();
-    ctx.fillRect(-9.5 * u, -10 * u, 2.6 * u, 12 * u);
-    ctx.fillRect(6.9 * u, -10 * u, 2.6 * u, 12 * u);
-  } else { /* longo */
-    ctx.beginPath();
-    ctx.arc(0, -10 * u, 7.4 * u, Math.PI, 0);
-    ctx.fill();
-    ctx.fillRect(-7.6 * u, -10 * u, 15.2 * u, 10 * u);
-    ctx.fillStyle = pele;
-    ctx.beginPath();
-    ctx.arc(0, -9 * u, 6 * u, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  /* rosto (só de frente e de lado — de costas fica sem rosto) */
-  if (direcao !== 'cima') {
-    const dx = direcao === 'esquerda' ? -1.6 * u : direcao === 'direita' ? 1.6 * u : 0;
-    ctx.fillStyle = '#1f2937';
-    ctx.beginPath(); ctx.arc(dx - 2.4 * u, -9.5 * u, 1 * u, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(dx + 2.4 * u, -9.5 * u, 1 * u, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#1f2937'; ctx.lineWidth = 1.2 * u;
-    ctx.beginPath(); ctx.arc(dx, -6.5 * u, 2.2 * u, 0.2 * Math.PI, 0.8 * Math.PI); ctx.stroke();
-  }
-
-  /* acessórios */
-  if (acessorio === 'oculos') {
-    ctx.strokeStyle = '#1f2937'; ctx.lineWidth = 1.2 * u;
-    ctx.beginPath(); ctx.arc(-2.4 * u, -9.5 * u, 2.4 * u, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(2.4 * u, -9.5 * u, 2.4 * u, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-0.2 * u, -9.5 * u); ctx.lineTo(0.2 * u, -9.5 * u); ctx.stroke();
-  } else if (acessorio === 'fone') {
-    ctx.fillStyle = '#334155';
-    ctx.fillRect(-9 * u, -12 * u, 2.4 * u, 5 * u);
-    ctx.fillRect(6.6 * u, -12 * u, 2.4 * u, 5 * u);
-    ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.6 * u;
-    ctx.beginPath(); ctx.arc(0, -11 * u, 8 * u, Math.PI, 0); ctx.stroke();
-  } else if (acessorio === 'lenco') {
-    ctx.fillStyle = '#e11d48';
-    ctx.fillRect(-7 * u, -3 * u, 14 * u, 2.6 * u);
-  }
-  ctx.restore();
+function spriteNix(quadro) {
+  return comCache('nix' + quadro, 16, 18, (ctx) => {
+    const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+    const corpo = ajustes.contraste ? '#0b3d91' : '#2f6fd0';
+    const claro = ajustes.contraste ? '#1e5fd0' : '#57a0ee';
+    const y0 = quadro;
+    p(6, 1 + y0, 4, 2, claro);
+    p(4, 3 + y0, 8, 3, corpo);
+    p(3, 6 + y0, 10, 6, corpo);
+    p(4, 12 + y0, 8, 3, corpo);
+    p(5, 15 + y0, 6, 1, corpo);
+    p(4, 6 + y0, 3, 3, '#ffffff'); p(9, 6 + y0, 3, 3, '#ffffff');
+    p(5, 7 + y0, 1, 2, '#12203a'); p(10, 7 + y0, 1, 2, '#12203a');
+    p(6, 11 + y0, 1, 1, '#ffe066'); p(9, 11 + y0, 1, 1, '#ffe066');
+    p(7, 12 + y0, 2, 1, '#ffe066');
+    p(3, 8 + y0, 1, 3, claro); p(12, 8 + y0, 1, 3, claro);
+  });
 }
 
-/* ---------- Nix, o guia luminoso ---------- */
-
 export function desenharNix(ctx, x, y, tam, tempo = 0) {
-  const u = tam / 32;
-  const flutua = ajustes.movimento ? Math.sin(tempo / 420) * 3 * u : 0;
-  const brilho = ajustes.movimento ? 0.5 + Math.sin(tempo / 300) * 0.12 : 0.5;
-  ctx.save();
-  ctx.translate(x, y + flutua);
-  sombraChao(ctx, 0, tam * 0.5 - flutua, tam * 0.9);
-
+  const fator = Math.max(1, Math.round(tam / 18));
+  const quadro = ajustes.movimento ? Math.round(Math.sin(tempo / 420) * 1.5) + 1 : 1;
+  sombra(ctx, x, y, 10 * fator);
   if (!ajustes.contraste) {
-    const halo = ctx.createRadialGradient(0, 0, tam * 0.15, 0, 0, tam * 0.85);
-    halo.addColorStop(0, `rgba(120,220,255,${brilho * 0.55})`);
-    halo.addColorStop(1, 'rgba(120,220,255,0)');
+    const raio = 14 * fator;
+    const brilho = ajustes.movimento ? 0.30 + Math.sin(tempo / 300) * 0.08 : 0.30;
+    const halo = ctx.createRadialGradient(x, y - 8 * fator, 2, x, y - 8 * fator, raio);
+    halo.addColorStop(0, `rgba(130,215,255,${brilho})`);
+    halo.addColorStop(1, 'rgba(130,215,255,0)');
     ctx.fillStyle = halo;
-    ctx.beginPath(); ctx.arc(0, 0, tam * 0.85, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y - 8 * fator, raio, 0, Math.PI * 2); ctx.fill();
   }
-
-  /* corpo em gota */
-  ctx.fillStyle = ajustes.contraste ? '#0b3d91' : '#2f6fd0';
-  ctx.beginPath();
-  ctx.moveTo(0, -12 * u);
-  ctx.bezierCurveTo(9 * u, -8 * u, 9 * u, 8 * u, 0, 11 * u);
-  ctx.bezierCurveTo(-9 * u, 8 * u, -9 * u, -8 * u, 0, -12 * u);
-  ctx.closePath();
-  ctx.fill(); traco(ctx, '#0b3d91');
-
-  /* olhos grandes e amigáveis */
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath(); ctx.arc(-3 * u, -2 * u, 3 * u, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(3 * u, -2 * u, 3 * u, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#0f172a';
-  ctx.beginPath(); ctx.arc(-3 * u, -2 * u, 1.4 * u, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(3 * u, -2 * u, 1.4 * u, 0, Math.PI * 2); ctx.fill();
-
-  /* faísca de "código" */
-  ctx.fillStyle = '#ffe066';
-  ctx.font = `bold ${5 * u}px system-ui, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.fillText('{ }', 0, 7 * u);
-  ctx.restore();
+  pousar(ctx, spriteNix(quadro), x, y, fator);
 }
 
 /* ---------- objetos do jardim ---------- */
 
-export function desenharVaso(ctx, x, y, tam, opcoes = {}) {
-  const { comAgua = false, comFlor = false, vazio = false } = opcoes;
-  const u = tam / 32;
-  ctx.save();
-  ctx.translate(x, y);
-  sombraChao(ctx, 0, 12 * u, tam);
-
-  if (!vazio) {
-    ctx.fillStyle = '#c2703d';
-    ctx.beginPath();
-    ctx.moveTo(-9 * u, -4 * u);
-    ctx.lineTo(9 * u, -4 * u);
-    ctx.lineTo(6 * u, 11 * u);
-    ctx.lineTo(-6 * u, 11 * u);
-    ctx.closePath();
-    ctx.fill(); traco(ctx, '#8a4b24');
-    ctx.fillStyle = '#a55c30';
-    ctx.fillRect(-10 * u, -6.5 * u, 20 * u, 3.5 * u);
-    traco(ctx, '#8a4b24');
-
-    /* terra */
-    ctx.fillStyle = '#5b4130';
-    ctx.fillRect(-8.4 * u, -4 * u, 16.8 * u, 2.4 * u);
-  }
-
-  if (comAgua) {
-    ctx.fillStyle = 'rgba(58,160,224,.75)';
-    ctx.fillRect(-8 * u, -3.4 * u, 16 * u, 1.6 * u);
-    ctx.fillStyle = '#3aa0e0';
-    for (let i = 0; i < 3; i++) {
-      ctx.beginPath();
-      ctx.arc(-4 * u + i * 4 * u, -5.6 * u, 1.1 * u, 0, Math.PI * 2);
-      ctx.fill();
+function spriteVaso({ comAgua = false, comFlor = false } = {}) {
+  return comCache(`vaso${comAgua ? 'a' : ''}${comFlor ? 'f' : ''}`, 16, 20, (ctx) => {
+    const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+    if (comFlor) {
+      p(7, 0, 2, 8, '#3f7a3a');
+      p(4, 1, 2, 2, '#e05c8a'); p(10, 1, 2, 2, '#e05c8a');
+      p(6, 0, 4, 1, '#e05c8a'); p(6, 4, 4, 1, '#e05c8a');
+      p(6, 1, 4, 3, '#ee85ab'); p(7, 2, 2, 1, '#ffd166');
+      p(9, 6, 3, 2, '#4e9a45');
     }
-  }
+    p(2, 8, 12, 3, '#a55c30');
+    p(3, 11, 10, 8, '#c2703d');
+    p(4, 11, 8, 1, '#5b4130');
+    p(5, 13, 1, 5, '#d98a5c');
+    if (comAgua) { p(4, 11, 8, 1, '#3aa0e0'); p(5, 10, 2, 1, '#68c1ee'); }
+  });
+}
 
-  if (comFlor) desenharFlor(ctx, 0, -6 * u, tam * 0.95, { semVaso: true });
-  ctx.restore();
+export function desenharVaso(ctx, x, y, tam, opcoes = {}) {
+  const fator = Math.max(1, Math.round(tam / 20));
+  sombra(ctx, x, y, 12 * fator);
+  pousar(ctx, spriteVaso(opcoes), x, y, fator);
+}
+
+function spriteFlor() {
+  return comCache('flor', 16, 16, (ctx) => {
+    const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+    p(7, 6, 2, 10, '#3f7a3a');
+    p(4, 9, 3, 2, '#4e9a45'); p(9, 11, 3, 2, '#4e9a45');
+    p(6, 1, 4, 2, '#e05c8a'); p(4, 3, 8, 4, '#ee85ab');
+    p(3, 4, 2, 2, '#e05c8a'); p(11, 4, 2, 2, '#e05c8a');
+    p(6, 7, 4, 1, '#e05c8a');
+    p(6, 3, 4, 3, '#ffd166'); p(7, 4, 2, 1, '#e0a020');
+  });
 }
 
 export function desenharFlor(ctx, x, y, tam, opcoes = {}) {
-  const u = tam / 32;
-  ctx.save();
-  ctx.translate(x, y);
-  if (!opcoes.semVaso) sombraChao(ctx, 0, 12 * u, tam * 0.7);
+  const fator = Math.max(1, Math.round(tam / 16));
+  if (!opcoes.semSombra) sombra(ctx, x, y, 9 * fator);
+  pousar(ctx, spriteFlor(), x, y, fator);
+}
 
-  ctx.strokeStyle = '#3f7d3a';
-  ctx.lineWidth = 2 * u;
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(0, -12 * u);
-  ctx.stroke();
+function spriteGota() {
+  return comCache('gota', 16, 16, (ctx) => {
+    const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+    p(7, 1, 2, 3, '#68c1ee');
+    p(6, 4, 4, 2, '#3aa0e0'); p(5, 6, 6, 4, '#3aa0e0');
+    p(4, 8, 8, 5, '#2f8fd8'); p(5, 13, 6, 2, '#2f8fd8');
+    p(6, 9, 2, 3, '#a5dcf5');
+  });
+}
 
-  ctx.fillStyle = '#4e9a45';
-  ctx.beginPath();
-  ctx.ellipse(-4 * u, -6 * u, 4 * u, 2 * u, -0.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  const petalas = 6;
-  ctx.fillStyle = '#e05c8a';
-  for (let i = 0; i < petalas; i++) {
-    const a = (i / petalas) * Math.PI * 2;
-    ctx.beginPath();
-    ctx.ellipse(Math.cos(a) * 4.4 * u, -12 * u + Math.sin(a) * 4.4 * u, 3.2 * u, 2.2 * u, a, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.fillStyle = '#ffd166';
-  ctx.beginPath(); ctx.arc(0, -12 * u, 3 * u, 0, Math.PI * 2); ctx.fill(); traco(ctx, '#c99a2e');
-  ctx.restore();
+function spritePoco() {
+  return comCache('poco', 32, 32, (ctx) => {
+    const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+    const c = cores();
+    p(4, 18, 24, 12, c.pedra[1]);
+    p(4, 16, 24, 3, c.pedra[2]);
+    p(6, 19, 20, 8, '#2f8fd8');
+    p(7, 20, 18, 2, '#68c1ee');
+    for (let i = 0; i < 5; i++) p(5 + i * 5, 22, 3, 5, c.pedra[0]);
+    p(6, 4, 3, 14, c.madeira[1]); p(23, 4, 3, 14, c.madeira[1]);
+    p(4, 1, 24, 4, c.madeira[0]);
+    p(4, 0, 24, 2, c.madeira[2]);
+    p(15, 5, 2, 7, '#6b7280');
+    p(12, 11, 8, 5, c.pedra[0]);
+    p(13, 12, 6, 3, '#3aa0e0');
+  });
 }
 
 export function desenharTorneira(ctx, x, y, tam, opcoes = {}) {
-  const u = tam / 32;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.fillStyle = '#94a3b8';
-  ctx.fillRect(-2 * u, -14 * u, 4 * u, 10 * u);
-  ctx.fillRect(-2 * u, -14 * u, 12 * u, 3.4 * u);
-  ctx.fillStyle = '#64748b';
-  ctx.beginPath(); ctx.arc(-4 * u, -13 * u, 3 * u, 0, Math.PI * 2); ctx.fill();
-  traco(ctx, '#475569');
-  if (opcoes.pingando) {
-    ctx.fillStyle = '#3aa0e0';
-    ctx.beginPath(); ctx.arc(9 * u, -6 * u, 1.6 * u, 0, Math.PI * 2); ctx.fill();
-  }
-  /* balde/poça */
-  ctx.fillStyle = '#a1a1aa';
-  retanguloArredondado(ctx, -8 * u, -4 * u, 16 * u, 12 * u, 2 * u);
-  ctx.fill(); traco(ctx, '#71717a');
-  ctx.fillStyle = 'rgba(58,160,224,.85)';
-  ctx.fillRect(-6.6 * u, -2 * u, 13.2 * u, 3 * u);
-  ctx.restore();
+  const fator = Math.max(1, Math.round(tam / 32));
+  sombra(ctx, x, y, 24 * fator);
+  pousar(ctx, spritePoco(), x, y, fator);
+}
+
+function spriteMesa() {
+  return comCache('mesa', 32, 22, (ctx) => {
+    const c = cores();
+    const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+    p(6, 12, 4, 10, c.madeira[1]); p(22, 12, 4, 10, c.madeira[1]);
+    p(2, 6, 28, 6, c.madeira[0]);
+    p(2, 5, 28, 2, c.madeira[2]);
+    for (let i = 0; i < 4; i++) p(5 + i * 7, 8, 5, 1, c.madeira[1]);
+  });
 }
 
 export function desenharMesa(ctx, x, y, tam) {
-  const p = paleta();
-  const u = tam / 32;
-  ctx.save();
-  ctx.translate(x, y);
-  sombraChao(ctx, 0, 12 * u, tam * 1.3);
-  ctx.fillStyle = p.madeira;
-  ctx.fillRect(-5 * u, 0, 3 * u, 12 * u);
-  ctx.fillRect(2 * u, 0, 3 * u, 12 * u);
-  ctx.fillStyle = p.madeiraClara;
-  retanguloArredondado(ctx, -16 * u, -6 * u, 32 * u, 7 * u, 2 * u);
-  ctx.fill(); traco(ctx, '#7a4f22');
-  ctx.restore();
+  const fator = Math.max(1, Math.round(tam / 22));
+  sombra(ctx, x, y, 28 * fator);
+  pousar(ctx, spriteMesa(), x, y, fator);
+}
+
+function spriteEstante() {
+  return comCache('estante', 32, 34, (ctx) => {
+    const c = cores();
+    const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+    p(2, 2, 28, 32, c.madeira[1]);
+    p(4, 4, 24, 12, '#7a5230'); p(4, 18, 24, 12, '#7a5230');
+    p(2, 15, 28, 3, c.madeira[0]); p(2, 29, 28, 3, c.madeira[0]);
+    p(2, 0, 28, 3, c.madeira[2]);
+    p(6, 6, 5, 9, '#8a6a45'); p(12, 8, 4, 7, '#9c7a52');
+    p(19, 20, 6, 9, '#8a6a45');
+  });
 }
 
 export function desenharPrateleira(ctx, x, y, tam) {
-  const p = paleta();
-  const u = tam / 32;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.fillStyle = p.madeira;
-  retanguloArredondado(ctx, -18 * u, -16 * u, 36 * u, 24 * u, 2 * u);
-  ctx.fill(); traco(ctx, '#7a4f22');
-  ctx.fillStyle = p.madeiraClara;
-  ctx.fillRect(-16 * u, -8 * u, 32 * u, 2.4 * u);
-  ctx.fillRect(-16 * u, 1 * u, 32 * u, 2.4 * u);
-  ctx.restore();
+  const fator = Math.max(1, Math.round(tam / 34));
+  sombra(ctx, x, y, 28 * fator);
+  pousar(ctx, spriteEstante(), x, y, fator);
+}
+
+function spriteCanteiro(florido) {
+  return comCache('canteiro' + (florido ? 'f' : ''), 34, 22, (ctx) => {
+    const c = cores();
+    const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+    p(1, 6, 32, 16, c.madeira[1]);
+    p(1, 5, 32, 3, c.madeira[2]);
+    p(3, 9, 28, 11, '#6b4f36');
+    p(4, 10, 26, 2, '#5b4130');
+    if (florido) {
+      [4, 12, 20, 26].forEach((x, i) => {
+        p(x + 2, 12, 1, 6, '#3f7a3a');
+        p(x, 9, 5, 4, i % 2 ? '#e05c8a' : '#e8d44d');
+        p(x + 1, 10, 3, 2, '#ffd166');
+      });
+    } else {
+      [5, 13, 21, 27].forEach((x) => { p(x, 14, 4, 2, '#4e7a3a'); p(x + 1, 12, 2, 2, '#4e7a3a'); });
+    }
+  });
 }
 
 export function desenharCanteiro(ctx, x, y, tam, opcoes = {}) {
-  const p = paleta();
-  const u = tam / 32;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.fillStyle = p.madeira;
-  retanguloArredondado(ctx, -18 * u, -8 * u, 36 * u, 18 * u, 3 * u);
-  ctx.fill(); traco(ctx, '#7a4f22');
-  ctx.fillStyle = '#5b4130';
-  ctx.fillRect(-15 * u, -5 * u, 30 * u, 12 * u);
-  if (opcoes.florido) {
-    desenharFlor(ctx, -8 * u, 4 * u, tam * 0.7, { semVaso: true });
-    desenharFlor(ctx, 8 * u, 4 * u, tam * 0.7, { semVaso: true });
-  } else {
-    ctx.fillStyle = '#6b7f5a';
-    for (let i = 0; i < 4; i++) {
-      ctx.beginPath();
-      ctx.ellipse(-10 * u + i * 7 * u, 2 * u, 2.4 * u, 1.4 * u, 0.4, 0, Math.PI * 2);
-      ctx.fill();
+  const fator = Math.max(1, Math.round(tam / 22));
+  sombra(ctx, x, y, 30 * fator);
+  pousar(ctx, spriteCanteiro(opcoes.florido), x, y, fator);
+}
+
+function spritePortao(aberta) {
+  return comCache('portao' + (aberta ? 'a' : ''), 32, 36, (ctx) => {
+    const c = cores();
+    const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+    p(0, 4, 4, 32, c.pedra[1]); p(28, 4, 4, 32, c.pedra[1]);
+    p(0, 2, 4, 3, c.pedra[2]); p(28, 2, 4, 3, c.pedra[2]);
+    p(2, 0, 28, 4, c.madeira[1]);
+    if (aberta) {
+      p(4, 6, 24, 30, '#f6e39a');
+      p(6, 8, 20, 26, '#ffe066');
+      p(10, 12, 12, 18, '#fff4c2');
+    } else {
+      p(4, 6, 24, 30, c.madeira[1]);
+      for (let i = 0; i < 4; i++) p(5 + i * 6, 7, 4, 28, c.madeira[0]);
+      p(4, 18, 24, 3, c.madeira[2]);
+      p(20, 22, 3, 3, '#6b7280');
     }
-  }
-  ctx.restore();
+  });
 }
 
 export function desenharPorta(ctx, x, y, tam, opcoes = {}) {
-  const u = tam / 32;
-  ctx.save();
-  ctx.translate(x, y);
-  if (opcoes.aberta && !ajustes.contraste) {
-    const halo = ctx.createRadialGradient(0, 0, 2 * u, 0, 0, 22 * u);
-    halo.addColorStop(0, 'rgba(255,224,102,.55)');
-    halo.addColorStop(1, 'rgba(255,224,102,0)');
-    ctx.fillStyle = halo;
-    ctx.beginPath(); ctx.arc(0, 0, 22 * u, 0, Math.PI * 2); ctx.fill();
-  }
-  ctx.fillStyle = opcoes.aberta ? '#ffe066' : '#6b7280';
-  retanguloArredondado(ctx, -11 * u, -18 * u, 22 * u, 30 * u, 3 * u);
-  ctx.fill(); traco(ctx, '#374151');
-  ctx.fillStyle = '#374151';
-  ctx.beginPath(); ctx.arc(6 * u, -2 * u, 1.6 * u, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
+  const fator = Math.max(1, Math.round(tam / 36));
+  pousar(ctx, spritePortao(opcoes.aberta), x, y, fator);
+}
+
+function spritePlaca(texto) {
+  return comCache('placa' + texto, 26, 24, (ctx) => {
+    const c = cores();
+    const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+    p(11, 12, 4, 12, c.madeira[1]);
+    p(1, 2, 24, 11, c.madeira[0]);
+    p(1, 1, 24, 2, c.madeira[2]);
+    ctx.fillStyle = '#4a3116';
+    ctx.font = '7px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(texto, 13, 10);
+  });
 }
 
 export function desenharPlaca(ctx, x, y, tam, texto) {
-  const u = tam / 32;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.fillStyle = '#c99961';
-  retanguloArredondado(ctx, -16 * u, -12 * u, 32 * u, 14 * u, 2 * u);
-  ctx.fill(); traco(ctx, '#7a4f22');
-  ctx.fillStyle = '#3b2712';
-  ctx.font = `bold ${6 * u}px system-ui, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.fillText(texto, 0, -3 * u);
-  ctx.fillStyle = '#8a5a2b';
-  ctx.fillRect(-2 * u, 2 * u, 4 * u, 10 * u);
-  ctx.restore();
+  const fator = Math.max(1, Math.round(tam / 24));
+  pousar(ctx, spritePlaca(texto), x, y, fator);
 }
 
-/* Mapa id → função de desenho, usado nas tarefas e na mochila. */
+/* ---------- vegetação e pedras do cenário ---------- */
+
+export function spriteArvore() {
+  return comCache('arvore', 32, 40, (ctx) => {
+    const c = cores();
+    const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+    p(13, 26, 6, 14, '#7a5230');
+    p(13, 26, 2, 14, '#96683f');
+    p(4, 6, 24, 20, c.folha[0]);
+    p(2, 12, 28, 10, c.folha[0]);
+    p(8, 2, 16, 8, c.folha[0]);
+    p(7, 8, 14, 10, c.folha[1]);
+    p(10, 5, 8, 5, c.folha[1]);
+    p(6, 20, 8, 4, c.folha[1]);
+  });
+}
+
+export function spriteArbusto() {
+  return comCache('arbusto', 16, 14, (ctx) => {
+    const c = cores();
+    const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+    p(2, 4, 12, 10, c.folha[0]);
+    p(4, 2, 8, 4, c.folha[1]);
+    p(5, 5, 5, 4, c.folha[1]);
+  });
+}
+
+export function spritePedra() {
+  return comCache('pedra', 16, 14, (ctx) => {
+    const c = cores();
+    const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+    p(2, 6, 12, 8, c.pedra[1]);
+    p(4, 3, 8, 5, c.pedra[0]);
+    p(5, 4, 4, 3, c.pedra[2]);
+  });
+}
+
+/* ---------- figuras usadas nas tarefas ---------- */
+
+function spriteSimples(id) {
+  const desenhos = {
+    sapato: (ctx) => {
+      const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+      p(2, 8, 12, 5, '#7c3aed'); p(3, 5, 6, 4, '#8b5cf6');
+      p(2, 12, 12, 2, '#4c1d95'); p(4, 6, 4, 1, '#c4b5fd');
+    },
+    bola: (ctx) => {
+      const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+      p(4, 2, 8, 12, '#f59e0b'); p(2, 4, 12, 8, '#f59e0b');
+      p(2, 7, 12, 2, '#b45309'); p(7, 4, 2, 8, '#b45309');
+      p(5, 3, 3, 2, '#fcd34d');
+    },
+    livro: (ctx) => {
+      const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+      p(2, 2, 12, 12, '#16a34a'); p(7, 2, 2, 12, '#14532d');
+      p(3, 4, 4, 8, '#f8fafc'); p(9, 4, 4, 8, '#f8fafc');
+    },
+    janela: (ctx) => {
+      const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+      p(1, 2, 14, 12, '#8a5a2b'); p(3, 4, 10, 8, '#9fd8f5');
+      p(7, 4, 2, 8, '#8a5a2b'); p(3, 7, 10, 2, '#8a5a2b');
+      p(4, 5, 2, 2, '#e0f2fe');
+    },
+    chave: (ctx) => {
+      const p = (x, y, l, a, cor) => { ctx.fillStyle = cor; ctx.fillRect(x, y, l, a); };
+      p(2, 5, 5, 5, '#eab308'); p(3, 6, 3, 3, '#8a5a2b');
+      p(7, 7, 7, 2, '#eab308'); p(11, 9, 2, 3, '#eab308');
+    }
+  };
+  return comCache('fig' + id, 16, 16, desenhos[id] || (() => {}));
+}
+
 export const FIGURAS = {
-  vaso: (ctx, x, y, t) => desenharVaso(ctx, x, y, t),
-  agua: (ctx, x, y, t) => {
-    const u = t / 32;
-    ctx.save(); ctx.translate(x, y);
-    ctx.fillStyle = '#3aa0e0';
-    ctx.beginPath();
-    ctx.moveTo(0, -13 * u);
-    ctx.bezierCurveTo(10 * u, -1 * u, 7 * u, 11 * u, 0, 11 * u);
-    ctx.bezierCurveTo(-7 * u, 11 * u, -10 * u, -1 * u, 0, -13 * u);
-    ctx.closePath(); ctx.fill(); traco(ctx, '#1d6ea8');
-    ctx.fillStyle = 'rgba(255,255,255,.6)';
-    ctx.beginPath(); ctx.ellipse(-3 * u, 3 * u, 2 * u, 3 * u, -0.3, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
-  },
-  flor: (ctx, x, y, t) => desenharFlor(ctx, x, y + 6 * (t / 32), t),
-  sapato: (ctx, x, y, t) => {
-    const u = t / 32;
-    ctx.save(); ctx.translate(x, y);
-    ctx.fillStyle = '#7c3aed';
-    retanguloArredondado(ctx, -12 * u, -2 * u, 24 * u, 9 * u, 3 * u);
-    ctx.fill(); traco(ctx, '#4c1d95');
-    ctx.fillStyle = '#4c1d95'; ctx.fillRect(-12 * u, 5 * u, 24 * u, 2.4 * u);
-    ctx.restore();
-  },
-  bola: (ctx, x, y, t) => {
-    const u = t / 32;
-    ctx.save(); ctx.translate(x, y);
-    ctx.fillStyle = '#f59e0b';
-    ctx.beginPath(); ctx.arc(0, 0, 11 * u, 0, Math.PI * 2); ctx.fill(); traco(ctx, '#b45309');
-    ctx.strokeStyle = '#b45309'; ctx.lineWidth = 1.6 * u;
-    ctx.beginPath(); ctx.moveTo(-11 * u, 0); ctx.lineTo(11 * u, 0); ctx.stroke();
-    ctx.restore();
-  },
-  livro: (ctx, x, y, t) => {
-    const u = t / 32;
-    ctx.save(); ctx.translate(x, y);
-    ctx.fillStyle = '#16a34a';
-    retanguloArredondado(ctx, -11 * u, -9 * u, 22 * u, 18 * u, 2 * u);
-    ctx.fill(); traco(ctx, '#14532d');
-    ctx.fillStyle = '#f8fafc'; ctx.fillRect(-1 * u, -9 * u, 2 * u, 18 * u);
-    ctx.restore();
-  },
-  janela: (ctx, x, y, t) => {
-    const u = t / 32;
-    ctx.save(); ctx.translate(x, y);
-    ctx.fillStyle = '#bfdbfe';
-    retanguloArredondado(ctx, -11 * u, -10 * u, 22 * u, 20 * u, 2 * u);
-    ctx.fill(); traco(ctx, '#1e3a8a');
-    ctx.strokeStyle = '#1e3a8a'; ctx.lineWidth = 2 * u;
-    ctx.beginPath(); ctx.moveTo(0, -10 * u); ctx.lineTo(0, 10 * u);
-    ctx.moveTo(-11 * u, 0); ctx.lineTo(11 * u, 0); ctx.stroke();
-    ctx.restore();
-  },
-  chave: (ctx, x, y, t) => {
-    const u = t / 32;
-    ctx.save(); ctx.translate(x, y);
-    ctx.strokeStyle = '#ca8a04'; ctx.lineWidth = 3 * u;
-    ctx.beginPath(); ctx.arc(-5 * u, 0, 5 * u, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(11 * u, 0);
-    ctx.moveTo(8 * u, 0); ctx.lineTo(8 * u, 5 * u); ctx.stroke();
-    ctx.restore();
-  }
+  vaso: () => spriteVaso(),
+  agua: () => spriteGota(),
+  flor: () => spriteFlor(),
+  sapato: () => spriteSimples('sapato'),
+  bola: () => spriteSimples('bola'),
+  livro: () => spriteSimples('livro'),
+  janela: () => spriteSimples('janela'),
+  chave: () => spriteSimples('chave')
 };
 
-/* Devolve um <canvas> pronto com a figura pedida (usado nos cartões). */
 export function figuraEmCanvas(id, tamanho = 120) {
-  const c = document.createElement('canvas');
-  const escala = window.devicePixelRatio || 1;
-  c.width = tamanho * escala;
-  c.height = tamanho * escala;
-  c.style.width = tamanho + 'px';
-  c.style.height = tamanho + 'px';
-  const ctx = c.getContext('2d');
-  ctx.scale(escala, escala);
-  const desenhar = FIGURAS[id];
-  if (desenhar) desenhar(ctx, tamanho / 2, tamanho / 2, tamanho * 0.9);
-  return c;
-}
-
-export function personagemEmCanvas(personagem, tamanho = 140) {
-  const c = document.createElement('canvas');
-  const escala = window.devicePixelRatio || 1;
-  c.width = tamanho * escala;
-  c.height = tamanho * escala;
-  c.style.width = tamanho + 'px';
-  c.style.height = tamanho + 'px';
-  const ctx = c.getContext('2d');
-  ctx.scale(escala, escala);
-  desenharPersonagem(ctx, tamanho / 2, tamanho * 0.66, tamanho * 0.78, personagem, { direcao: 'baixo' });
-  return c;
+  const fabrica = FIGURAS[id];
+  if (!fabrica) return telaPixel(tamanho, tamanho).c;
+  return escalar(fabrica(), tamanho);
 }

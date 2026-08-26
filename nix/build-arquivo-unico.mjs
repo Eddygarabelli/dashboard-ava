@@ -15,6 +15,7 @@ const MODULOS = [
   'js/acessibilidade.js',
   'js/som.js',
   'js/desenho.js',
+  'js/cenario.js',
   'js/estado.js',
   'js/interface.js',
   'js/midia.js',

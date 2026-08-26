@@ -43,6 +43,7 @@ export function abrirPersonalizacao(container, aoTerminar) {
 
   const tela = cena.querySelector('#previa-personagem');
   const ctx = tela.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
   const campoNome = cena.querySelector('#nome-jogador');
   campoNome.value = estado.aluno.nome || '';
   campoNome.addEventListener('input', () => {
@@ -52,7 +53,8 @@ export function abrirPersonalizacao(container, aoTerminar) {
 
   function redesenhar() {
     ctx.clearRect(0, 0, tela.width, tela.height);
-    desenharPersonagem(ctx, tela.width / 2, tela.height * 0.72, 190, estado.personagem, { direcao: 'baixo' });
+    desenharPersonagem(ctx, tela.width / 2, tela.height * 0.82, 190, estado.personagem,
+      { direcao: 'baixo', semSombra: true });
   }
 
   const listaOpcoes = cena.querySelector('#opcoes-personagem');
