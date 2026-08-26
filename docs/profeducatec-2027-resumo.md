@@ -16,6 +16,7 @@
 | Edital | **nº 03/2026** |
 | Coordenação nacional | Universidade do Estado do Amazonas (**UEA**) |
 | Formato | Mestrado profissional **em rede nacional** (9 IES estaduais associadas, 7 estados) |
+| Modalidade | **Presencial mediado por tecnologias digitais** — atividades síncronas e assíncronas; aulas de segunda a sábado, conforme o colegiado local. **Não é EaD.** |
 | Ingresso | 1º semestre de **2027** |
 | Vinculação | Ação do programa **Mais Professores para o Brasil** (MEC + Capes) |
 
@@ -33,7 +34,7 @@ Distribuição por instituição:
 
 | IES | UF | Vagas |
 |---|---|---|
-| UEA — Universidade do Estado do Amazonas | AM | 15 |
+| UEA — Universidade do Estado do Amazonas | AM | 15 (uma fonte indica 20, em 3 campi — conferir) |
 | **UEM — Universidade Estadual de Maringá** | **PR** | **15** |
 | UVA — Universidade Estadual Vale do Acaraú | CE | 15 |
 | UPE — Universidade de Pernambuco | PE | 15 |
@@ -82,7 +83,8 @@ Itens que a divulgação pública não detalha e que **mudam a estratégia de ca
 - [ ] Exigência de **pré-projeto** vinculado a uma linha de pesquisa e seu formato
 - [ ] Documentação de comprovação de vínculo (declaração da escola / NRE)
 - [ ] Regras das **ações afirmativas** (categorias e forma de autodeclaração/heteroidentificação)
-- [ ] Formato das aulas (presencial, híbrido, frequência dos encontros) e duração
+- [ ] **Frequência e dias dos encontros presenciais no polo da UEM** (definidos pelo colegiado local — é o dado que decide a compatibilidade com a jornada docente) e duração do curso
+- [ ] Distribuição final de vagas por IES (há divergência nas fontes quanto à UEA: 15 ou 20)
 - [ ] Exigência de **produto educacional** como resultado da dissertação
 - [ ] Disponibilidade e critérios de **bolsa**
 - [ ] Necessidade de afastamento/licença ou compatibilidade com a jornada docente
